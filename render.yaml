@@ -1,0 +1,41 @@
+# Render.com Blueprint – WilkenPoelker App
+# Deploy: render.com → New Blueprint → connect this repo
+
+databases:
+  - name: wilkenpoelker-db
+    plan: free
+    databaseName: wilkenpoelker_app
+    user: wilkenpoelker
+
+services:
+  - type: web
+    name: wilkenpoelker-app
+    runtime: node
+    plan: free
+    buildCommand: >
+      cd frontend &&
+      npm install --legacy-peer-deps &&
+      npx expo export --platform web &&
+      mkdir -p ../backend/public &&
+      cp -r dist/* ../backend/public/ &&
+      cd ../backend &&
+      npm install
+    startCommand: cd backend && node src/app.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wilkenpoelker-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false  # Set manually after deploy to your Render URL
+      - key: OPENAI_API_KEY
+        sync: false  # Set manually if you want AI features
+      - key: BCRYPT_ROUNDS
+        value: "12"

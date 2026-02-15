@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wilkenpoelker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: wilkenpoelker_app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d wilkenpoelker_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wilkenpoelker-backend
+    restart: unless-stopped
+    ports:
+      - "5002:5002"
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override DB_HOST to point to the postgres service inside Docker network
+      DB_HOST: postgres
+      DB_PORT: 5432
+      NODE_ENV: production
+      USE_SQLITE: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+
+volumes:
+  postgres_data:
+  backend_uploads:
+  backend_logs:

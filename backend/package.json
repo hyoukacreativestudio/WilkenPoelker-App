@@ -1,23 +1,49 @@
 {
-  "name": "taifun-backend",
+  "name": "wilkenpoelker-backend",
   "version": "1.0.0",
-  "main": "app.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "seed": "node src/seeds/index.js",
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "test": "jest --verbose --forceExit --detectOpenHandles",
+    "test:unit": "jest tests/sanitizer.test.js tests/errorHandler.test.js --verbose",
+    "test:api": "jest tests/api.test.js --verbose --forceExit --detectOpenHandles",
+    "health": "curl -f http://localhost:5002/api/health || exit 1",
+    "generate:jwt-secret": "node -e \"console.log('JWT_SECRET=' + require('crypto').randomBytes(64).toString('hex')); console.log('JWT_REFRESH_SECRET=' + require('crypto').randomBytes(64).toString('hex'))\""
   },
   "dependencies": {
+    "@sentry/node": "^10.38.0",
     "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.3.1",
     "firebase-admin": "^12.0.0",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^7.0.0",
-    "mongoose": "^8.0.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
+    "nodemailer": "^8.0.1",
     "openai": "^4.0.0",
-    "socket.io": "^4.7.2"
+    "pg": "^8.18.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7",
+    "socket.io": "^4.7.2",
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0",
+    "winston": "^3.19.0",
+    "xss": "^1.0.15"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "sharp": "^0.34.5",
+    "supertest": "^7.2.2"
   }
 }
