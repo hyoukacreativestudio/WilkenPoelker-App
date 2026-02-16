@@ -594,7 +594,7 @@ function DepartmentSection({
           }
         }
       } catch (error) {
-        console.warn('Image picker error:', error);
+        // Image picker error handled silently
       }
     },
     [dept, handleUpdateMember, uploadImage]

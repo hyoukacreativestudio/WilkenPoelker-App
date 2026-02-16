@@ -295,7 +295,7 @@ export default function AdminRequestsScreen({ navigation }) {
       const res = await customerNumberApi.getAllRequests(status || activeTab);
       setRequests(res.data?.requests || res.data || []);
     } catch (err) {
-      console.error('Failed to fetch requests:', err);
+      // Error handled silently - UI shows empty state
     }
   }, [activeTab]);
 

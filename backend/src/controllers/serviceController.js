@@ -15,13 +15,16 @@ const createTicket = asyncHandler(async (req, res) => {
   const { title, type, category, description, urgency, appointmentDate, alternativeDates } = req.body;
 
   // Process file attachments
-  const attachments = (req.files || []).map((file) => ({
-    filename: file.filename,
-    originalName: file.originalname,
-    mimetype: file.mimetype,
-    size: file.size,
-    url: `/uploads/${file.filename}`,
-  }));
+  const { uploadFile } = require('../services/uploadService');
+  const attachments = await Promise.all(
+    (req.files || []).map(async (file) => ({
+      filename: file.filename,
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      url: await uploadFile(file, 'tickets'),
+    }))
+  );
 
   const ticket = await serviceService.createTicket(
     { title, type, category, description, urgency, appointmentDate, alternativeDates, attachments },
@@ -289,13 +292,16 @@ const sendChatMessage = asyncHandler(async (req, res) => {
   }
 
   // Process attachment if present
-  const attachments = (req.files || []).map((file) => ({
-    filename: file.filename,
-    originalName: file.originalname,
-    mimetype: file.mimetype,
-    size: file.size,
-    url: `/uploads/${file.filename}`,
-  }));
+  const { uploadFile: uploadToCloud } = require('../services/uploadService');
+  const attachments = await Promise.all(
+    (req.files || []).map(async (file) => ({
+      filename: file.filename,
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      url: await uploadToCloud(file, 'chat'),
+    }))
+  );
 
   const chatMessage = await serviceService.sendChatMessage(
     ticketId,

@@ -164,7 +164,7 @@ export default function AdminOpenTicketsScreen({ navigation }) {
       const res = await serviceApi.getAdminTickets({ tab: 'open', limit: 50 });
       setTickets(res.data?.tickets || res.data || []);
     } catch (err) {
-      console.error('Failed to fetch admin tickets:', err);
+      // Error handled silently - UI shows empty state
     }
   }, []);
 

@@ -82,14 +82,15 @@ const uploadImage = async (req, res) => {
       return res.status(400).json({ error: 'No image file provided' });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    const { uploadFile } = require('../services/uploadService');
+    const imageUrl = await uploadFile(req.file, 'about');
     res.json({
       message: 'Image uploaded',
       url: imageUrl,
       filename: req.file.filename,
     });
   } catch (error) {
-    console.error('Error uploading image:', error);
+    logger.error('Error uploading image:', error);
     res.status(500).json({ error: 'Could not upload image' });
   }
 };

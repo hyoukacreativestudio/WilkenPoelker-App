@@ -9,23 +9,37 @@ function initializeFirebase() {
   if (firebaseInitialized) return;
 
   try {
-    if (config.firebase.serviceAccount) {
+    const serviceAccountValue = config.firebase.serviceAccount;
+
+    if (!serviceAccountValue) {
+      logger.warn('Firebase service account not configured, push notifications disabled');
+      return;
+    }
+
+    let serviceAccount;
+
+    // Support JSON string directly (for cloud deployments like Render)
+    if (serviceAccountValue.trim().startsWith('{')) {
+      serviceAccount = JSON.parse(serviceAccountValue);
+      logger.info('Firebase: Using service account from JSON env variable');
+    } else {
+      // Treat as file path (for local development)
       const fs = require('fs');
-      // Resolve path relative to backend root (2 levels up from config/)
-      const resolvedPath = path.resolve(__dirname, '../../', config.firebase.serviceAccount);
+      const resolvedPath = path.resolve(__dirname, '../../', serviceAccountValue);
       if (fs.existsSync(resolvedPath)) {
-        const serviceAccount = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
-        });
-        firebaseInitialized = true;
-        logger.info('Firebase Admin SDK initialized');
+        serviceAccount = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
+        logger.info('Firebase: Using service account from file');
       } else {
         logger.warn(`Firebase service account file not found at ${resolvedPath}, push notifications disabled`);
+        return;
       }
-    } else {
-      logger.warn('Firebase service account not configured, push notifications disabled');
     }
+
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    firebaseInitialized = true;
+    logger.info('Firebase Admin SDK initialized');
   } catch (error) {
     logger.warn('Firebase initialization failed:', error.message);
   }

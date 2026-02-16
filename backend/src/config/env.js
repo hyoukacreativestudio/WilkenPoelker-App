@@ -51,6 +51,11 @@ const envSchema = Joi.object({
   UPLOAD_MAX_SIZE: Joi.number().default(10485760),
   UPLOAD_PATH: Joi.string().default('./uploads'),
 
+  // Cloudinary (optional - if not set, files are stored locally)
+  CLOUDINARY_CLOUD_NAME: Joi.string().allow('').default(''),
+  CLOUDINARY_API_KEY: Joi.string().allow('').default(''),
+  CLOUDINARY_API_SECRET: Joi.string().allow('').default(''),
+
   // Security
   BCRYPT_ROUNDS: Joi.number().default(12),
   RATE_LIMIT_WINDOW_MS: Joi.number().default(900000),
@@ -122,6 +127,13 @@ module.exports = {
   upload: {
     maxSize: env.UPLOAD_MAX_SIZE,
     path: env.UPLOAD_PATH,
+  },
+
+  cloudinary: {
+    cloudName: env.CLOUDINARY_CLOUD_NAME,
+    apiKey: env.CLOUDINARY_API_KEY,
+    apiSecret: env.CLOUDINARY_API_SECRET,
+    isConfigured: !!(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET),
   },
 
   security: {

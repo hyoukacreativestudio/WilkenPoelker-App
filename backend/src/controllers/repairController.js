@@ -57,7 +57,8 @@ const createRepair = asyncHandler(async (req, res) => {
   // Process device photo if uploaded
   let devicePhoto = null;
   if (req.file) {
-    devicePhoto = `/uploads/${req.file.filename}`;
+    const { uploadFile } = require('../services/uploadService');
+    devicePhoto = await uploadFile(req.file, 'repairs');
   }
 
   const repair = await repairService.createRepair(

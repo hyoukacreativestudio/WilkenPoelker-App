@@ -8,6 +8,7 @@ export const usersApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   changePassword: (data) => apiClient.put('/users/password', data),
+  exportMyData: () => apiClient.get('/users/export'),
 
   // Admin
   getUsers: (params) => apiClient.get('/users/admin/list', { params }),

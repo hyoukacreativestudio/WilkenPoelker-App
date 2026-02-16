@@ -116,9 +116,20 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-// Serve frontend build (Expo Web) from /public if it exists
+// Serve .well-known files with correct content types (for Universal Links / App Links)
 const publicPath = path.resolve(__dirname, '../public');
 const fs = require('fs');
+app.get('/.well-known/apple-app-site-association', (req, res) => {
+  const filePath = path.join(publicPath, '.well-known', 'apple-app-site-association');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'application/json');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).end();
+  }
+});
+
+// Serve frontend build (Expo Web) from /public if it exists
 if (fs.existsSync(publicPath)) {
   app.use(express.static(publicPath, {
     maxAge: config.isProd ? '7d' : '1h',

@@ -36,6 +36,9 @@ router.put(
   userController.updateAvatar
 );
 
+// GET /api/users/export (DSGVO Art. 15 - Data Export)
+router.get('/export', authenticate, userController.exportMyData);
+
 // PUT /api/users/password
 router.put(
   '/password',

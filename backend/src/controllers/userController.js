@@ -1,6 +1,6 @@
 const userService = require('../services/userService');
 const { asyncHandler } = require('../middlewares/errorHandler');
-const { User, Post, Comment, Like, Notification, FCMToken, AuditLog } = require('../models');
+const { User, Post, Comment, Like, Notification, FCMToken, AuditLog, Appointment, Repair, Ticket, Favorite, ProductReview, ServiceRating, AISession } = require('../models');
 
 // ──────────────────────────────────────────────
 // Profile endpoints
@@ -38,7 +38,8 @@ const updateAvatar = asyncHandler(async (req, res) => {
     });
   }
 
-  const filePath = `/uploads/${req.file.filename}`;
+  const { uploadFile } = require('../services/uploadService');
+  const filePath = await uploadFile(req.file, 'avatars');
   const result = await userService.updateAvatar(req.user.id, filePath, User);
 
   res.json({
@@ -130,11 +131,52 @@ const getAuditLog = asyncHandler(async (req, res) => {
   });
 });
 
+// DSGVO Art. 15 - Right of Access / Data Export
+const exportMyData = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const user = await User.findByPk(userId, {
+    attributes: { exclude: ['password', 'refreshToken', 'verificationToken', 'resetPasswordToken'] },
+  });
+
+  const [posts, comments, likes, appointments, repairs, tickets, favorites, reviews, ratings, aiSessions] = await Promise.all([
+    Post.findAll({ where: { userId }, attributes: ['id', 'content', 'mediaUrl', 'createdAt'] }),
+    Comment.findAll({ where: { userId }, attributes: ['id', 'content', 'createdAt'] }),
+    Like.findAll({ where: { userId }, attributes: ['id', 'postId', 'createdAt'] }),
+    Appointment.findAll({ where: { userId }, attributes: { exclude: ['deletedAt'] } }),
+    Repair.findAll({ where: { userId }, attributes: { exclude: ['deletedAt'] } }),
+    Ticket.findAll({ where: { userId }, attributes: { exclude: ['deletedAt'] } }),
+    Favorite.findAll({ where: { userId }, attributes: ['id', 'productId', 'createdAt'] }),
+    ProductReview.findAll({ where: { userId }, attributes: ['id', 'productId', 'rating', 'comment', 'createdAt'] }),
+    ServiceRating.findAll({ where: { userId }, attributes: ['id', 'rating', 'comment', 'createdAt'] }),
+    AISession.findAll({ where: { userId }, attributes: ['id', 'category', 'messages', 'createdAt'] }),
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      exportDate: new Date().toISOString(),
+      profile: user,
+      posts,
+      comments,
+      likes,
+      appointments,
+      repairs,
+      tickets,
+      favorites,
+      reviews,
+      ratings,
+      aiSessions,
+    },
+  });
+});
+
 module.exports = {
   getProfile,
   updateProfile,
   updateAvatar,
   changePassword,
+  exportMyData,
   listUsers,
   changeUserRole,
   updatePermissions,

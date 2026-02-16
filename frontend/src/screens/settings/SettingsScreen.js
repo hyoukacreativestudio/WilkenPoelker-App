@@ -8,12 +8,18 @@ import {
   Switch,
   Alert,
   StyleSheet,
+  Share,
+  Platform,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../hooks/useAuth';
 import { LanguageContext } from '../../context/LanguageContext';
+import { authApi } from '../../api/auth';
+import { usersApi } from '../../api/users';
 import Card from '../../components/ui/Card';
 import Chip from '../../components/ui/Chip';
 import Divider from '../../components/ui/Divider';
@@ -28,6 +34,7 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
   const { theme, isDark, mode, accentColor, textSize, setThemeMode, setAccentColor, setTextSize } = useTheme();
   const { language, setLanguage: setLanguageRaw } = useContext(LanguageContext);
+  const { logout } = useAuth();
   const { showToast } = useToast();
   const navigation = useNavigation();
 
@@ -81,20 +88,76 @@ export default function SettingsScreen() {
           text: t('settings.deleteConfirm'),
           style: 'destructive',
           onPress: () => {
-            // Placeholder - does not actually delete
-            showToast({ type: 'success', message: t('settings.deleteDataRequestedMessage') });
+            // Second confirmation with password prompt
+            Alert.prompt
+              ? Alert.prompt(
+                  t('settings.deleteDataTitle'),
+                  t('settings.enterPasswordToDelete'),
+                  async (password) => {
+                    if (!password) return;
+                    try {
+                      await authApi.deleteAccount(password);
+                      showToast({ type: 'success', message: t('settings.deleteDataRequestedMessage') });
+                      await logout();
+                    } catch (err) {
+                      showToast({ type: 'error', message: err.message || t('errors.generic') });
+                    }
+                  },
+                  'secure-text'
+                )
+              : // Android fallback (no Alert.prompt)
+                Alert.alert(
+                  t('settings.deleteDataTitle'),
+                  t('settings.deleteAccountContactSupport'),
+                  [{ text: t('common.ok') }]
+                );
           },
         },
       ]
     );
   };
 
-  const handleExportData = () => {
-    showToast({ type: 'info', message: t('settings.exportDataMessage') });
+  const [exporting, setExporting] = useState(false);
+  const handleExportData = async () => {
+    try {
+      setExporting(true);
+      const res = await usersApi.exportMyData();
+      const jsonStr = JSON.stringify(res.data?.data || res.data, null, 2);
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'wilkenpoelker-daten-export.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        await Share.share({
+          message: jsonStr,
+          title: 'WilkenPoelker Datenexport',
+        });
+      }
+      showToast({ type: 'success', message: t('settings.exportDataMessage') });
+    } catch (err) {
+      showToast({ type: 'error', message: err.message || t('errors.generic') });
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const handleClearCache = () => {
-    showToast({ type: 'success', message: t('settings.cacheClearedMessage') });
+  const handleClearCache = async () => {
+    try {
+      const keysToKeep = ['accessToken', 'refreshToken', 'user', '@theme_mode', '@accent_color', '@text_size', '@language'];
+      const allKeys = await AsyncStorage.getAllKeys();
+      const keysToRemove = allKeys.filter((k) => !keysToKeep.includes(k));
+      if (keysToRemove.length > 0) {
+        await AsyncStorage.multiRemove(keysToRemove);
+      }
+      showToast({ type: 'success', message: t('settings.cacheClearedMessage') });
+    } catch {
+      showToast({ type: 'error', message: t('errors.generic') });
+    }
   };
 
   const s = styles(theme);

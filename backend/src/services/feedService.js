@@ -67,7 +67,8 @@ async function createPost({ content, type, userId, file }, { Post }) {
   };
 
   if (file) {
-    postData.mediaUrl = `/uploads/${file.filename}`;
+    const { uploadFile } = require('./uploadService');
+    postData.mediaUrl = await uploadFile(file, 'feed');
     if (['image', 'video'].includes(postData.type)) {
       postData.thumbnailUrl = postData.mediaUrl;
     }
