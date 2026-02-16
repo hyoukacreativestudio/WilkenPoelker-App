@@ -19,12 +19,21 @@
       "ios": {
         "simulator": false
       },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "API_BASE_URL": "https://api.wilkenpoelker.de/api"
       }
     },
     "production": {
       "autoIncrement": true,
+      "ios": {
+        "image": "latest"
+      },
+      "android": {
+        "image": "latest"
+      },
       "env": {
         "API_BASE_URL": "https://api.wilkenpoelker.de/api"
       }

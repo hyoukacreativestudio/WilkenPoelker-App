@@ -1,0 +1,35 @@
+# EAS Build Ignore File
+# Unnötige Dateien vom Build ausschließen
+
+# Node modules (werden beim Build automatisch installiert)
+node_modules/
+
+# Tests
+__tests__/
+*.test.js
+*.test.ts
+*.test.tsx
+*.spec.js
+*.spec.ts
+
+# Docs
+docs/
+*.md
+LICENSE
+
+# Development files
+.env
+.env.local
+.env.development
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
