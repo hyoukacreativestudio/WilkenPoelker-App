@@ -756,6 +756,10 @@
     "agb": "Terms & Conditions",
     "widerrufsrecht": "Right of Withdrawal",
     "licenses": "Licenses",
+    "developedBy": "Developed by",
+    "developer": "HyoukaCreativeStudio",
+    "copyright": "© 2024-2026 HyoukaCreativeStudio. All rights reserved.",
+    "allRightsReserved": "All rights to this app, including design, code and content, belong to HyoukaCreativeStudio.",
     "contactSupport": "Contact & Support",
     "sendFeedback": "Send feedback",
     "reportBug": "Report a bug",
@@ -1055,7 +1059,9 @@
       "disputeResolutionTitle": "Dispute Resolution",
       "disputeResolutionText": "The European Commission provides a platform for online dispute resolution (OS): https://ec.europa.eu/consumers/odr/. We are not willing or obliged to participate in dispute resolution proceedings before a consumer arbitration board.",
       "disclaimerTitle": "Disclaimer",
-      "disclaimerText": "Despite careful content control, we assume no liability for the content of external links. The operators of the linked pages are solely responsible for their content."
+      "disclaimerText": "Despite careful content control, we assume no liability for the content of external links. The operators of the linked pages are solely responsible for their content.",
+      "appDevelopmentTitle": "App Development",
+      "appDevelopmentText": "This app was designed, developed and implemented by HyoukaCreativeStudio. All rights to the software, source code, design and technical implementation belong to HyoukaCreativeStudio. Unauthorized reproduction, distribution or modification of this app or parts thereof is not permitted without express written permission from HyoukaCreativeStudio."
     },
     "widerrufsrecht": {
       "title": "Right of Withdrawal",

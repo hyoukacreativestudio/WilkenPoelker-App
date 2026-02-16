@@ -439,6 +439,19 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <Divider style={{ marginVertical: theme.spacing.sm }} />
+            <View style={s.infoRow}>
+              <Text style={[theme.typography.styles.body, { color: theme.colors.text }]}>
+                {t('settings.developedBy')}
+              </Text>
+              <Text style={[theme.typography.styles.body, { color: theme.colors.primary, fontWeight: '600' }]}>
+                {t('settings.developer')}
+              </Text>
+            </View>
+            <Divider style={{ marginVertical: theme.spacing.sm }} />
+            <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary, textAlign: 'center', paddingVertical: theme.spacing.xs }]}>
+              {t('settings.copyright')}
+            </Text>
+            <Divider style={{ marginVertical: theme.spacing.sm }} />
             <Button
               title={t('settings.clearCache')}
               variant="ghost"

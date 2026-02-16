@@ -756,6 +756,10 @@
     "agb": "AGB",
     "widerrufsrecht": "Widerrufsbelehrung",
     "licenses": "Lizenzen",
+    "developedBy": "Entwickelt von",
+    "developer": "HyoukaCreativeStudio",
+    "copyright": "© 2024-2026 HyoukaCreativeStudio. Alle Rechte vorbehalten.",
+    "allRightsReserved": "Alle Rechte an dieser App, einschließlich Design, Code und Inhalte, liegen bei HyoukaCreativeStudio.",
     "contactSupport": "Kontakt & Support",
     "sendFeedback": "Feedback senden",
     "reportBug": "Fehler melden",
@@ -1041,7 +1045,9 @@
       "disputeResolutionTitle": "Streitschlichtung",
       "disputeResolutionText": "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr/. Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
       "disclaimerTitle": "Haftungshinweis",
-      "disclaimerText": "Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine Haftung für die Inhalte externer Links. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich."
+      "disclaimerText": "Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine Haftung für die Inhalte externer Links. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich.",
+      "appDevelopmentTitle": "App-Entwicklung",
+      "appDevelopmentText": "Diese App wurde konzipiert, entwickelt und umgesetzt von HyoukaCreativeStudio. Sämtliche Rechte an der Software, dem Quellcode, dem Design und der technischen Umsetzung liegen bei HyoukaCreativeStudio. Die unautorisierte Vervielfältigung, Verbreitung oder Modifikation dieser App oder Teilen davon ist ohne ausdrückliche schriftliche Genehmigung von HyoukaCreativeStudio nicht gestattet."
     },
     "widerrufsrecht": {
       "title": "Widerrufsbelehrung",

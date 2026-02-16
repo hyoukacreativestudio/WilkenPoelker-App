@@ -248,6 +248,31 @@ export default function ImpressumScreen() {
             </Text>
           </Card>
         </View>
+
+        {/* App Development Credits */}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>{t('legal.impressum.appDevelopmentTitle')}</Text>
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
+              <MaterialCommunityIcons
+                name="code-braces"
+                size={20}
+                color={theme.colors.primary}
+                style={{ marginRight: theme.spacing.sm }}
+              />
+              <Text style={[theme.typography.styles.body, { color: theme.colors.text, fontWeight: '600' }]}>
+                HyoukaCreativeStudio
+              </Text>
+            </View>
+            <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, lineHeight: 20 }]}>
+              {t('legal.impressum.appDevelopmentText')}
+            </Text>
+            <Divider style={{ marginVertical: theme.spacing.sm }} />
+            <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary, textAlign: 'center' }]}>
+              {t('settings.copyright')}
+            </Text>
+          </Card>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
