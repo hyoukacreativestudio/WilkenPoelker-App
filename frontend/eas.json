@@ -23,7 +23,8 @@
         "buildType": "apk"
       },
       "env": {
-        "API_BASE_URL": "https://wilkenpoelker-app.onrender.com/api"
+        "API_BASE_URL": "https://wilkenpoelker-app.onrender.com/api",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "production": {

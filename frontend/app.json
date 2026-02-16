@@ -75,7 +75,13 @@
           "color": "#2E7D32"
         }
       ],
-      "@sentry/react-native"
+      [
+        "@sentry/react-native",
+        {
+          "organization": "hyouka-creative-studio",
+          "project": "wilkenpoelker-app"
+        }
+      ]
     ],
     "extra": {
       "eas": {
