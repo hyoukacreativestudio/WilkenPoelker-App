@@ -41,11 +41,11 @@ frontend/web-build/
 # Metro
 .metro-health-check*
 
-# Firebase
+# Firebase (service account contains secrets - never commit)
 firebase-service-account.json
 *-firebase-adminsdk-*.json
-google-services.json
 GoogleService-Info.plist
+# Note: google-services.json is allowed (public Firebase config needed for EAS Build)
 
 # EAS
 
