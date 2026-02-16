@@ -2,6 +2,7 @@
   "expo": {
     "name": "WilkenPoelker",
     "slug": "wilkenpoelker",
+    "owner": "hyoukaeu",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -78,11 +79,11 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "eb70f600-3921-4ce9-b547-d3a83665d4d8"
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/REPLACE_WITH_EAS_PROJECT_ID"
+      "url": "https://u.expo.dev/eb70f600-3921-4ce9-b547-d3a83665d4d8"
     },
     "runtimeVersion": {
       "policy": "appVersion"
