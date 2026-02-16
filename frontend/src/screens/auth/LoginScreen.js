@@ -27,6 +27,7 @@ export default function LoginScreen({ navigation }) {
   const [customerNumber, setCustomerNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors] = useState({});
 
   const handleLogin = async () => {
@@ -42,7 +43,7 @@ export default function LoginScreen({ navigation }) {
 
     setLoading(true);
     try {
-      await login({ email: email.trim(), password, customerNumber: customerNumber.trim() || undefined });
+      await login({ email: email.trim(), password, customerNumber: customerNumber.trim() || undefined, rememberMe });
     } catch (err) {
       const msg = err.response?.data?.message || t('errors.invalidCredentials');
       showToast({ type: 'error', message: msg });
@@ -114,12 +115,25 @@ export default function LoginScreen({ navigation }) {
             keyboardType="numeric"
           />
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ForgotPassword')}
-            style={s.forgotPassword}
-          >
-            <Text style={s.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
-          </TouchableOpacity>
+          {/* Remember Me & Forgot Password Row */}
+          <View style={s.optionsRow}>
+            <TouchableOpacity
+              onPress={() => setRememberMe(!rememberMe)}
+              style={s.rememberMe}
+              activeOpacity={0.7}
+            >
+              <View style={[s.checkbox, rememberMe && s.checkboxActive]}>
+                {rememberMe && <Text style={s.checkmark}>✓</Text>}
+              </View>
+              <Text style={s.rememberMeText}>{t('auth.rememberMe')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ForgotPassword')}
+            >
+              <Text style={s.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
+            </TouchableOpacity>
+          </View>
 
           <Button
             title={t('auth.login')}
@@ -190,10 +204,40 @@ const styles = (theme) =>
       padding: theme.spacing.lg,
       ...theme.shadows.md,
     },
-    forgotPassword: {
-      alignSelf: 'flex-end',
+    optionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       marginBottom: theme.spacing.md,
       marginTop: -theme.spacing.xs,
+    },
+    rememberMe: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderRadius: theme.borderRadius.sm,
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      marginRight: theme.spacing.xs,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkboxActive: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    checkmark: {
+      color: '#fff',
+      fontSize: 13,
+      fontWeight: 'bold',
+      marginTop: -1,
+    },
+    rememberMeText: {
+      ...theme.typography.styles.bodySmall,
+      color: theme.colors.textSecondary,
     },
     forgotPasswordText: {
       ...theme.typography.styles.bodySmall,

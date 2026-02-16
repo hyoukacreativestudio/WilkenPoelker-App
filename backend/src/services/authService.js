@@ -17,11 +17,11 @@ function generateAccessToken(user) {
   );
 }
 
-function generateRefreshToken(user) {
+function generateRefreshToken(user, rememberMe = false) {
   return jwt.sign(
     { id: user.id, type: 'refresh' },
     config.jwt.refreshSecret,
-    { expiresIn: config.jwt.refreshExpiresIn }
+    { expiresIn: rememberMe ? '30d' : config.jwt.refreshExpiresIn }
   );
 }
 
@@ -91,7 +91,7 @@ async function registerUser(data, User, taifunDb) {
 }
 
 async function loginUser(data, User) {
-  const { email, password, customerNumber } = data;
+  const { email, password, customerNumber, rememberMe } = data;
 
   // Find user by email or last name
   const whereClause = email.includes('@')
@@ -119,9 +119,9 @@ async function loginUser(data, User) {
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
-  // Generate tokens
+  // Generate tokens (rememberMe extends refresh token to 30 days)
   const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
+  const refreshToken = generateRefreshToken(user, rememberMe);
 
   // Store hashed refresh token
   user.refreshToken = hashToken(refreshToken);

@@ -30,8 +30,8 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = useCallback(async ({ email, password, customerNumber }) => {
-    const { data } = await authApi.login({ email, password, customerNumber });
+  const login = useCallback(async ({ email, password, customerNumber, rememberMe = true }) => {
+    const { data } = await authApi.login({ email, password, customerNumber, rememberMe });
     const { accessToken, refreshToken, user: userData } = data.data;
 
     await storage.setItem('accessToken', accessToken);
