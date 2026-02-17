@@ -27,7 +27,7 @@ export default function EditableImage({
         onReplace(result.assets[0].uri);
       }
     } catch (error) {
-      console.warn('Image picker error:', error);
+      // image picker failed silently
     }
   };
 

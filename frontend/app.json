@@ -84,6 +84,8 @@
       ]
     ],
     "extra": {
+      "apiBaseUrl": "https://wilkenpoelker-app.onrender.com/api",
+      "sentryDsn": "https://639710648792f8628edfb8552a94d15c@o4510895813820416.ingest.de.sentry.io/4510895927394384",
       "eas": {
         "projectId": "eb70f600-3921-4ce9-b547-d3a83665d4d8"
       }

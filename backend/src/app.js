@@ -193,12 +193,6 @@ io.on('connection', (socket) => {
 });
 
 // Cron jobs
-// Check Taifun repair statuses every 5 minutes
-cron.schedule('*/5 * * * *', async () => {
-  logger.debug('Cron: Checking Taifun repair statuses...');
-  // PLACEHOLDER: Implement Taifun status polling
-});
-
 // Send appointment reminders (runs every 30 minutes)
 cron.schedule('*/30 * * * *', async () => {
   logger.debug('Cron: Checking appointment reminders...');

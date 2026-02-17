@@ -5,10 +5,10 @@ const db = require('../models');
 const { taifunDb } = require('../config/database');
 
 const register = asyncHandler(async (req, res) => {
-  const { username, email, password, customerNumber, dsgvoAccepted } = req.body;
+  const { username, email, password, customerNumber, firstName, lastName, phone, address, dsgvoAccepted } = req.body;
 
   const result = await authService.registerUser(
-    { username, email, password, customerNumber, dsgvoAccepted },
+    { username, email, password, customerNumber, firstName, lastName, phone, address, dsgvoAccepted },
     db.User,
     taifunDb
   );

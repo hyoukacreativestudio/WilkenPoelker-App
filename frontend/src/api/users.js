@@ -5,7 +5,7 @@ export const usersApi = {
   updateProfile: (data) => apiClient.put('/users/profile', data),
   uploadAvatar: (formData) =>
     apiClient.put('/users/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     }),
   changePassword: (data) => apiClient.put('/users/password', data),
   exportMyData: () => apiClient.get('/users/export'),

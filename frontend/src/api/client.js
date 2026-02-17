@@ -53,7 +53,7 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Request interceptor - attach auth token
+// Request interceptor - attach auth token & handle FormData
 apiClient.interceptors.request.use(
   async (config) => {
     try {
@@ -62,6 +62,13 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch {}
+
+    // When sending FormData, remove default JSON Content-Type
+    // so that axios/fetch can set the correct multipart boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

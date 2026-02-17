@@ -119,7 +119,7 @@ export default function EditableImageGallery({
         }, 100);
       }
     } catch (error) {
-      console.warn('Image picker error:', error);
+      // image picker failed silently
     }
   };
 

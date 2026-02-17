@@ -45,7 +45,6 @@ export function useFAQs(category) {
       const data = await faqApi.getFAQs(category);
       setFaqs(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(`Error fetching FAQs for ${category}:`, err);
       setError(err.message || 'Could not load FAQs');
       setFaqs([]);
     } finally {
@@ -71,7 +70,6 @@ export function useFAQs(category) {
       showToast({ type: 'success', message: 'FAQ erstellt' });
       return newFAQ;
     } catch (err) {
-      console.error('Error creating FAQ:', err);
       showToast({ type: 'error', message: 'FAQ konnte nicht erstellt werden' });
       return null;
     } finally {
@@ -88,7 +86,6 @@ export function useFAQs(category) {
       showToast({ type: 'success', message: 'FAQ aktualisiert' });
       return updated;
     } catch (err) {
-      console.error('Error updating FAQ:', err);
       showToast({ type: 'error', message: 'FAQ konnte nicht aktualisiert werden' });
       return null;
     } finally {
@@ -105,7 +102,6 @@ export function useFAQs(category) {
       showToast({ type: 'success', message: 'FAQ gelöscht' });
       return true;
     } catch (err) {
-      console.error('Error deleting FAQ:', err);
       showToast({ type: 'error', message: 'FAQ konnte nicht gelöscht werden' });
       return false;
     } finally {

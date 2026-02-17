@@ -3,7 +3,7 @@ import apiClient from './client';
 export const serviceApi = {
   createTicket: (formData) =>
     apiClient.post('/service/tickets', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     }),
   getTickets: (params) => apiClient.get('/service/tickets', { params }),
   getAllTickets: (params) => apiClient.get('/service/tickets/all', { params }),
@@ -19,7 +19,7 @@ export const serviceApi = {
   getChatMessages: (ticketId, params) => apiClient.get(`/service/tickets/${ticketId}/chat`, { params }),
   sendChatMessage: (ticketId, formData) =>
     apiClient.post(`/service/tickets/${ticketId}/chat`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     }),
   editMessage: (id, message) => apiClient.put(`/service/messages/${id}`, { message }),
   deleteMessage: (id) => apiClient.delete(`/service/messages/${id}`),

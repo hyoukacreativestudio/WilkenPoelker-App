@@ -34,8 +34,36 @@ services:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: CORS_ORIGINS
-        sync: false  # Set manually after deploy to your Render URL
+        sync: false  # Set to: https://wilkenpoelker-app.onrender.com
+      - key: API_URL
+        sync: false  # Set to: https://wilkenpoelker-app.onrender.com
+      - key: APP_URL
+        sync: false  # Set to: https://wilkenpoelker-app.onrender.com
       - key: OPENAI_API_KEY
-        sync: false  # Set manually if you want AI features
+        sync: false
       - key: BCRYPT_ROUNDS
         value: "12"
+      # Email (SendGrid)
+      - key: EMAIL_HOST
+        value: smtp.sendgrid.net
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USER
+        value: apikey
+      - key: EMAIL_PASSWORD
+        sync: false  # Set to SendGrid API key
+      - key: EMAIL_FROM
+        value: noreply@wilkenpoelker.de
+      # Cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      # Sentry
+      - key: SENTRY_DSN
+        sync: false
+      # Firebase (paste entire JSON content as the value)
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false

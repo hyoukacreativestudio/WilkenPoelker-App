@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -60,21 +60,34 @@ export default function SettingsScreen() {
     }, 100);
   };
 
-  // Local notification toggle state (UI-only)
-  const [notifications, setNotifications] = useState({
+  const NOTIFICATION_STORAGE_KEY = '@notification_prefs';
+  const DEFAULT_NOTIFICATIONS = {
     push: true,
     repairUpdates: true,
     appointmentReminders: true,
     chatMessages: true,
     feedUpdates: false,
     offers: true,
-  });
+  };
+
+  const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
+
+  useEffect(() => {
+    AsyncStorage.getItem(NOTIFICATION_STORAGE_KEY)
+      .then((stored) => {
+        if (stored) {
+          setNotifications({ ...DEFAULT_NOTIFICATIONS, ...JSON.parse(stored) });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const toggleNotification = (key) => {
     setNotifications((prev) => {
-      const newVal = !prev[key];
+      const updated = { ...prev, [key]: !prev[key] };
+      AsyncStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
       showToast({ type: 'success', message: t('settings.notificationUpdated') });
-      return { ...prev, [key]: newVal };
+      return updated;
     });
   };
 

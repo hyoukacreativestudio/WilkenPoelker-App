@@ -5,9 +5,9 @@ export const notificationsApi = {
   markAsRead: (id) => apiClient.put(`/notifications/${id}/read`),
   markAllAsRead: () => apiClient.put('/notifications/read-all'),
   deleteNotification: (id) => apiClient.delete(`/notifications/${id}`),
-  deleteAll: () => apiClient.delete('/notifications/all'),
+  deleteAll: () => apiClient.delete('/notifications/all?confirm=true'),
   registerFcmToken: (token, platform) => apiClient.post('/notifications/fcm-token', { token, platform }),
-  removeFcmToken: () => apiClient.delete('/notifications/fcm-token'),
+  removeFcmToken: (token) => apiClient.delete('/notifications/fcm-token', { data: { token } }),
   sendBroadcast: (data) => apiClient.post('/notifications/send', data),
   getUnreadCount: () => apiClient.get('/notifications/unread-count'),
 };

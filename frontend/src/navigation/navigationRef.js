@@ -66,6 +66,6 @@ export function navigateFromNotification(deepLink) {
       }
     }
   } catch (err) {
-    console.warn('Deep link navigation failed:', err.message);
+    // navigation failed silently
   }
 }

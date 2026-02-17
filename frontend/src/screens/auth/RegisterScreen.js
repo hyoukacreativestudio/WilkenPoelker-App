@@ -83,6 +83,7 @@ export default function RegisterScreen({ navigation }) {
         email: form.email.trim(),
         phone: form.phone.trim() || undefined,
         password: form.password,
+        passwordConfirm: form.passwordConfirm,
         address: Object.keys(address).length > 1 ? address : undefined,
         dsgvoAccepted: true,
         agbAccepted: true,

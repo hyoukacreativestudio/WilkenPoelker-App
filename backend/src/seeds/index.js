@@ -1,5 +1,5 @@
 const { sequelize } = require('../config/database');
-const { User, Product, OpeningHour, Holiday, Post, Ticket, ChatMessage, ServiceRating, Notification, Appointment, Repair, FAQ } = require('../models');
+const { User, Product, OpeningHour, Holiday, Post, Ticket, ChatMessage, ServiceRating, Notification, Appointment, Repair, FAQ, CustomerNumberRequest } = require('../models');
 const { hashPassword } = require('../utils/crypto');
 
 async function seed() {
@@ -745,6 +745,42 @@ async function seed() {
     await FAQ.create(f);
   }
   console.log(`${faqData.length} FAQs seeded.`);
+
+  // --- CUSTOMER NUMBER REQUESTS ---
+  const cnRequests = [
+    {
+      userId: customer3.id,
+      status: 'pending',
+      phone: '+49 541 111222',
+      address: { street: 'Lotter Straße 42', zip: '49078', city: 'Osnabrück', country: 'Deutschland' },
+      isExistingCustomer: false,
+      message: 'Ich bin Neukunde und möchte gerne eine Kundennummer erhalten.',
+    },
+    {
+      userId: customer4.id,
+      status: 'pending',
+      phone: '+49 541 333444',
+      address: { street: 'Natruper Straße 88', zip: '49076', city: 'Osnabrück', country: 'Deutschland' },
+      isExistingCustomer: true,
+      message: 'Habe letzte Woche ein E-Bike bei Ihnen gekauft und benötige eine Kundennummer für den Service.',
+    },
+    {
+      userId: customer5.id,
+      status: 'approved',
+      phone: '+49 541 555666',
+      address: { street: 'Bramscher Straße 15', zip: '49090', city: 'Osnabrück', country: 'Deutschland' },
+      isExistingCustomer: true,
+      message: 'Stammkunde seit 2023, hätte gerne eine Kundennummer.',
+      assignedCustomerNumber: '3001',
+      reviewedBy: admin.id,
+      reviewedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      reviewNote: 'Kundennummer 3001 zugewiesen.',
+    },
+  ];
+  for (const r of cnRequests) {
+    await CustomerNumberRequest.create(r);
+  }
+  console.log(`${cnRequests.length} customer number requests seeded.`);
 
   console.log('Seeding complete!');
 }

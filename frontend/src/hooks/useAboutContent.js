@@ -34,7 +34,6 @@ export function useAboutContent(section) {
         });
       }
     } catch (err) {
-      console.log(`About content API unavailable for ${section}, using defaults`);
       // Keep defaults on error - app works without backend
     } finally {
       setLoading(false);
@@ -77,7 +76,6 @@ export function useAboutContent(section) {
       showToast({ type: 'success', message: 'Änderungen gespeichert' });
       return true;
     } catch (err) {
-      console.error('Error saving about content:', err);
       showToast({ type: 'error', message: 'Änderungen konnten nicht gespeichert werden.' });
       return false;
     } finally {
@@ -98,7 +96,6 @@ export function useAboutContent(section) {
       const result = await aboutApi.uploadImage(imageUri);
       return result.url; // e.g. "/uploads/uuid_filename.jpg"
     } catch (err) {
-      console.error('Error uploading image:', err);
       showToast({ type: 'error', message: 'Bild konnte nicht hochgeladen werden.' });
       return null;
     } finally {
@@ -113,7 +110,7 @@ export function useAboutContent(section) {
       const filename = imageUrl.split('/').pop();
       await aboutApi.deleteImage(filename);
     } catch (err) {
-      console.error('Error deleting image:', err);
+      // deletion failed silently
     }
   }, []);
 

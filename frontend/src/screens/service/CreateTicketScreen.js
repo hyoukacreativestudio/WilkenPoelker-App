@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { useApi } from '../../hooks/useApi';
@@ -134,8 +136,32 @@ export default function CreateTicketScreen({ route, navigation }) {
     }
   };
 
-  const handleAddImage = () => {
-    showToast({ type: 'info', message: t('service.imagePickerNotAvailable') });
+  const handleAddImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showToast({ type: 'error', message: t('permissions.mediaLibrary') });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: 5 - images.length,
+      });
+
+      if (!result.canceled && result.assets?.length > 0) {
+        const newImages = result.assets.map((asset) => ({
+          uri: asset.uri,
+          type: asset.mimeType || asset.type || 'image/jpeg',
+          fileName: asset.fileName || `attachment_${Date.now()}.jpg`,
+        }));
+        setImages((prev) => [...prev, ...newImages].slice(0, 5));
+      }
+    } catch (err) {
+      showToast({ type: 'error', message: t('errors.somethingWentWrong') });
+    }
   };
 
   const handleRemoveImage = (index) => {

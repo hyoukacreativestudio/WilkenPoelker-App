@@ -162,7 +162,7 @@ export default function RepairDetailScreen({ route, navigation }) {
   if (!repair) return null;
 
   const statusColor = STATUS_COLORS[repair.status] || theme.colors.textSecondary;
-  const canRate = false;
+  const canRate = repair.status === 'ready' && !repair.review && !ratingSubmitted;
 
   const styles = s(theme);
 

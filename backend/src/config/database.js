@@ -159,10 +159,9 @@ async function connectDatabase() {
       }
     }
 
-    // Sync models: SQLite uses basic sync, PostgreSQL uses alter
-    // Always sync so Render/cloud deployments create tables automatically
-    const syncOpts = sequelize.getDialect() === 'sqlite' ? {} : { alter: true };
-    await sequelize.sync(syncOpts);
+    // Sync models: creates tables if they don't exist (safe for production)
+    // For schema changes in production, use Sequelize migrations instead of alter:true
+    await sequelize.sync();
     logger.info('Database models synchronized');
   } catch (error) {
     logger.error('Database connection failed:', error.message);

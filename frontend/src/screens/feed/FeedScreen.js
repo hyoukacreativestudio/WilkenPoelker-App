@@ -109,7 +109,11 @@ export default function FeedScreen({ navigation }) {
           const blob = await response.blob();
           formData.append('media', blob, postData.image.name || 'photo.jpg');
         } else {
-          formData.append('media', postData.image);
+          formData.append('media', {
+            uri: postData.image.uri,
+            type: postData.image.type || postData.image.mimeType || 'image/jpeg',
+            name: postData.image.name || postData.image.fileName || 'photo.jpg',
+          });
         }
         formData.append('type', 'image');
       }

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { storage } from '../utils/storage';
 import { authApi } from '../api/auth';
+import { notificationsApi } from '../api/notifications';
 
 export const AuthContext = createContext(null);
 
@@ -50,6 +51,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
+    // Remove push token from backend before logout
+    try {
+      const storedToken = await storage.getItem('expoPushToken');
+      if (storedToken) {
+        await notificationsApi.removeFcmToken(storedToken).catch(() => {});
+        await storage.deleteItem('expoPushToken');
+      }
+    } catch {}
+
     try {
       await authApi.logout();
     } catch {

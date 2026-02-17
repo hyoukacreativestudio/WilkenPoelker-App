@@ -284,7 +284,7 @@ export default function TicketDetailScreen({ route, navigation }) {
         <Button
           title={t('service.openChat')}
           onPress={handleOpenChat}
-          icon="chat-outline"
+          icon={<MaterialCommunityIcons name="chat-outline" size={20} color="#FFFFFF" />}
           fullWidth
         />
       </View>

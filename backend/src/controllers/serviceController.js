@@ -286,9 +286,10 @@ const getAvailableStaff = asyncHandler(async (req, res) => {
 const sendChatMessage = asyncHandler(async (req, res) => {
   const { message } = req.body;
   const ticketId = req.params.id;
+  const hasFiles = req.files && req.files.length > 0;
 
-  if (!message || !message.trim()) {
-    throw new AppError('Message is required', 400, 'MESSAGE_REQUIRED');
+  if ((!message || !message.trim()) && !hasFiles) {
+    throw new AppError('Message or attachment is required', 400, 'MESSAGE_REQUIRED');
   }
 
   // Process attachment if present
@@ -306,7 +307,7 @@ const sendChatMessage = asyncHandler(async (req, res) => {
   const chatMessage = await serviceService.sendChatMessage(
     ticketId,
     req.user.id,
-    { message: message.trim(), attachments },
+    { message: message ? message.trim() : '', attachments },
     models
   );
 

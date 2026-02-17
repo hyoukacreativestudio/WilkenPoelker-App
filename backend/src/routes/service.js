@@ -181,8 +181,7 @@ router.post(
   validate([
     validators.uuid('id'),
     body('message')
-      .notEmpty()
-      .withMessage('Message is required')
+      .optional({ values: 'falsy' })
       .isLength({ max: 5000 })
       .withMessage('Message cannot exceed 5000 characters'),
   ]),

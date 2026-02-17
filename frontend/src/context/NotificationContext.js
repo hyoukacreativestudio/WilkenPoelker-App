@@ -4,6 +4,7 @@ import { Platform, AppState } from 'react-native';
 import { notificationsApi } from '../api/notifications';
 import { AuthContext } from './AuthContext';
 import { navigateFromNotification } from '../navigation/navigationRef';
+import { storage } from '../utils/storage';
 
 export const NotificationContext = createContext(null);
 
@@ -30,22 +31,37 @@ export function NotificationProvider({ children }) {
 
   const previousUnreadRef = useRef(0);
 
-  // Play in-app notification sound (web-safe)
+  // Play in-app notification sound (web-safe) - pleasant two-tone chime
   const playNotificationSound = useCallback(() => {
     try {
       if (Platform.OS === 'web') {
-        // Web: Use Web Audio API for a short notification beep
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        oscillator.frequency.value = 880; // A5 note
-        oscillator.type = 'sine';
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.3);
+        const now = audioContext.currentTime;
+
+        // First tone: C6 (soft)
+        const osc1 = audioContext.createOscillator();
+        const gain1 = audioContext.createGain();
+        osc1.connect(gain1);
+        gain1.connect(audioContext.destination);
+        osc1.frequency.value = 523.25; // C5
+        osc1.type = 'sine';
+        gain1.gain.setValueAtTime(0.15, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc1.start(now);
+        osc1.stop(now + 0.25);
+
+        // Second tone: E5 (slightly higher, pleasant interval)
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        osc2.frequency.value = 659.25; // E5
+        osc2.type = 'sine';
+        gain2.gain.setValueAtTime(0, now + 0.12);
+        gain2.gain.linearRampToValueAtTime(0.12, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc2.start(now + 0.12);
+        osc2.stop(now + 0.45);
       }
       // On native, expo-notifications handles the sound via the channel config
     } catch {}
@@ -143,9 +159,14 @@ export function NotificationProvider({ children }) {
 
       if (finalStatus !== 'granted') return;
 
-      const tokenData = await Notifications.getExpoPushTokenAsync();
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: 'eb70f600-3921-4ce9-b547-d3a83665d4d8',
+      });
       const token = tokenData.data;
       setExpoPushToken(token);
+
+      // Persist token for cleanup on logout
+      await storage.setItem('expoPushToken', token).catch(() => {});
 
       // Register token with backend
       const platform = Platform.OS;

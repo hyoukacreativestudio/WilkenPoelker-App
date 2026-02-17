@@ -5,7 +5,7 @@ export const feedApi = {
   getPost: (id) => apiClient.get(`/feed/${id}`),
   createPost: (formData) =>
     apiClient.post('/feed', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     }),
   updatePost: (id, data) => apiClient.put(`/feed/${id}`, data),
   deletePost: (id) => apiClient.delete(`/feed/${id}`),

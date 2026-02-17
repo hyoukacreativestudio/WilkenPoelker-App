@@ -36,8 +36,9 @@ export default function Tabs({
               }}
             >
               <Text
+                numberOfLines={1}
                 style={[
-                  theme.typography.styles.body,
+                  theme.typography.styles.bodySmall,
                   {
                     color: isActive ? theme.colors.primary : theme.colors.textSecondary,
                     fontWeight: isActive

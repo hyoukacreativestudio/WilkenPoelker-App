@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useRef, useCallback } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 
 export const OfflineContext = createContext(null);
@@ -8,31 +8,44 @@ export function OfflineProvider({ children }) {
   const [connectionType, setConnectionType] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
 
+  // Track online state inside the effect using a ref to avoid re-registering the listener
+  const isOnlineRef = useRef(true);
+  const bannerTimeoutRef = useRef(null);
+
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       const online = state.isConnected && state.isInternetReachable !== false;
       setConnectionType(state.type);
 
-      if (!online && isOnline) {
+      if (!online && isOnlineRef.current) {
         // Went offline
+        isOnlineRef.current = false;
         setIsOnline(false);
         setShowBanner(true);
-      } else if (online && !isOnline) {
+      } else if (online && !isOnlineRef.current) {
         // Came back online
+        isOnlineRef.current = true;
         setIsOnline(true);
         // Show "back online" briefly then hide
-        setTimeout(() => setShowBanner(false), 3000);
+        bannerTimeoutRef.current = setTimeout(() => setShowBanner(false), 3000);
       }
     });
 
     // Initial check
     NetInfo.fetch().then((state) => {
-      setIsOnline(state.isConnected && state.isInternetReachable !== false);
+      const online = state.isConnected && state.isInternetReachable !== false;
+      isOnlineRef.current = online;
+      setIsOnline(online);
       setConnectionType(state.type);
     });
 
-    return () => unsubscribe();
-  }, [isOnline]);
+    return () => {
+      unsubscribe();
+      if (bannerTimeoutRef.current) {
+        clearTimeout(bannerTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const dismissBanner = useCallback(() => {
     setShowBanner(false);

@@ -1,10 +1,10 @@
 import * as Sentry from '@sentry/react-native';
+import Constants from 'expo-constants';
 
-const SENTRY_DSN = 'https://639710648792f8628edfb8552a94d15c@o4510895813820416.ingest.de.sentry.io/4510895927394384';
+const SENTRY_DSN = Constants.expoConfig?.extra?.sentryDsn || '';
 
 export function initializeSentry() {
   if (!SENTRY_DSN) {
-    console.log('Sentry DSN not configured, error tracking disabled');
     return;
   }
 

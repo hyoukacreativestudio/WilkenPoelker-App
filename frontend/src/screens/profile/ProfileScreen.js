@@ -178,7 +178,8 @@ export default function ProfileScreen({ navigation }) {
       setConfirmPassword('');
       showToast({ type: 'success', message: t('auth.passwordChanged') });
     } catch (err) {
-      showToast({ type: 'error', message: t('errors.somethingWentWrong') });
+      const msg = err?.message || err?.details?.[0]?.msg || t('errors.somethingWentWrong');
+      showToast({ type: 'error', message: msg });
     }
   }, [currentPassword, newPassword, confirmPassword, changePasswordApi, t, showToast]);
 

@@ -114,7 +114,7 @@ export default function AIChatScreen({ route, navigation }) {
       });
 
       const data = response.data?.data || response.data;
-      const aiText = data.message || data.response || t('ai.errorResponse');
+      const aiText = data.reply || data.message || data.response || t('ai.errorResponse');
 
       if (data.sessionId && !sessionId) {
         setSessionId(data.sessionId);
