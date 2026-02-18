@@ -116,9 +116,17 @@ export default function CreateTicketScreen({ route, navigation }) {
       for (let i = 0; i < images.length; i++) {
         const image = images[i];
         if (Platform.OS === 'web') {
-          const response = await fetch(image.uri);
-          const blob = await response.blob();
-          formData.append('attachments', blob, image.fileName || `attachment_${i}.jpg`);
+          // Use pre-fetched blob if available, otherwise fetch from URI
+          let blob = image._webBlob;
+          if (!blob) {
+            const response = await fetch(image.uri);
+            blob = await response.blob();
+          }
+          const fileName = image.fileName || `attachment_${i}.jpg`;
+          const file = new File([blob], fileName, {
+            type: blob.type || image.type || 'image/jpeg',
+          });
+          formData.append('attachments', file);
         } else {
           formData.append('attachments', {
             uri: image.uri,
@@ -159,11 +167,24 @@ export default function CreateTicketScreen({ route, navigation }) {
       });
 
       if (!result.canceled && result.assets?.length > 0) {
-        const newImages = result.assets.map((asset) => ({
-          uri: asset.uri,
-          type: asset.mimeType || asset.type || 'image/jpeg',
-          fileName: asset.fileName || `attachment_${Date.now()}.jpg`,
-        }));
+        const newImages = [];
+        for (const asset of result.assets) {
+          const img = {
+            uri: asset.uri,
+            type: asset.mimeType || asset.type || 'image/jpeg',
+            fileName: asset.fileName || `attachment_${Date.now()}.jpg`,
+          };
+          // On web, pre-fetch the blob immediately so it survives state changes
+          if (Platform.OS === 'web' && asset.uri) {
+            try {
+              const resp = await fetch(asset.uri);
+              img._webBlob = await resp.blob();
+            } catch (e) {
+              console.warn('Failed to pre-fetch image blob:', e);
+            }
+          }
+          newImages.push(img);
+        }
         setImages((prev) => [...prev, ...newImages].slice(0, 5));
       }
     } catch (err) {

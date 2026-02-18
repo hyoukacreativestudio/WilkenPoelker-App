@@ -583,7 +583,18 @@ function DepartmentSection({
         });
 
         if (!result.canceled && result.assets?.[0]) {
-          const uploadedUrl = await uploadImage(result.assets[0].uri);
+          const asset = result.assets[0];
+          // On web, pre-fetch the blob immediately so it survives state changes
+          let webBlob = null;
+          if (Platform.OS === 'web' && asset.uri) {
+            try {
+              const resp = await fetch(asset.uri);
+              webBlob = await resp.blob();
+            } catch (e) {
+              console.warn('Failed to pre-fetch image blob:', e);
+            }
+          }
+          const uploadedUrl = await uploadImage(asset.uri, webBlob);
           if (uploadedUrl) {
             const updatedMember = {
               ...dept.members[memberIndex],

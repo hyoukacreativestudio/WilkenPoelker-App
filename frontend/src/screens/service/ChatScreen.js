@@ -259,9 +259,16 @@ export default function ChatScreen({ route, navigation }) {
         const img = images[i];
         const name = img.fileName || `image_${i}.jpg`;
         if (Platform.OS === 'web') {
-          const response = await fetch(img.uri);
-          const blob = await response.blob();
-          formData.append('attachments', blob, name);
+          // Use pre-fetched blob if available, otherwise fetch from URI
+          let blob = img._webBlob;
+          if (!blob) {
+            const response = await fetch(img.uri);
+            blob = await response.blob();
+          }
+          const file = new File([blob], name, {
+            type: blob.type || img.mimeType || 'image/jpeg',
+          });
+          formData.append('attachments', file);
         } else {
           formData.append('attachments', {
             uri: img.uri,

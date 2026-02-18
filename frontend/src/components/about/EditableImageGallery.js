@@ -97,8 +97,19 @@ export default function EditableImageGallery({
         const asset = result.assets[0];
         let imageUrl = asset.uri;
 
+        // On web, pre-fetch the blob immediately so it survives state changes
+        let webBlob = null;
+        if (Platform.OS === 'web' && asset.uri) {
+          try {
+            const resp = await fetch(asset.uri);
+            webBlob = await resp.blob();
+          } catch (e) {
+            console.warn('Failed to pre-fetch image blob:', e);
+          }
+        }
+
         if (onUploadImage) {
-          const uploaded = await onUploadImage(asset.uri);
+          const uploaded = await onUploadImage(asset.uri, webBlob);
           if (uploaded) {
             imageUrl = uploaded;
           }

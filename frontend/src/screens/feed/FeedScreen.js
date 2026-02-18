@@ -104,10 +104,17 @@ export default function FeedScreen({ navigation }) {
       formData.append('content', postData.content || '');
       if (postData.image) {
         if (Platform.OS === 'web') {
-          // On web, fetch the blob from the URI and append as File
-          const response = await fetch(postData.image.uri);
-          const blob = await response.blob();
-          formData.append('media', blob, postData.image.name || 'photo.jpg');
+          // On web, use pre-fetched blob if available, otherwise fetch from URI
+          let blob = postData.image._webBlob;
+          if (!blob) {
+            const response = await fetch(postData.image.uri);
+            blob = await response.blob();
+          }
+          const fileName = postData.image.name || 'photo.jpg';
+          const file = new File([blob], fileName, {
+            type: blob.type || postData.image.type || 'image/jpeg',
+          });
+          formData.append('media', file);
         } else {
           formData.append('media', {
             uri: postData.image.uri,
@@ -125,6 +132,7 @@ export default function FeedScreen({ navigation }) {
       setShowCreateModal(false);
       showToast({ type: 'success', message: t('feed.postCreatedSuccess') });
     } catch (err) {
+      console.error('Feed upload error:', err);
       showToast({ type: 'error', message: t('feed.createPostError') });
     }
   };

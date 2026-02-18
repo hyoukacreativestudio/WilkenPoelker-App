@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { View, Image, TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
 import * as ExpoImagePicker from 'expo-image-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -41,8 +41,25 @@ export default function ImagePicker({
     });
 
     if (!result.canceled && result.assets) {
-      const newUris = result.assets.map((asset) => asset.uri);
-      const combined = [...images, ...newUris].slice(0, maxImages);
+      const newItems = [];
+      for (const asset of result.assets) {
+        const item = { uri: asset.uri };
+        // On web, pre-fetch the blob immediately so it survives state changes
+        if (Platform.OS === 'web' && asset.uri) {
+          try {
+            const resp = await fetch(asset.uri);
+            item._webBlob = await resp.blob();
+          } catch (e) {
+            console.warn('Failed to pre-fetch image blob:', e);
+          }
+        }
+        newItems.push(item);
+      }
+      // Maintain backward compatibility: if images are strings, convert to objects
+      const currentImages = images.map((img) =>
+        typeof img === 'string' ? { uri: img } : img
+      );
+      const combined = [...currentImages, ...newItems].slice(0, maxImages);
       if (onImagesChange) {
         onImagesChange(combined);
       }
@@ -59,7 +76,9 @@ export default function ImagePicker({
   return (
     <View style={[styles.container, style]}>
       <View style={styles.grid}>
-        {images.map((uri, index) => (
+        {images.map((img, index) => {
+          const uri = typeof img === 'string' ? img : img.uri;
+          return (
           <View
             key={`${uri}-${index}`}
             style={[
@@ -89,7 +108,8 @@ export default function ImagePicker({
               <MaterialCommunityIcons name="close" size={14} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-        ))}
+          );
+        })}
 
         {images.length < maxImages && (
           <TouchableOpacity

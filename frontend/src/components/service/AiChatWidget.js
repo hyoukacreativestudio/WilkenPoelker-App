@@ -36,6 +36,19 @@ export default function AiChatWidget({ category = 'bike', onOpenFullChat, style 
       quality: 0.7,
     });
     if (!result.canceled && result.assets?.length > 0) {
+      // On web, pre-fetch the blobs immediately so they survive state changes
+      if (Platform.OS === 'web') {
+        for (const asset of result.assets) {
+          if (asset.uri) {
+            try {
+              const resp = await fetch(asset.uri);
+              asset._webBlob = await resp.blob();
+            } catch (e) {
+              console.warn('Failed to pre-fetch image blob:', e);
+            }
+          }
+        }
+      }
       setPendingImages((prev) => [...prev, ...result.assets].slice(0, 3));
     }
   };

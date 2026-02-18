@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
@@ -24,7 +24,17 @@ export default function EditableImage({
       });
 
       if (!result.canceled && result.assets?.[0]) {
-        onReplace(result.assets[0].uri);
+        const asset = result.assets[0];
+        // On web, pre-fetch the blob immediately so it survives state changes
+        if (Platform.OS === 'web' && asset.uri) {
+          try {
+            const resp = await fetch(asset.uri);
+            asset._webBlob = await resp.blob();
+          } catch (e) {
+            console.warn('Failed to pre-fetch image blob:', e);
+          }
+        }
+        onReplace(asset.uri, asset._webBlob);
       }
     } catch (error) {
       // image picker failed silently

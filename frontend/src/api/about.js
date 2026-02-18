@@ -15,7 +15,8 @@ export const aboutApi = {
   },
 
   // Upload an image (admin)
-  uploadImage: async (imageUri) => {
+  // webBlob: optional pre-fetched Blob for web (avoids re-fetching a potentially revoked blob: URI)
+  uploadImage: async (imageUri, webBlob = null) => {
     const formData = new FormData();
     const name = imageUri.split('/').pop() || 'photo.jpg';
     const ext = name.split('.').pop()?.toLowerCase();
@@ -28,9 +29,12 @@ export const aboutApi = {
     };
 
     if (Platform.OS === 'web') {
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-      formData.append('image', blob, name);
+      // Use pre-fetched blob if available, otherwise fetch from URI
+      const blob = webBlob || (await fetch(imageUri).then((r) => r.blob()));
+      const file = new File([blob], name, {
+        type: blob.type || mimeMap[ext] || 'image/jpeg',
+      });
+      formData.append('image', file);
     } else {
       formData.append('image', {
         uri: imageUri,

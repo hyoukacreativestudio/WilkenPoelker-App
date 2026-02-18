@@ -42,7 +42,18 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
     }
 
     if (!result.canceled && result.assets?.[0]) {
-      setImage(result.assets[0]);
+      const asset = result.assets[0];
+      // On web, pre-fetch the blob immediately so it survives state changes
+      if (Platform.OS === 'web' && asset.uri) {
+        try {
+          const response = await fetch(asset.uri);
+          const blob = await response.blob();
+          asset._webBlob = blob;
+        } catch (e) {
+          console.warn('Failed to pre-fetch image blob:', e);
+        }
+      }
+      setImage(asset);
     }
   };
 
@@ -53,10 +64,15 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
     const postData = { content: content.trim() };
     if (image) {
       const uri = image.uri;
-      const name = uri.split('/').pop() || 'photo.jpg';
-      const ext = name.split('.').pop()?.toLowerCase();
+      const fileName = image.fileName || 'photo.jpg';
+      const ext = fileName.split('.').pop()?.toLowerCase();
       const mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
-      postData.image = { uri, name, type: mimeMap[ext] || 'image/jpeg' };
+      postData.image = {
+        uri,
+        name: fileName,
+        type: mimeMap[ext] || image.mimeType || 'image/jpeg',
+        _webBlob: image._webBlob || null,
+      };
     }
     onSubmit(postData);
     setContent('');

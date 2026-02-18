@@ -90,10 +90,11 @@ export function useAboutContent(section) {
   }, [fetchContent]);
 
   // Upload an image (this still calls API immediately - uploads are not deferred)
-  const uploadImage = useCallback(async (imageUri) => {
+  // webBlob: optional pre-fetched Blob for web (avoids re-fetching a potentially revoked blob: URI)
+  const uploadImage = useCallback(async (imageUri, webBlob = null) => {
     try {
       setSaving(true);
-      const result = await aboutApi.uploadImage(imageUri);
+      const result = await aboutApi.uploadImage(imageUri, webBlob);
       return result.url; // e.g. "/uploads/uuid_filename.jpg"
     } catch (err) {
       showToast({ type: 'error', message: 'Bild konnte nicht hochgeladen werden.' });
