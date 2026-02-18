@@ -292,17 +292,22 @@ async function seed() {
   }
   console.log('Opening hours seeded.');
 
-  // --- HOLIDAYS ---
+  // --- HOLIDAYS (Niedersachsen) ---
   const holidays = [
+    // Feste Feiertage (jährlich wiederkehrend)
     { date: '2026-01-01', name: 'Neujahr', isClosed: true, isRecurring: true },
-    { date: '2026-04-03', name: 'Karfreitag', isClosed: true },
-    { date: '2026-04-06', name: 'Ostermontag', isClosed: true },
     { date: '2026-05-01', name: 'Tag der Arbeit', isClosed: true, isRecurring: true },
-    { date: '2026-05-14', name: 'Christi Himmelfahrt', isClosed: true },
-    { date: '2026-05-25', name: 'Pfingstmontag', isClosed: true },
     { date: '2026-10-03', name: 'Tag der Deutschen Einheit', isClosed: true, isRecurring: true },
+    { date: '2026-10-31', name: 'Reformationstag', isClosed: true, isRecurring: true },
     { date: '2026-12-25', name: '1. Weihnachtstag', isClosed: true, isRecurring: true },
     { date: '2026-12-26', name: '2. Weihnachtstag', isClosed: true, isRecurring: true },
+    // Bewegliche Feiertage (2026)
+    { date: '2026-04-03', name: 'Karfreitag', isClosed: true },
+    { date: '2026-04-06', name: 'Ostermontag', isClosed: true },
+    { date: '2026-05-14', name: 'Christi Himmelfahrt', isClosed: true },
+    { date: '2026-05-25', name: 'Pfingstmontag', isClosed: true },
+    // Sonstige (kein gesetzlicher Feiertag, verkürzte Öffnungszeiten)
+    { date: '2026-12-24', name: 'Heiligabend', isClosed: false, specialHours: [{ open: '08:00', close: '12:00' }] },
     { date: '2026-12-31', name: 'Silvester', isClosed: false, specialHours: [{ open: '08:00', close: '12:00' }] },
   ];
   for (const h of holidays) {
