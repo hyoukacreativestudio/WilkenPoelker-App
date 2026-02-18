@@ -130,11 +130,11 @@ async function connectDatabase() {
     await sequelize.authenticate();
     logger.info(`Database connected (${sequelize.getDialect()})`);
 
-    // SQLite: manually add missing columns before sync (SQLite doesn't support full ALTER)
-    if (sequelize.getDialect() === 'sqlite') {
-      const qi = sequelize.getQueryInterface();
-      const tables = await qi.showAllTables();
-      for (const table of tables) {
+    // Auto-add missing columns for all dialects (safe schema migration)
+    const qi = sequelize.getQueryInterface();
+    const tables = await qi.showAllTables();
+    for (const table of tables) {
+      try {
         const cols = await qi.describeTable(table);
         const model = Object.values(sequelize.models).find(
           (m) => m.getTableName() === table
@@ -156,11 +156,12 @@ async function connectDatabase() {
             }
           }
         }
+      } catch (e) {
+        // Table might not be fully accessible yet
       }
     }
 
-    // Sync models: creates tables if they don't exist (safe for production)
-    // For schema changes in production, use Sequelize migrations instead of alter:true
+    // Sync models: creates tables if they don't exist
     await sequelize.sync();
     logger.info('Database models synchronized');
   } catch (error) {
