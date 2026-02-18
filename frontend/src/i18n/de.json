@@ -1238,5 +1238,31 @@
     "edit": "Bearbeiten",
     "cropHint": "Rahmen ziehen zum Zuschneiden",
     "applyCrop": "Zuschnitt anwenden"
+  },
+  "closedDays": {
+    "title": "Geschlossene Tage",
+    "addClosedDay": "Geschlossenen Tag hinzufügen",
+    "date": "Datum",
+    "datePlaceholder": "JJJJ-MM-TT",
+    "name": "Bezeichnung",
+    "namePlaceholder": "z.B. Betriebsurlaub",
+    "isClosed": "Ganztägig geschlossen",
+    "specialHours": "Sonderöffnungszeiten",
+    "openTime": "Öffnung",
+    "closeTime": "Schließung",
+    "isRecurring": "Jährlich wiederkehrend",
+    "noClosedDays": "Keine geschlossenen Tage",
+    "noClosedDaysSubtitle": "Fügen Sie geschlossene Tage hinzu",
+    "deleteTitle": "Tag löschen",
+    "deleteConfirm": "Diesen geschlossenen Tag wirklich löschen?",
+    "saved": "Geschlossener Tag gespeichert",
+    "deleted": "Geschlossener Tag gelöscht",
+    "fetchError": "Fehler beim Laden",
+    "saveError": "Fehler beim Speichern",
+    "deleteError": "Fehler beim Löschen",
+    "recurring": "Wiederkehrend",
+    "closed": "Geschlossen",
+    "todayHoliday": "Heute: {{name}}",
+    "todaySpecialHours": "Heute Sonderöffnungszeiten: {{hours}}"
   }
 }

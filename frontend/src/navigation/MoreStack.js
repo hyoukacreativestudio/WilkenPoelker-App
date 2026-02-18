@@ -17,6 +17,7 @@ import SettingsScreen from '../screens/settings/SettingsScreen';
 import AdminScreen from '../screens/admin/AdminScreen';
 import AdminRequestsScreen from '../screens/admin/AdminRequestsScreen';
 import AdminOpenTicketsScreen from '../screens/admin/AdminOpenTicketsScreen';
+import ClosedDaysScreen from '../screens/admin/ClosedDaysScreen';
 import ImpressumScreen from '../screens/legal/ImpressumScreen';
 import DatenschutzScreen from '../screens/legal/DatenschutzScreen';
 import AGBScreen from '../screens/legal/AGBScreen';
@@ -164,6 +165,15 @@ export default function MoreStack() {
         component={AdminOpenTicketsScreen}
         options={({ navigation }) => ({
           title: t('adminTickets.title', 'Offene Tickets'),
+          headerLeft: () => backButton(navigation),
+          headerRight: () => <NotificationBell />,
+        })}
+      />
+      <Stack.Screen
+        name="ClosedDays"
+        component={ClosedDaysScreen}
+        options={({ navigation }) => ({
+          title: t('closedDays.title', 'Geschlossene Tage'),
           headerLeft: () => backButton(navigation),
           headerRight: () => <NotificationBell />,
         })}

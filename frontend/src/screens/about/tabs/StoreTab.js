@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import EditableTextBlock from '../../../components/about/EditableTextBlock';
 import EditableImageGallery from '../../../components/about/EditableImageGallery';
 import EditableListEditor from '../../../components/about/EditableListEditor';
 import EditOverlay from '../../../components/about/EditOverlay';
+import { settingsApi } from '../../../api/settings';
 
 // ---------------------------------------------------------------------------
 // Local asset map for store photos
@@ -270,6 +271,29 @@ export default function StoreTab({ isEditMode, registerSave }) {
   const OPENING_HOURS = useMemo(() => getOpeningHours(), []);
   const isWinter = useMemo(() => isWinterSeason(), []);
 
+  // Holiday status from API
+  const [holidayInfo, setHolidayInfo] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await settingsApi.getOpeningStatus();
+        if (cancelled) return;
+        if (status.todayHours?.isHoliday) {
+          setHolidayInfo({
+            name: status.todayHours.holidayName,
+            isClosed: status.todayHours.isClosed,
+            periods: status.todayHours.periods || [],
+          });
+        }
+      } catch {
+        // Ignore - no holiday banner shown
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // Resolve content with fallbacks
   const tagline = content.tagline || DEFAULT_TAGLINE;
   const highlights = useMemo(
@@ -505,6 +529,44 @@ export default function StoreTab({ isEditMode, registerSave }) {
             {t('store.hours.title', '\u00d6ffnungszeiten')}
           </Text>
         </View>
+        {/* Holiday notice (from API) */}
+        {holidayInfo ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: holidayInfo.isClosed ? theme.colors.error + '15' : theme.colors.warning + '15',
+              borderRadius: theme.borderRadius.sm,
+              paddingHorizontal: theme.spacing.sm,
+              paddingVertical: theme.spacing.xs + 2,
+              marginBottom: theme.spacing.md,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="calendar-remove-outline"
+              size={18}
+              color={holidayInfo.isClosed ? theme.colors.error : theme.colors.warning}
+              style={{ marginRight: theme.spacing.xs }}
+            />
+            <Text
+              style={[
+                theme.typography.styles.bodySmall,
+                {
+                  color: holidayInfo.isClosed ? theme.colors.error : theme.colors.warning,
+                  fontWeight: theme.typography.weights.semiBold,
+                  flex: 1,
+                },
+              ]}
+            >
+              {holidayInfo.isClosed
+                ? t('closedDays.todayHoliday', 'Heute: {{name}}', { name: holidayInfo.name || t('closedDays.closed', 'Geschlossen') })
+                : t('closedDays.todaySpecialHours', 'Heute Sonderöffnungszeiten: {{hours}}', {
+                    hours: holidayInfo.periods.map((p) => `${p.open} - ${p.close}`).join(', ') + ' Uhr',
+                  })}
+            </Text>
+          </View>
+        ) : null}
+
         {OPENING_HOURS.map((entry, index) => {
           const isClosed = entry.hours === 'Geschlossen';
           return (

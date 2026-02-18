@@ -184,6 +184,13 @@ export default function MoreMenuScreen({ navigation }) {
                     onPress={() => navigation.navigate('Admin')}
                     theme={theme}
                   />
+                  <Divider style={{ marginVertical: 0 }} />
+                  <MenuRow
+                    icon="calendar-remove-outline"
+                    label={t('closedDays.title', 'Geschlossene Tage')}
+                    onPress={() => navigation.navigate('ClosedDays')}
+                    theme={theme}
+                  />
                 </>
               ) : null}
             </View>

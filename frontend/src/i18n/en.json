@@ -1252,5 +1252,31 @@
     "edit": "Edit",
     "cropHint": "Drag to crop",
     "applyCrop": "Apply crop"
+  },
+  "closedDays": {
+    "title": "Closed Days",
+    "addClosedDay": "Add Closed Day",
+    "date": "Date",
+    "datePlaceholder": "YYYY-MM-DD",
+    "name": "Name",
+    "namePlaceholder": "e.g. Company Holiday",
+    "isClosed": "Closed all day",
+    "specialHours": "Special Hours",
+    "openTime": "Opening",
+    "closeTime": "Closing",
+    "isRecurring": "Recurring yearly",
+    "noClosedDays": "No closed days",
+    "noClosedDaysSubtitle": "Add closed days to manage",
+    "deleteTitle": "Delete Day",
+    "deleteConfirm": "Really delete this closed day?",
+    "saved": "Closed day saved",
+    "deleted": "Closed day deleted",
+    "fetchError": "Error loading",
+    "saveError": "Error saving",
+    "deleteError": "Error deleting",
+    "recurring": "Recurring",
+    "closed": "Closed",
+    "todayHoliday": "Today: {{name}}",
+    "todaySpecialHours": "Today special hours: {{hours}}"
   }
 }

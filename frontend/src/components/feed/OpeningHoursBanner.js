@@ -1,22 +1,22 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { settingsApi } from '../../api/settings';
+
+// ── Local fallback logic (used when API fails) ──────────────────────────────
 
 function isWinterSeason(date = new Date()) {
-  const month = date.getMonth(); // 0-based: 0=Jan, 10=Nov, 11=Dec
+  const month = date.getMonth();
   const day = date.getDate();
-  // November (10) and December (11) are always winter
   if (month >= 10) return true;
-  // January (0) is always winter
   if (month === 0) return true;
-  // 1. February (month=1, day=1) is still winter
   if (month === 1 && day === 1) return true;
   return false;
 }
 
-function getOpeningHours(isWinter) {
+function getOpeningHoursFallback(isWinter) {
   return {
     weekdays: {
       morning: { open: '8:00', close: '13:00' },
@@ -28,10 +28,9 @@ function getOpeningHours(isWinter) {
   };
 }
 
-function isCurrentlyOpen(hours, date = new Date()) {
+function isCurrentlyOpenFallback(hours, date = new Date()) {
   const day = date.getDay();
   const time = date.getHours() * 60 + date.getMinutes();
-
   if (day === 0) return false;
 
   const parseTime = (str) => {
@@ -41,9 +40,10 @@ function isCurrentlyOpen(hours, date = new Date()) {
 
   if (day >= 1 && day <= 5) {
     const { morning, afternoon } = hours.weekdays;
-    const inMorning = time >= parseTime(morning.open) && time < parseTime(morning.close);
-    const inAfternoon = time >= parseTime(afternoon.open) && time < parseTime(afternoon.close);
-    return inMorning || inAfternoon;
+    return (
+      (time >= parseTime(morning.open) && time < parseTime(morning.close)) ||
+      (time >= parseTime(afternoon.open) && time < parseTime(afternoon.close))
+    );
   }
 
   if (day === 6) {
@@ -54,19 +54,64 @@ function isCurrentlyOpen(hours, date = new Date()) {
   return false;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function OpeningHoursBanner() {
   const { theme } = useTheme();
   const { t } = useTranslation();
 
-  const { isWinter, isOpen, weekdayClose } = useMemo(() => {
+  // Fallback values (used immediately, then overridden by API)
+  const fallback = useMemo(() => {
     const now = new Date();
     const winter = isWinterSeason(now);
-    const h = getOpeningHours(winter);
+    const h = getOpeningHoursFallback(winter);
     return {
       isWinter: winter,
-      isOpen: isCurrentlyOpen(h, now),
+      isOpen: isCurrentlyOpenFallback(h, now),
       weekdayClose: winter ? '17:00' : '18:00',
     };
+  }, []);
+
+  const [isOpen, setIsOpen] = useState(fallback.isOpen);
+  const [isHoliday, setIsHoliday] = useState(false);
+  const [holidayName, setHolidayName] = useState(null);
+  const [holidayHours, setHolidayHours] = useState(null);
+  const [weekdayClose, setWeekdayClose] = useState(fallback.weekdayClose);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const status = await settingsApi.getOpeningStatus();
+        if (cancelled) return;
+
+        setIsOpen(status.isOpen);
+
+        if (status.todayHours?.isHoliday) {
+          setIsHoliday(true);
+          setHolidayName(status.todayHours.holidayName || null);
+
+          if (!status.todayHours.isClosed && status.todayHours.periods?.length > 0) {
+            const hrs = status.todayHours.periods
+              .map((p) => `${p.open} - ${p.close}`)
+              .join(', ');
+            setHolidayHours(hrs);
+          }
+        }
+
+        // Update weekday close from season
+        if (status.season === 'winter') {
+          setWeekdayClose('17:00');
+        } else {
+          setWeekdayClose('18:00');
+        }
+      } catch {
+        // Keep fallback values on error
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
   const statusColor = isOpen ? '#2E7D32' : '#D32F2F';
@@ -115,6 +160,35 @@ export default function OpeningHoursBanner() {
           </Text>
         </View>
       </View>
+
+      {/* Holiday banner */}
+      {isHoliday ? (
+        <View
+          style={[
+            s.holidayBanner,
+            {
+              backgroundColor: isOpen ? theme.colors.warning + '15' : theme.colors.error + '15',
+              borderRadius: theme.borderRadius.sm,
+              marginTop: theme.spacing.sm,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="calendar-remove-outline"
+            size={16}
+            color={isOpen ? theme.colors.warning : theme.colors.error}
+          />
+          <Text
+            style={[
+              s.holidayText,
+              { color: isOpen ? theme.colors.warning : theme.colors.error },
+            ]}
+          >
+            {holidayName || t('closedDays.closed', 'Geschlossen')}
+            {holidayHours ? ` (${holidayHours} Uhr)` : ''}
+          </Text>
+        </View>
+      ) : null}
 
       {/* Divider */}
       <View style={[s.divider, { backgroundColor: theme.colors.divider }]} />
@@ -182,6 +256,17 @@ const s = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '700',
+    marginLeft: 6,
+  },
+  holidayBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  holidayText: {
+    fontSize: 13,
+    fontWeight: '600',
     marginLeft: 6,
   },
   divider: {
