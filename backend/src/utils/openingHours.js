@@ -298,7 +298,9 @@ async function isWithinOpeningHours(dateStr, timeStr) {
  * Check if a date is a weekday (Mon-Fri).
  */
 function isWeekday(dateStr) {
-  const date = new Date(`${dateStr}T12:00:00`);
+  // Extract date-only part (handles both "2026-02-23" and full ISO strings)
+  const datePart = typeof dateStr === 'string' ? dateStr.substring(0, 10) : dateStr;
+  const date = new Date(`${datePart}T12:00:00`);
   const day = date.getDay();
   return day >= 1 && day <= 5;
 }
