@@ -37,19 +37,6 @@ export default function ChatInput({ onSend, onTyping, disabled, style }) {
 
     if (!result.canceled && result.assets?.length > 0) {
       const newImages = result.assets.slice(0, 5 - images.length);
-      // On web, pre-fetch the blobs immediately so they survive state changes
-      if (Platform.OS === 'web') {
-        for (const asset of newImages) {
-          if (asset.uri) {
-            try {
-              const resp = await fetch(asset.uri);
-              asset._webBlob = await resp.blob();
-            } catch (e) {
-              console.warn('Failed to pre-fetch image blob:', e);
-            }
-          }
-        }
-      }
       setImages((prev) => [...prev, ...newImages]);
     }
   };

@@ -41,20 +41,10 @@ export default function ImagePicker({
     });
 
     if (!result.canceled && result.assets) {
-      const newItems = [];
-      for (const asset of result.assets) {
-        const item = { uri: asset.uri };
-        // On web, pre-fetch the blob immediately so it survives state changes
-        if (Platform.OS === 'web' && asset.uri) {
-          try {
-            const resp = await fetch(asset.uri);
-            item._webBlob = await resp.blob();
-          } catch (e) {
-            console.warn('Failed to pre-fetch image blob:', e);
-          }
-        }
-        newItems.push(item);
-      }
+      const newItems = result.assets.map((asset) => ({
+        uri: asset.uri,
+        file: asset.file, // native File object on web from expo-image-picker
+      }));
       // Maintain backward compatibility: if images are strings, convert to objects
       const currentImages = images.map((img) =>
         typeof img === 'string' ? { uri: img } : img

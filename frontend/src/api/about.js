@@ -15,8 +15,8 @@ export const aboutApi = {
   },
 
   // Upload an image (admin)
-  // webBlob: optional pre-fetched Blob for web (avoids re-fetching a potentially revoked blob: URI)
-  uploadImage: async (imageUri, webBlob = null) => {
+  // webFile: optional native File object from expo-image-picker on web
+  uploadImage: async (imageUri, webFile = null) => {
     const formData = new FormData();
     const name = imageUri.split('/').pop() || 'photo.jpg';
     const ext = name.split('.').pop()?.toLowerCase();
@@ -29,12 +29,9 @@ export const aboutApi = {
     };
 
     if (Platform.OS === 'web') {
-      // Use pre-fetched blob if available, otherwise fetch from URI
-      const blob = webBlob || (await fetch(imageUri).then((r) => r.blob()));
-      const file = new File([blob], name, {
-        type: blob.type || mimeMap[ext] || 'image/jpeg',
-      });
-      formData.append('image', file);
+      if (webFile) {
+        formData.append('image', webFile, name);
+      }
     } else {
       formData.append('image', {
         uri: imageUri,

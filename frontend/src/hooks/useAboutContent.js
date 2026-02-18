@@ -90,11 +90,11 @@ export function useAboutContent(section) {
   }, [fetchContent]);
 
   // Upload an image (this still calls API immediately - uploads are not deferred)
-  // webBlob: optional pre-fetched Blob for web (avoids re-fetching a potentially revoked blob: URI)
-  const uploadImage = useCallback(async (imageUri, webBlob = null) => {
+  // webFile: optional native File object from expo-image-picker on web
+  const uploadImage = useCallback(async (imageUri, webFile = null) => {
     try {
       setSaving(true);
-      const result = await aboutApi.uploadImage(imageUri, webBlob);
+      const result = await aboutApi.uploadImage(imageUri, webFile);
       return result.url; // e.g. "/uploads/uuid_filename.jpg"
     } catch (err) {
       showToast({ type: 'error', message: 'Bild konnte nicht hochgeladen werden.' });

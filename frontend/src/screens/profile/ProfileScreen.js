@@ -105,25 +105,13 @@ export default function ProfileScreen({ navigation }) {
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
 
-        // On web, pre-fetch the blob immediately so it survives state changes
-        let webBlob = null;
-        if (Platform.OS === 'web' && asset.uri) {
-          try {
-            const resp = await fetch(asset.uri);
-            webBlob = await resp.blob();
-          } catch (e) {
-            console.warn('Failed to pre-fetch image blob:', e);
-          }
-        }
-
         const formData = new FormData();
 
         if (Platform.OS === 'web') {
-          const blob = webBlob || (await fetch(asset.uri).then((r) => r.blob()));
-          const file = new File([blob], 'avatar.jpg', {
-            type: blob.type || 'image/jpeg',
-          });
-          formData.append('avatar', file);
+          const webFile = asset.file;
+          if (webFile) {
+            formData.append('avatar', webFile, 'avatar.jpg');
+          }
         } else {
           formData.append('avatar', {
             uri: asset.uri,

@@ -15,16 +15,10 @@ export const aiApi = {
         const type = img.mimeType || 'image/jpeg';
 
         if (Platform.OS === 'web') {
-          // Use pre-fetched blob if available, otherwise fetch from URI
-          let blob = img._webBlob;
-          if (!blob) {
-            const response = await fetch(img.uri);
-            blob = await response.blob();
+          const webFile = img.file || img._webFile;
+          if (webFile) {
+            formData.append('images', webFile, name);
           }
-          const file = new File([blob], name, {
-            type: blob.type || type,
-          });
-          formData.append('images', file);
         } else {
           formData.append('images', { uri: img.uri, name, type });
         }

@@ -25,16 +25,7 @@ export default function EditableImage({
 
       if (!result.canceled && result.assets?.[0]) {
         const asset = result.assets[0];
-        // On web, pre-fetch the blob immediately so it survives state changes
-        if (Platform.OS === 'web' && asset.uri) {
-          try {
-            const resp = await fetch(asset.uri);
-            asset._webBlob = await resp.blob();
-          } catch (e) {
-            console.warn('Failed to pre-fetch image blob:', e);
-          }
-        }
-        onReplace(asset.uri, asset._webBlob);
+        onReplace(asset.uri, asset.file);
       }
     } catch (error) {
       // image picker failed silently

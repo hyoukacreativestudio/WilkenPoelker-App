@@ -115,23 +115,17 @@ export default function CreateTicketScreen({ route, navigation }) {
 
       for (let i = 0; i < images.length; i++) {
         const image = images[i];
+        const fileName = image.fileName || `attachment_${i}.jpg`;
         if (Platform.OS === 'web') {
-          // Use pre-fetched blob if available, otherwise fetch from URI
-          let blob = image._webBlob;
-          if (!blob) {
-            const response = await fetch(image.uri);
-            blob = await response.blob();
+          const webFile = image.file || image._webFile;
+          if (webFile) {
+            formData.append('attachments', webFile, fileName);
           }
-          const fileName = image.fileName || `attachment_${i}.jpg`;
-          const file = new File([blob], fileName, {
-            type: blob.type || image.type || 'image/jpeg',
-          });
-          formData.append('attachments', file);
         } else {
           formData.append('attachments', {
             uri: image.uri,
             type: image.type || 'image/jpeg',
-            name: image.fileName || `attachment_${i}.jpg`,
+            name: fileName,
           });
         }
       }
@@ -167,24 +161,12 @@ export default function CreateTicketScreen({ route, navigation }) {
       });
 
       if (!result.canceled && result.assets?.length > 0) {
-        const newImages = [];
-        for (const asset of result.assets) {
-          const img = {
-            uri: asset.uri,
-            type: asset.mimeType || asset.type || 'image/jpeg',
-            fileName: asset.fileName || `attachment_${Date.now()}.jpg`,
-          };
-          // On web, pre-fetch the blob immediately so it survives state changes
-          if (Platform.OS === 'web' && asset.uri) {
-            try {
-              const resp = await fetch(asset.uri);
-              img._webBlob = await resp.blob();
-            } catch (e) {
-              console.warn('Failed to pre-fetch image blob:', e);
-            }
-          }
-          newImages.push(img);
-        }
+        const newImages = result.assets.map((asset) => ({
+          uri: asset.uri,
+          file: asset.file, // native File object on web from expo-image-picker
+          type: asset.mimeType || asset.type || 'image/jpeg',
+          fileName: asset.fileName || `attachment_${Date.now()}.jpg`,
+        }));
         setImages((prev) => [...prev, ...newImages].slice(0, 5));
       }
     } catch (err) {

@@ -104,17 +104,17 @@ export default function FeedScreen({ navigation }) {
       formData.append('content', postData.content || '');
       if (postData.image) {
         if (Platform.OS === 'web') {
-          // On web, use pre-fetched blob if available, otherwise fetch from URI
-          let blob = postData.image._webBlob;
-          if (!blob) {
+          // On web, use the native File object from expo-image-picker
+          const webFile = postData.image.file;
+          if (webFile) {
+            formData.append('media', webFile, postData.image.name || webFile.name || 'photo.jpg');
+          } else {
+            // Fallback: create File from blob URI via FileReader
             const response = await fetch(postData.image.uri);
-            blob = await response.blob();
+            const blob = await response.blob();
+            const fileName = postData.image.name || 'photo.jpg';
+            formData.append('media', new File([blob], fileName, { type: blob.type || 'image/jpeg' }));
           }
-          const fileName = postData.image.name || 'photo.jpg';
-          const file = new File([blob], fileName, {
-            type: blob.type || postData.image.type || 'image/jpeg',
-          });
-          formData.append('media', file);
         } else {
           formData.append('media', {
             uri: postData.image.uri,

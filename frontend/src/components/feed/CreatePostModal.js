@@ -42,18 +42,7 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
     }
 
     if (!result.canceled && result.assets?.[0]) {
-      const asset = result.assets[0];
-      // On web, pre-fetch the blob immediately so it survives state changes
-      if (Platform.OS === 'web' && asset.uri) {
-        try {
-          const response = await fetch(asset.uri);
-          const blob = await response.blob();
-          asset._webBlob = blob;
-        } catch (e) {
-          console.warn('Failed to pre-fetch image blob:', e);
-        }
-      }
-      setImage(asset);
+      setImage(result.assets[0]);
     }
   };
 
@@ -71,7 +60,7 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
         uri,
         name: fileName,
         type: mimeMap[ext] || image.mimeType || 'image/jpeg',
-        _webBlob: image._webBlob || null,
+        file: image.file || null, // expo-image-picker provides native File on web
       };
     }
     onSubmit(postData);
