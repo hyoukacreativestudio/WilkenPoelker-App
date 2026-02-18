@@ -254,13 +254,15 @@ async function getWeekSchedule(season) {
  * Used for appointment booking validation.
  */
 async function isWithinOpeningHours(dateStr, timeStr) {
-  const date = new Date(`${dateStr}T12:00:00`);
+  // Extract date-only part (handles both "2026-02-23" and full ISO strings)
+  const datePart = typeof dateStr === 'string' ? dateStr.substring(0, 10) : dateStr;
+  const date = new Date(`${datePart}T12:00:00`);
   const berlin = toBerlinTime(date);
   const season = getSeason(berlin.date);
   const targetMinutes = timeToMinutes(timeStr);
 
   // Check holiday
-  const holiday = await checkHoliday(dateStr);
+  const holiday = await checkHoliday(datePart);
   if (holiday && holiday.isClosed) {
     return { valid: false, reason: `Geschlossen wegen Feiertag: ${holiday.name}` };
   }
