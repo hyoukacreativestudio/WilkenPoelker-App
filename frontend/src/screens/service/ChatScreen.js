@@ -255,12 +255,21 @@ export default function ChatScreen({ route, navigation }) {
       const formData = new FormData();
       if (text.trim()) formData.append('message', text.trim());
 
-      images.forEach((img, index) => {
-        const uri = Platform.OS === 'web' ? img.uri : img.uri;
-        const name = img.fileName || `image_${index}.jpg`;
-        const type = img.mimeType || 'image/jpeg';
-        formData.append('attachments', { uri, name, type });
-      });
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        const name = img.fileName || `image_${i}.jpg`;
+        if (Platform.OS === 'web') {
+          const response = await fetch(img.uri);
+          const blob = await response.blob();
+          formData.append('attachments', blob, name);
+        } else {
+          formData.append('attachments', {
+            uri: img.uri,
+            type: img.mimeType || 'image/jpeg',
+            name,
+          });
+        }
+      }
 
       const result = await serviceApi.sendChatMessage(ticketId, formData);
       const savedMessage = result.data?.data?.message || result.data?.data || result.data;

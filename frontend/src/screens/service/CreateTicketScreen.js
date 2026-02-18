@@ -113,13 +113,20 @@ export default function CreateTicketScreen({ route, navigation }) {
       formData.append('description', description.trim());
       formData.append('urgency', 'normal');
 
-      images.forEach((image, index) => {
-        formData.append('attachments', {
-          uri: image.uri,
-          type: image.type || 'image/jpeg',
-          name: image.fileName || `attachment_${index}.jpg`,
-        });
-      });
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        if (Platform.OS === 'web') {
+          const response = await fetch(image.uri);
+          const blob = await response.blob();
+          formData.append('attachments', blob, image.fileName || `attachment_${i}.jpg`);
+        } else {
+          formData.append('attachments', {
+            uri: image.uri,
+            type: image.type || 'image/jpeg',
+            name: image.fileName || `attachment_${i}.jpg`,
+          });
+        }
+      }
 
       const result = await createTicketApi.execute(formData);
       showToast({ type: 'success', message: t('service.ticketCreatedSuccess') });

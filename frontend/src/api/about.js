@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import apiClient, { getServerUrl } from './client';
 
 export const aboutApi = {
@@ -26,14 +27,20 @@ export const aboutApi = {
       webp: 'image/webp',
     };
 
-    formData.append('image', {
-      uri: imageUri,
-      name,
-      type: mimeMap[ext] || 'image/jpeg',
-    });
+    if (Platform.OS === 'web') {
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      formData.append('image', blob, name);
+    } else {
+      formData.append('image', {
+        uri: imageUri,
+        name,
+        type: mimeMap[ext] || 'image/jpeg',
+      });
+    }
 
     const response = await apiClient.post('/about/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     });
     return response.data;
   },
