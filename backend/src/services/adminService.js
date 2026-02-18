@@ -43,9 +43,9 @@ async function getDashboardStats() {
       },
     }),
 
-    // Completed repairs
+    // Completed repairs (repair_done or ready for pickup)
     Repair.count({
-      where: { status: 'completed' },
+      where: { status: { [Op.in]: ['repair_done', 'ready'] } },
     }),
 
     // Average rating
@@ -363,7 +363,7 @@ async function getYearlyOverview(year) {
     attributes: [
       'technicianId',
       [fn('COUNT', col('id')), 'total'],
-      [fn('SUM', literal("CASE WHEN status = 'completed' THEN 1 ELSE 0 END")), 'completed'],
+      [fn('SUM', literal("CASE WHEN status IN ('repair_done', 'ready') THEN 1 ELSE 0 END")), 'completed'],
       [fn('SUM', col('cost')), 'revenue'],
     ],
     group: ['technicianId'],

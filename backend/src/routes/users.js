@@ -108,6 +108,19 @@ router.put(
   userController.updatePermissions
 );
 
+// GET /api/users/admin/audit-log  (MUST be before :id route)
+router.get(
+  '/admin/audit-log',
+  authenticate,
+  isAdmin,
+  validate([
+    ...validators.pagination,
+    query('action').optional().isString().trim(),
+    query('userId').optional().isUUID().withMessage('Invalid userId format'),
+  ]),
+  userController.getAuditLog
+);
+
 // GET /api/users/admin/:id
 router.get(
   '/admin/:id',
@@ -124,19 +137,6 @@ router.put(
   isAdmin,
   validate([validators.uuid('id')]),
   userController.deactivateUser
-);
-
-// GET /api/users/admin/audit-log
-router.get(
-  '/admin/audit-log',
-  authenticate,
-  isAdmin,
-  validate([
-    ...validators.pagination,
-    query('action').optional().isString().trim(),
-    query('userId').optional().isUUID().withMessage('Invalid userId format'),
-  ]),
-  userController.getAuditLog
 );
 
 module.exports = router;
