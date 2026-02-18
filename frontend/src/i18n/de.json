@@ -1228,8 +1228,10 @@
     "save": "Fertig",
     "rotate": "Drehen",
     "flip": "Spiegeln",
-    "cropSquare": "Quadrat",
+    "crop": "Zuschneiden",
     "reset": "Zurücksetzen",
-    "edit": "Bearbeiten"
+    "edit": "Bearbeiten",
+    "cropHint": "Rahmen ziehen zum Zuschneiden",
+    "applyCrop": "Zuschnitt anwenden"
   }
 }

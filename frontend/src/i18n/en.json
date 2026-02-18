@@ -1242,8 +1242,10 @@
     "save": "Done",
     "rotate": "Rotate",
     "flip": "Flip",
-    "cropSquare": "Square",
+    "crop": "Crop",
     "reset": "Reset",
-    "edit": "Edit"
+    "edit": "Edit",
+    "cropHint": "Drag to crop",
+    "applyCrop": "Apply crop"
   }
 }
