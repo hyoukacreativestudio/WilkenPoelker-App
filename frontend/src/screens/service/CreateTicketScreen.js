@@ -18,6 +18,8 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Chip from '../../components/ui/Chip';
 import { useToast } from '../../components/ui/Toast';
+import { getPreviewUri, revokePreviewUri, getDisplayUri } from '../../utils/imageHelpers';
+import ImageEditModal from '../../components/shared/ImageEditModal';
 
 const TITLE_OPTIONS = {
   bike: [
@@ -79,6 +81,7 @@ export default function CreateTicketScreen({ route, navigation }) {
   const [description, setDescription] = useState('');
   const [images, setImages] = useState([]);
   const [errors, setErrors] = useState({});
+  const [editingIndex, setEditingIndex] = useState(null);
 
   const createTicketApi = useApi(serviceApi.createTicket);
 
@@ -166,6 +169,7 @@ export default function CreateTicketScreen({ route, navigation }) {
           file: asset.file, // native File object on web from expo-image-picker
           type: asset.mimeType || asset.type || 'image/jpeg',
           fileName: asset.fileName || `attachment_${Date.now()}.jpg`,
+          _previewUri: getPreviewUri(asset),
         }));
         setImages((prev) => [...prev, ...newImages].slice(0, 5));
       }
@@ -175,7 +179,11 @@ export default function CreateTicketScreen({ route, navigation }) {
   };
 
   const handleRemoveImage = (index) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImages((prev) => {
+      const removed = prev[index];
+      if (removed?._previewUri) revokePreviewUri(removed._previewUri);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const s = styles(theme);
@@ -259,7 +267,12 @@ export default function CreateTicketScreen({ route, navigation }) {
         <View style={s.imagesRow}>
           {images.map((image, index) => (
             <View key={index} style={s.imageContainer}>
-              <Image source={{ uri: image.uri }} style={s.imagePreview} />
+              <TouchableOpacity onPress={() => setEditingIndex(index)} activeOpacity={0.8}>
+                <Image source={{ uri: getDisplayUri(image) }} style={s.imagePreview} />
+                <View style={{ position: 'absolute', bottom: 2, left: 2, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 8, padding: 2 }}>
+                  <MaterialCommunityIcons name="pencil" size={12} color="#fff" />
+                </View>
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleRemoveImage(index)}
                 style={s.removeImageButton}
@@ -300,6 +313,19 @@ export default function CreateTicketScreen({ route, navigation }) {
           </Text>
         </View>
       </View>
+
+      {/* Image Edit Modal */}
+      {editingIndex !== null && (
+        <ImageEditModal
+          visible={editingIndex !== null}
+          image={images[editingIndex]}
+          onSave={(editedImage) => {
+            setImages((prev) => prev.map((img, i) => (i === editingIndex ? editedImage : img)));
+            setEditingIndex(null);
+          }}
+          onClose={() => setEditingIndex(null)}
+        />
+      )}
     </ScrollView>
   );
 }

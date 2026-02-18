@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -11,12 +11,20 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { processPickerAssets, revokeAllPreviewUris, revokePreviewUri, getDisplayUri } from '../../utils/imageHelpers';
+import ImageEditModal from '../shared/ImageEditModal';
 
 export default function ChatInput({ onSend, onTyping, disabled, style }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const [text, setText] = useState('');
   const [images, setImages] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
+
+  // Cleanup preview URIs on unmount
+  useEffect(() => {
+    return () => revokeAllPreviewUris(images);
+  }, []);
 
   const handleSend = () => {
     if ((!text.trim() && images.length === 0) || disabled) return;
@@ -36,13 +44,26 @@ export default function ChatInput({ onSend, onTyping, disabled, style }) {
     });
 
     if (!result.canceled && result.assets?.length > 0) {
-      const newImages = result.assets.slice(0, 5 - images.length);
+      const newImages = processPickerAssets(result.assets.slice(0, 5 - images.length));
       setImages((prev) => [...prev, ...newImages]);
     }
   };
 
   const handleRemoveImage = (index) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImages((prev) => {
+      const removed = prev[index];
+      if (removed?._previewUri) revokePreviewUri(removed._previewUri);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleEditImage = (index) => {
+    setEditingIndex(index);
+  };
+
+  const handleEditSave = (editedImage) => {
+    setImages((prev) => prev.map((img, i) => (i === editingIndex ? editedImage : img)));
+    setEditingIndex(null);
   };
 
   const handleTextChange = (val) => {
@@ -59,15 +80,30 @@ export default function ChatInput({ onSend, onTyping, disabled, style }) {
         <View style={{ flexDirection: 'row', paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.sm, gap: theme.spacing.xs }}>
           {images.map((img, index) => (
             <View key={index} style={{ position: 'relative' }}>
-              <Image
-                source={{ uri: img.uri }}
-                style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: theme.borderRadius.sm,
-                }}
-                resizeMode="cover"
-              />
+              <TouchableOpacity onPress={() => handleEditImage(index)} activeOpacity={0.8}>
+                <Image
+                  source={{ uri: getDisplayUri(img) }}
+                  style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: theme.borderRadius.sm,
+                  }}
+                  resizeMode="cover"
+                />
+                {/* Edit icon overlay */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    bottom: 2,
+                    left: 2,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    borderRadius: 8,
+                    padding: 2,
+                  }}
+                >
+                  <MaterialCommunityIcons name="pencil" size={12} color="#fff" />
+                </View>
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleRemoveImage(index)}
                 style={{
@@ -144,6 +180,16 @@ export default function ChatInput({ onSend, onTyping, disabled, style }) {
           />
         </TouchableOpacity>
       </View>
+
+      {/* Image Edit Modal */}
+      {editingIndex !== null && (
+        <ImageEditModal
+          visible={editingIndex !== null}
+          image={images[editingIndex]}
+          onSave={handleEditSave}
+          onClose={() => setEditingIndex(null)}
+        />
+      )}
     </View>
   );
 }

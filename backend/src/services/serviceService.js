@@ -592,7 +592,7 @@ async function sendChatMessage(ticketId, userId, data, models) {
     await Notification.create({
       userId: recipientId,
       title: 'Neue Chat-Nachricht',
-      message: `Neue Nachricht in Ticket ${ticket.ticketNumber}: ${data.message.substring(0, 60)}...`,
+      message: `Neue Nachricht in Ticket ${ticket.ticketNumber}: ${data.message ? data.message.substring(0, 60) : 'Bild gesendet'}`,
       type: 'chat_message',
       category: 'chat',
       relatedId: ticketId,

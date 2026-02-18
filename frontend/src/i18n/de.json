@@ -1222,5 +1222,14 @@
     "bikeManager": "Fahrrad Manager",
     "cleaningManager": "Reinigungsgeräte Manager",
     "motorManager": "Motorgeräte Manager"
+  },
+  "imageEdit": {
+    "title": "Bild bearbeiten",
+    "save": "Fertig",
+    "rotate": "Drehen",
+    "flip": "Spiegeln",
+    "cropSquare": "Quadrat",
+    "reset": "Zurücksetzen",
+    "edit": "Bearbeiten"
   }
 }

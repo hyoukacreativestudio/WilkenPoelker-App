@@ -1236,5 +1236,14 @@
     "bikeManager": "Bike Manager",
     "cleaningManager": "Cleaning Equipment Manager",
     "motorManager": "Motor Equipment Manager"
+  },
+  "imageEdit": {
+    "title": "Edit Image",
+    "save": "Done",
+    "rotate": "Rotate",
+    "flip": "Flip",
+    "cropSquare": "Square",
+    "reset": "Reset",
+    "edit": "Edit"
   }
 }

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Image, TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
 import * as ExpoImagePicker from 'expo-image-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { getPreviewUri, revokePreviewUri, getDisplayUri } from '../../utils/imageHelpers';
+import ImageEditModal from './ImageEditModal';
 
 const IMAGE_SIZE = 80;
 
@@ -15,6 +17,7 @@ export default function ImagePicker({
 }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const [editingIndex, setEditingIndex] = useState(null);
 
   const handleAddImage = async () => {
     if (images.length >= maxImages) {
@@ -44,6 +47,7 @@ export default function ImagePicker({
       const newItems = result.assets.map((asset) => ({
         uri: asset.uri,
         file: asset.file, // native File object on web from expo-image-picker
+        _previewUri: getPreviewUri(asset),
       }));
       // Maintain backward compatibility: if images are strings, convert to objects
       const currentImages = images.map((img) =>
@@ -57,17 +61,30 @@ export default function ImagePicker({
   };
 
   const handleRemoveImage = (index) => {
+    const removed = images[index];
+    if (removed && typeof removed === 'object' && removed._previewUri) {
+      revokePreviewUri(removed._previewUri);
+    }
     const updated = images.filter((_, i) => i !== index);
     if (onImagesChange) {
       onImagesChange(updated);
     }
   };
 
+  const handleEditSave = (editedImage) => {
+    if (editingIndex === null) return;
+    const updated = images.map((img, i) => (i === editingIndex ? editedImage : img));
+    if (onImagesChange) {
+      onImagesChange(updated);
+    }
+    setEditingIndex(null);
+  };
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.grid}>
         {images.map((img, index) => {
-          const uri = typeof img === 'string' ? img : img.uri;
+          const uri = typeof img === 'string' ? img : getDisplayUri(img);
           return (
           <View
             key={`${uri}-${index}`}
@@ -80,13 +97,19 @@ export default function ImagePicker({
               },
             ]}
           >
-            <Image
-              source={{ uri }}
-              style={[
-                styles.image,
-                { borderRadius: theme.borderRadius.md },
-              ]}
-            />
+            <TouchableOpacity onPress={() => setEditingIndex(index)} activeOpacity={0.8}>
+              <Image
+                source={{ uri }}
+                style={[
+                  styles.image,
+                  { borderRadius: theme.borderRadius.md },
+                ]}
+              />
+              {/* Edit icon overlay */}
+              <View style={{ position: 'absolute', bottom: 2, left: 2, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 8, padding: 2 }}>
+                <MaterialCommunityIcons name="pencil" size={12} color="#fff" />
+              </View>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.removeButton,
@@ -136,6 +159,16 @@ export default function ImagePicker({
       >
         {images.length}/{maxImages}
       </Text>
+
+      {/* Image Edit Modal */}
+      {editingIndex !== null && (
+        <ImageEditModal
+          visible={editingIndex !== null}
+          image={typeof images[editingIndex] === 'string' ? { uri: images[editingIndex] } : images[editingIndex]}
+          onSave={handleEditSave}
+          onClose={() => setEditingIndex(null)}
+        />
+      )}
     </View>
   );
 }

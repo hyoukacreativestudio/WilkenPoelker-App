@@ -24,6 +24,7 @@ import RatingModal from '../../components/service/RatingModal';
 import EmptyState from '../../components/ui/EmptyState';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import { useToast } from '../../components/ui/Toast';
+import { getDisplayUri } from '../../utils/imageHelpers';
 
 export default function ChatScreen({ route, navigation }) {
   const { ticketId } = route.params;
@@ -236,7 +237,7 @@ export default function ChatScreen({ route, navigation }) {
     if ((!text.trim() && images.length === 0) || sending || isClosed) return;
     emitStopTyping();
 
-    const tempAttachments = images.map((img) => ({ url: img.uri }));
+    const tempAttachments = images.map((img) => ({ url: getDisplayUri(img) }));
     const tempMessage = {
       _id: `temp_${Date.now()}`,
       message: text.trim(),
@@ -283,6 +284,7 @@ export default function ChatScreen({ route, navigation }) {
         );
       }
     } catch (err) {
+      console.error('Chat send error:', err?.response?.status, err?.response?.data || err?.message);
       setMessages((prev) => prev.filter((msg) => msg._id !== tempMessage._id));
       showToast({ type: 'error', message: t('chat.sendMessageError') });
     } finally {

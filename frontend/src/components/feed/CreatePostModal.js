@@ -16,12 +16,15 @@ import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
 import Button from '../ui/Button';
+import { getPreviewUri, revokePreviewUri, getDisplayUri } from '../../utils/imageHelpers';
+import ImageEditModal from '../shared/ImageEditModal';
 
 export default function CreatePostModal({ visible, onClose, onSubmit }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const [content, setContent] = useState('');
   const [image, setImage] = useState(null);
+  const [showEdit, setShowEdit] = useState(false);
 
   const pickImage = async (useCamera = false) => {
     const options = {
@@ -42,11 +45,18 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
     }
 
     if (!result.canceled && result.assets?.[0]) {
-      setImage(result.assets[0]);
+      const asset = result.assets[0];
+      asset._previewUri = getPreviewUri(asset);
+      // Revoke old preview if replacing
+      if (image?._previewUri) revokePreviewUri(image._previewUri);
+      setImage(asset);
     }
   };
 
-  const removeImage = () => setImage(null);
+  const removeImage = () => {
+    if (image?._previewUri) revokePreviewUri(image._previewUri);
+    setImage(null);
+  };
 
   const handleSubmit = () => {
     if (!content.trim() && !image) return;
@@ -69,6 +79,7 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
   };
 
   const handleClose = () => {
+    if (image?._previewUri) revokePreviewUri(image._previewUri);
     setContent('');
     setImage(null);
     onClose();
@@ -154,7 +165,7 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
                 <View style={{ paddingHorizontal: theme.spacing.md, marginBottom: theme.spacing.sm }}>
                   <View style={{ position: 'relative' }}>
                     <Image
-                      source={{ uri: image.uri }}
+                      source={{ uri: getDisplayUri(image) }}
                       style={{
                         width: '100%',
                         height: 200,
@@ -178,6 +189,27 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
                       }}
                     >
                       <MaterialCommunityIcons name="close" size={16} color="#fff" />
+                    </TouchableOpacity>
+                    {/* Edit button */}
+                    <TouchableOpacity
+                      onPress={() => setShowEdit(true)}
+                      activeOpacity={0.7}
+                      style={{
+                        position: 'absolute',
+                        bottom: 8,
+                        right: 8,
+                        backgroundColor: 'rgba(0,0,0,0.6)',
+                        borderRadius: 12,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <MaterialCommunityIcons name="pencil" size={14} color="#fff" />
+                      <Text style={{ color: '#fff', fontSize: 12, marginLeft: 4 }}>
+                        {t('imageEdit.edit', 'Bearbeiten')}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -225,6 +257,19 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
           </Pressable>
         </KeyboardAvoidingView>
       </Pressable>
+
+      {/* Image Edit Modal */}
+      {showEdit && image && (
+        <ImageEditModal
+          visible={showEdit}
+          image={image}
+          onSave={(editedImage) => {
+            setImage(editedImage);
+            setShowEdit(false);
+          }}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
     </RNModal>
   );
 }

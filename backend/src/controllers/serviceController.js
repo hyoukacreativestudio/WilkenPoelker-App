@@ -325,7 +325,7 @@ const sendChatMessage = asyncHandler(async (req, res) => {
       pushService
         .sendToUser(recipientId, {
           title: 'Neue Chat-Nachricht',
-          body: message.substring(0, 100),
+          body: message ? message.substring(0, 100) : 'Bild gesendet',
           data: { type: 'chat_message', ticketId },
         })
         .catch(() => {});
