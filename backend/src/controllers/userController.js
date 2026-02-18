@@ -147,8 +147,8 @@ const exportMyData = asyncHandler(async (req, res) => {
     Repair.findAll({ where: { userId } }),
     Ticket.findAll({ where: { userId } }),
     Favorite.findAll({ where: { userId }, attributes: ['id', 'productId', 'createdAt'] }),
-    ProductReview.findAll({ where: { userId }, attributes: ['id', 'productId', 'rating', 'comment', 'createdAt'] }),
-    ServiceRating.findAll({ where: { userId }, attributes: ['id', 'rating', 'comment', 'createdAt'] }),
+    ProductReview.findAll({ where: { userId }, attributes: ['id', 'productId', 'rating', 'text', 'createdAt'] }),
+    ServiceRating.findAll({ where: { userId }, attributes: ['id', 'overallRating', 'type', 'text', 'createdAt'] }),
     AISession.findAll({ where: { userId }, attributes: ['id', 'category', 'messages', 'createdAt'] }),
   ]);
 
