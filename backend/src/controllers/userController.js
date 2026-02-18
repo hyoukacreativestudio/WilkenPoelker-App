@@ -136,16 +136,16 @@ const exportMyData = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   const user = await User.findByPk(userId, {
-    attributes: { exclude: ['password', 'refreshToken', 'verificationToken', 'resetPasswordToken'] },
+    attributes: { exclude: ['password', 'refreshToken', 'emailVerificationToken', 'passwordResetToken', 'passwordResetExpires', 'pinCode'] },
   });
 
   const [posts, comments, likes, appointments, repairs, tickets, favorites, reviews, ratings, aiSessions] = await Promise.all([
     Post.findAll({ where: { userId }, attributes: ['id', 'content', 'mediaUrl', 'createdAt'] }),
     Comment.findAll({ where: { userId }, attributes: ['id', 'content', 'createdAt'] }),
     Like.findAll({ where: { userId }, attributes: ['id', 'postId', 'createdAt'] }),
-    Appointment.findAll({ where: { userId }, attributes: { exclude: ['deletedAt'] } }),
-    Repair.findAll({ where: { userId }, attributes: { exclude: ['deletedAt'] } }),
-    Ticket.findAll({ where: { userId }, attributes: { exclude: ['deletedAt'] } }),
+    Appointment.findAll({ where: { userId } }),
+    Repair.findAll({ where: { userId } }),
+    Ticket.findAll({ where: { userId } }),
     Favorite.findAll({ where: { userId }, attributes: ['id', 'productId', 'createdAt'] }),
     ProductReview.findAll({ where: { userId }, attributes: ['id', 'productId', 'rating', 'comment', 'createdAt'] }),
     ServiceRating.findAll({ where: { userId }, attributes: ['id', 'rating', 'comment', 'createdAt'] }),
