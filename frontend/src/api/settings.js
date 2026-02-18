@@ -1,10 +1,28 @@
 import apiClient from './client';
 
 export const settingsApi = {
-  getOpeningHours: () => apiClient.get('/settings/opening-hours'),
-  getOpeningStatus: () => apiClient.get('/settings/opening-hours/status'),
-  getHolidays: () => apiClient.get('/settings/holidays'),
-  updateOpeningHours: (data) => apiClient.put('/settings/opening-hours', data),
-  addHoliday: (data) => apiClient.post('/settings/holidays', data),
-  removeHoliday: (id) => apiClient.delete(`/settings/holidays/${id}`),
+  getOpeningHours: async () => {
+    const response = await apiClient.get('/settings/opening-hours');
+    return response.data?.data ?? response.data;
+  },
+  getOpeningStatus: async () => {
+    const response = await apiClient.get('/settings/opening-hours/status');
+    return response.data?.data ?? response.data;
+  },
+  getHolidays: async () => {
+    const response = await apiClient.get('/settings/holidays');
+    return response.data?.data ?? response.data;
+  },
+  updateOpeningHours: async (data) => {
+    const response = await apiClient.put('/settings/opening-hours', data);
+    return response.data?.data ?? response.data;
+  },
+  addHoliday: async (data) => {
+    const response = await apiClient.post('/settings/holidays', data);
+    return response.data?.data ?? response.data;
+  },
+  removeHoliday: async (id) => {
+    const response = await apiClient.delete(`/settings/holidays/${id}`);
+    return response.data?.data ?? response.data;
+  },
 };
