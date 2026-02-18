@@ -14,6 +14,10 @@ const { apiLimiter } = require('./middlewares/rateLimit');
 const logger = require('./utils/logger');
 
 const app = express();
+
+// Trust first proxy (Render) - required for express-rate-limit behind reverse proxy
+app.set('trust proxy', 1);
+
 const server = http.createServer(app);
 
 // Socket.io setup with CORS
