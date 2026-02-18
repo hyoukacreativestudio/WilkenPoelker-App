@@ -208,7 +208,13 @@ export default function RegisterScreen({ navigation }) {
             trackColor={{ true: theme.colors.primary }}
           />
           <Text style={[s.checkboxLabel, errors.dsgvo && s.checkboxError]}>
-            {t('auth.dsgvoAccept')}
+            {t('auth.iAccept')}{' '}
+            <Text
+              style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
+              onPress={() => navigation.navigate('Datenschutz')}
+            >
+              {t('auth.privacyPolicyLink')}
+            </Text>
           </Text>
         </View>
 
@@ -219,7 +225,13 @@ export default function RegisterScreen({ navigation }) {
             trackColor={{ true: theme.colors.primary }}
           />
           <Text style={[s.checkboxLabel, errors.agb && s.checkboxError]}>
-            {t('auth.agbAccept')}
+            {t('auth.iAccept')}{' '}
+            <Text
+              style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
+              onPress={() => navigation.navigate('AGB')}
+            >
+              {t('auth.agbLink')}
+            </Text>
           </Text>
         </View>
 

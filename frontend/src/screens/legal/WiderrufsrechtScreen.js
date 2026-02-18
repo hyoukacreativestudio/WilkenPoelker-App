@@ -43,6 +43,11 @@ export default function WiderrufsrechtScreen() {
       title: t('legal.widerrufsrecht.section5Title'),
       content: t('legal.widerrufsrecht.section5Content'),
     },
+    {
+      key: 'withdrawalForm',
+      title: t('legal.widerrufsrecht.section6Title'),
+      content: t('legal.widerrufsrecht.section6Content'),
+    },
   ];
 
   return (

@@ -79,6 +79,7 @@ async function registerUser(data, User, taifunDb) {
     emailVerificationToken: hashToken(verificationToken),
     dsgvoAccepted: true,
     dsgvoAcceptedAt: new Date(),
+    agbAccepted: true,
     agbAcceptedAt: new Date(),
   });
 

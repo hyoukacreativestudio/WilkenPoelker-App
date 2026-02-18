@@ -304,6 +304,9 @@ export default function ProductDetailScreen({ route, navigation }) {
               </Text>
             )}
           </View>
+          <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary, marginTop: 2 }]}>
+            {t('product.inclVat')}
+          </Text>
 
           {/* Rating */}
           {ratings && ratings.average != null && (

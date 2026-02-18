@@ -63,6 +63,11 @@ export default function DatenschutzScreen() {
       title: t('legal.datenschutz.section9Title'),
       content: t('legal.datenschutz.section9Content'),
     },
+    {
+      key: 'mobileApp',
+      title: t('legal.datenschutz.section10Title'),
+      content: t('legal.datenschutz.section10Content'),
+    },
   ];
 
   return (

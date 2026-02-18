@@ -111,6 +111,13 @@ const User = sequelize.define('User', {
   dsgvoAcceptedAt: {
     type: DataTypes.DATE,
   },
+  agbAccepted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  agbAcceptedAt: {
+    type: DataTypes.DATE,
+  },
   pinCode: {
     type: DataTypes.STRING,
   },

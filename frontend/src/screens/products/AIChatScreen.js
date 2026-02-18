@@ -55,7 +55,14 @@ export default function AIChatScreen({ route, navigation }) {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages([welcomeMessage]);
+    const disclosureMessage = {
+      id: generateId(),
+      role: 'system',
+      text: t('aiChat.dataDisclosure'),
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages([welcomeMessage, disclosureMessage]);
   }, [category, t]);
 
   // Typing indicator animation
@@ -154,6 +161,17 @@ export default function AIChatScreen({ route, navigation }) {
   const renderMessage = useCallback(
     ({ item }) => {
       const isUser = item.role === 'user';
+      const isSystem = item.role === 'system';
+
+      // System disclosure banner
+      if (isSystem) {
+        return (
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, marginBottom: theme.spacing.sm, backgroundColor: theme.colors.info + '10', borderRadius: theme.borderRadius.md }}>
+            <MaterialCommunityIcons name="shield-lock-outline" size={14} color={theme.colors.info} style={{ marginRight: theme.spacing.xs }} />
+            <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary, flex: 1 }]}>{item.text}</Text>
+          </View>
+        );
+      }
 
       return (
         <View

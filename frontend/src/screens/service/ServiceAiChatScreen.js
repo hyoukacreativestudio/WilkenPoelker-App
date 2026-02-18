@@ -182,6 +182,12 @@ export default function ServiceAiChatScreen({ route, navigation }) {
         <MaterialCommunityIcons name="wrench" size={16} color={categoryColor} />
         <Text style={[s.tutorialHintText, { color: categoryColor }]}>{t('aiChat.tutorialRepairHint')}</Text>
       </View>
+
+      {/* DSGVO AI Disclosure */}
+      <View style={[s.tutorialHint, { backgroundColor: theme.colors.info + '10', marginTop: theme.spacing.sm }]}>
+        <MaterialCommunityIcons name="shield-lock-outline" size={16} color={theme.colors.info} />
+        <Text style={[s.tutorialHintText, { color: theme.colors.textSecondary, flex: 1 }]}>{t('aiChat.dataDisclosure')}</Text>
+      </View>
     </Animated.View>
   );
 
