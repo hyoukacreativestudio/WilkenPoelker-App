@@ -11,7 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
-import { processPickerAssets, revokeAllPreviewUris, revokePreviewUri, getDisplayUri } from '../../utils/imageHelpers';
+import { createStablePreviewUri, revokeAllPreviewUris, revokePreviewUri, getDisplayUri } from '../../utils/imageHelpers';
 import ImageEditModal from '../shared/ImageEditModal';
 
 export default function ChatInput({ onSend, onTyping, disabled, style }) {
@@ -44,7 +44,13 @@ export default function ChatInput({ onSend, onTyping, disabled, style }) {
     });
 
     if (!result.canceled && result.assets?.length > 0) {
-      const newImages = processPickerAssets(result.assets.slice(0, 5 - images.length));
+      const assetsToProcess = result.assets.slice(0, 5 - images.length);
+      const newImages = await Promise.all(
+        assetsToProcess.map(async (asset) => ({
+          ...asset,
+          _previewUri: await createStablePreviewUri(asset),
+        }))
+      );
       setImages((prev) => [...prev, ...newImages]);
     }
   };

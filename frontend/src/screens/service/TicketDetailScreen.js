@@ -47,6 +47,12 @@ export default function TicketDetailScreen({ route, navigation }) {
       const data = result.data?.data;
       setTicket(data?.ticket || data || result.data);
     } catch (err) {
+      const code = err?.code || err?.response?.data?.error?.code;
+      if (code === 'TICKET_ACCESS_DENIED' || code === 'CHAT_ACCESS_DENIED') {
+        showToast({ type: 'error', message: t('service.ticketAccessDenied', 'Dieses Ticket ist einem anderen Mitarbeiter zugewiesen.') });
+        navigation.goBack();
+        return;
+      }
       showToast({ type: 'error', message: t('service.loadTicketError') });
     } finally {
       setLoading(false);

@@ -393,6 +393,8 @@ export default function ClosedDaysScreen() {
             <ScrollView
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
+              style={Platform.OS === 'web' ? { overflow: 'visible' } : undefined}
+              contentContainerStyle={Platform.OS === 'web' ? { overflow: 'visible' } : undefined}
             >
               {/* Modal title */}
               <Text style={s.modalTitle}>
@@ -416,7 +418,7 @@ export default function ClosedDaysScreen() {
 
               {/* Date input(s) */}
               {Platform.OS === 'web' ? (
-                <View style={{ marginBottom: theme.spacing.md }}>
+                <View style={{ marginBottom: theme.spacing.md, overflow: 'visible', zIndex: 10 }}>
                   <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, marginBottom: 4 }]}>
                     {isRange ? t('closedDays.startDate', 'Startdatum') : t('closedDays.date', 'Datum')}
                   </Text>
@@ -732,6 +734,7 @@ const styles = (theme) =>
       width: '100%',
       maxWidth: 440,
       maxHeight: '92%',
+      ...(Platform.OS === 'web' ? { overflow: 'visible' } : {}),
     },
     modalTitle: {
       ...theme.typography.styles.h5,

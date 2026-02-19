@@ -44,7 +44,12 @@ export default function LoginScreen({ navigation }) {
     try {
       await login({ email: emailOrCustomerNumber.trim(), password, rememberMe });
     } catch (err) {
-      const msg = err.response?.data?.message || t('errors.invalidCredentials');
+      if (err.code === 'EMAIL_NOT_VERIFIED') {
+        showToast({ type: 'info', message: t('auth.emailNotVerified', 'Bitte verifiziere zuerst deine E-Mail-Adresse.') });
+        navigation.navigate('EmailVerification', { email: emailOrCustomerNumber.trim() });
+        return;
+      }
+      const msg = err.message || err.response?.data?.message || t('errors.invalidCredentials');
       showToast({ type: 'error', message: msg });
     } finally {
       setLoading(false);

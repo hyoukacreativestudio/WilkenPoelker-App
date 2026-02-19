@@ -162,14 +162,29 @@ async function getAdminTickets(user, query, models) {
     where.category = { [Op.in]: allowedCategories };
   }
 
+  const isAdminRole = user.role === 'admin' || user.role === 'super_admin';
+
   // Filter by tab
   if (tab === 'open') {
     where.status = 'open';
+    // Non-admin staff: only show unassigned tickets or tickets assigned to them
+    if (!isAdminRole) {
+      where[Op.or] = [
+        { assignedTo: null },
+        { assignedTo: user.id },
+      ];
+    }
   } else if (tab === 'mine') {
     where.assignedTo = user.id;
     where.status = { [Op.in]: ['in_progress', 'open', 'confirmed'] };
   } else if (tab === 'all') {
-    // No additional filter – show everything
+    // Non-admin staff: only show their own assigned tickets and unassigned ones
+    if (!isAdminRole) {
+      where[Op.or] = [
+        { assignedTo: null },
+        { assignedTo: user.id },
+      ];
+    }
   }
 
   const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -257,6 +272,19 @@ async function getTicketById(ticketId, userId, models) {
 
   if (!ticket) {
     throw new NotFoundError('Ticket');
+  }
+
+  // Access control: non-admin staff cannot view tickets assigned to other staff
+  const requestingUser = await User.findByPk(userId, { attributes: ['id', 'role'] });
+  if (requestingUser && requestingUser.role !== 'customer') {
+    const isAdmin = requestingUser.role === 'admin' || requestingUser.role === 'super_admin';
+    const isTicketCreator = ticket.userId === userId;
+    const isAssigned = ticket.assignedTo === userId;
+    const isUnassigned = !ticket.assignedTo;
+
+    if (!isAdmin && !isTicketCreator && !isAssigned && !isUnassigned) {
+      throw new AppError('Dieses Ticket ist einem anderen Mitarbeiter zugewiesen.', 403, 'TICKET_ACCESS_DENIED');
+    }
   }
 
   // Count messages
@@ -544,6 +572,18 @@ async function sendChatMessage(ticketId, userId, data, models) {
 
   if (ticket.status === 'cancelled' || ticket.status === 'completed' || ticket.status === 'closed') {
     throw new AppError('Cannot send messages to a closed ticket', 400, 'TICKET_CLOSED');
+  }
+
+  // Access control: non-admin staff cannot message in tickets assigned to other staff
+  const senderCheck = await User.findByPk(userId, { attributes: ['id', 'role'] });
+  if (senderCheck && senderCheck.role !== 'customer') {
+    const isSenderAdmin = senderCheck.role === 'admin' || senderCheck.role === 'super_admin';
+    const isSenderAssigned = ticket.assignedTo === userId;
+    const isUnassigned = !ticket.assignedTo;
+
+    if (!isSenderAdmin && !isSenderAssigned && !isUnassigned && ticket.userId !== userId) {
+      throw new AppError('You do not have access to this chat', 403, 'CHAT_ACCESS_DENIED');
+    }
   }
 
   // Auto-assign: if staff responds to an open/unassigned ticket, assign them

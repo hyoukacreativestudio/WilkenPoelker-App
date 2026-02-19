@@ -120,6 +120,11 @@ async function loginUser(data, User) {
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
+  // Check email verification
+  if (!user.emailVerified) {
+    throw new AppError('Bitte verifiziere zuerst deine E-Mail-Adresse.', 403, 'EMAIL_NOT_VERIFIED');
+  }
+
   // Generate tokens (rememberMe extends refresh token to 30 days)
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user, rememberMe);

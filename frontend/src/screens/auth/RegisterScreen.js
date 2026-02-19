@@ -89,7 +89,7 @@ export default function RegisterScreen({ navigation }) {
         agbAccepted: true,
       });
       showToast({ type: 'success', message: t('auth.registrationSuccess') });
-      navigation.navigate('Login');
+      navigation.navigate('EmailVerification', { email: form.email.trim() });
     } catch (err) {
       // Normalized errors from interceptor: { message, code, details }
       let msg = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || t('errors.somethingWentWrong');

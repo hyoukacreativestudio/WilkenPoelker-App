@@ -227,6 +227,7 @@
     "hasAccount": "Bereits ein Konto?",
     "registerNow": "Jetzt registrieren",
     "loginNow": "Jetzt anmelden",
+    "emailNotVerified": "Bitte verifiziere zuerst deine E-Mail-Adresse.",
     "dsgvoAccept": "Ich akzeptiere die Datenschutzerklärung",
     "agbAccept": "Ich akzeptiere die AGB",
     "iAccept": "Ich akzeptiere die",
@@ -371,6 +372,7 @@
     "openChat": "Chat öffnen",
     "ticketNotFound": "Ticket nicht gefunden",
     "loadTicketError": "Ticket konnte nicht geladen werden",
+    "ticketAccessDenied": "Dieses Ticket ist einem anderen Mitarbeiter zugewiesen.",
     "errors": {
       "typeRequired": "Bitte wählen Sie eine Art der Anfrage aus.",
       "descriptionTooShort": "Die Beschreibung muss mindestens 10 Zeichen lang sein."

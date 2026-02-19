@@ -227,6 +227,7 @@
     "hasAccount": "Already have an account?",
     "registerNow": "Register now",
     "loginNow": "Log in now",
+    "emailNotVerified": "Please verify your email address first.",
     "dsgvoAccept": "I accept the privacy policy",
     "agbAccept": "I accept the terms and conditions",
     "iAccept": "I accept the",
@@ -371,6 +372,7 @@
     "openChat": "Open Chat",
     "ticketNotFound": "Ticket not found",
     "loadTicketError": "Could not load ticket",
+    "ticketAccessDenied": "This ticket is assigned to another staff member.",
     "errors": {
       "typeRequired": "Please select a request type.",
       "descriptionTooShort": "The description must be at least 10 characters long."
