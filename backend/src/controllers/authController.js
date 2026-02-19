@@ -14,9 +14,12 @@ const register = asyncHandler(async (req, res) => {
   );
 
   // Send verification email (non-blocking)
+  const requestOrigin = `${req.protocol}://${req.get('host')}`;
   emailService
-    .sendVerificationEmail(email, username, result.verificationToken)
-    .catch(() => {});
+    .sendVerificationEmail(email, username, result.verificationToken, requestOrigin)
+    .catch((err) => {
+      console.error('Failed to send verification email:', err.message);
+    });
 
   res.status(201).json({
     success: true,
@@ -99,12 +102,36 @@ const resetPassword = asyncHandler(async (req, res) => {
 const verifyEmail = asyncHandler(async (req, res) => {
   const { token } = req.params;
 
-  await authService.verifyEmail(token, db.User);
+  try {
+    await authService.verifyEmail(token, db.User);
 
-  res.json({
-    success: true,
-    message: 'Email verified successfully.',
-  });
+    // Return user-friendly HTML page
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="de">
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>E-Mail bestätigt – WilkenPoelker</title>
+      <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}
+      .card{background:#fff;border-radius:16px;padding:40px;max-width:420px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+      .icon{font-size:64px;margin-bottom:16px}.btn{display:inline-block;background:#2E7D32;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:20px}</style></head>
+      <body><div class="card"><div class="icon">✅</div><h2>E-Mail bestätigt!</h2>
+      <p>Deine E-Mail-Adresse wurde erfolgreich verifiziert. Du kannst dich jetzt in der App anmelden.</p>
+      </div></body></html>
+    `);
+  } catch (err) {
+    res.status(400).send(`
+      <!DOCTYPE html>
+      <html lang="de">
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>Fehler – WilkenPoelker</title>
+      <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}
+      .card{background:#fff;border-radius:16px;padding:40px;max-width:420px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+      .icon{font-size:64px;margin-bottom:16px}</style></head>
+      <body><div class="card"><div class="icon">❌</div><h2>Verifizierung fehlgeschlagen</h2>
+      <p>${err.message || 'Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Verifizierungslink in der App an.'}</p>
+      </div></body></html>
+    `);
+  }
 });
 
 const resendVerification = asyncHandler(async (req, res) => {
@@ -126,9 +153,12 @@ const resendVerification = asyncHandler(async (req, res) => {
   await user.save();
 
   // Send verification email (non-blocking)
+  const resendOrigin = `${req.protocol}://${req.get('host')}`;
   emailService
-    .sendVerificationEmail(email, user.firstName || user.username, verificationToken)
-    .catch(() => {});
+    .sendVerificationEmail(email, user.firstName || user.username, verificationToken, resendOrigin)
+    .catch((err) => {
+      console.error('Failed to resend verification email:', err.message);
+    });
 
   res.json({
     success: true,

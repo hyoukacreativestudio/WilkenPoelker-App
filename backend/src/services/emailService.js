@@ -37,8 +37,15 @@ async function sendEmail({ to, subject, html, text }) {
   }
 }
 
-async function sendVerificationEmail(email, name, token) {
-  const verifyUrl = `${config.urls.app}/verify-email?token=${token}`;
+async function sendVerificationEmail(email, name, token, requestOrigin) {
+  // Use API_URL from config, fall back to request origin or Render URL
+  let baseUrl = config.urls.api;
+  if (baseUrl.includes('localhost') && requestOrigin) {
+    baseUrl = requestOrigin + '/api';
+  } else if (baseUrl.includes('localhost')) {
+    baseUrl = 'https://wilkenpoelker-app.onrender.com/api';
+  }
+  const verifyUrl = `${baseUrl}/auth/verify-email/${token}`;
 
   await sendEmail({
     to: email,

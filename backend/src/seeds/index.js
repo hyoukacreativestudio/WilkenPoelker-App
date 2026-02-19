@@ -32,6 +32,7 @@ async function seed() {
     role: 'admin',
     customerNumber: '1000',
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const bikeManager = await User.create({
     username: 'bikemanager',
@@ -42,6 +43,7 @@ async function seed() {
     role: 'bike_manager',
     customerNumber: '1001',
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const customer1 = await User.create({
     username: 'jschmidt',
@@ -54,6 +56,7 @@ async function seed() {
     phone: '+49 541 123456',
     address: { street: 'Bergstraße 12', zip: '49074', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const customer2 = await User.create({
     username: 'tmeyer',
@@ -66,6 +69,7 @@ async function seed() {
     phone: '+49 541 987654',
     address: { street: 'Hegerstraße 5', zip: '49078', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const robbyManager = await User.create({
     username: 'robbymanager',
@@ -77,6 +81,7 @@ async function seed() {
     customerNumber: '1002',
     phone: '+49 541 555333',
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const superAdmin = await User.create({
     username: 'superadmin',
@@ -88,6 +93,7 @@ async function seed() {
     customerNumber: '1003',
     phone: '+49 541 100100',
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const cleaningManager = await User.create({
     username: 'cleaningmanager',
@@ -99,6 +105,7 @@ async function seed() {
     customerNumber: '1004',
     phone: '+49 541 200200',
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const motorManager = await User.create({
     username: 'motormanager',
@@ -110,6 +117,7 @@ async function seed() {
     customerNumber: '1005',
     phone: '+49 541 300300',
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const serviceManager = await User.create({
     username: 'servicemanager',
@@ -121,6 +129,7 @@ async function seed() {
     customerNumber: '1006',
     phone: '+49 541 400400',
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
 
   // --- ADDITIONAL TEST USERS ---
@@ -135,6 +144,7 @@ async function seed() {
     phone: '+49 541 111222',
     address: { street: 'Lotter Straße 42', zip: '49078', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const customer4 = await User.create({
     username: 'mweber',
@@ -147,6 +157,7 @@ async function seed() {
     phone: '+49 541 333444',
     address: { street: 'Natruper Straße 88', zip: '49076', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const customer5 = await User.create({
     username: 'sfischer',
@@ -159,6 +170,7 @@ async function seed() {
     phone: '+49 541 555666',
     address: { street: 'Bramscher Straße 15', zip: '49090', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const customer6 = await User.create({
     username: 'pkoch',
@@ -171,6 +183,7 @@ async function seed() {
     phone: '+49 541 777888',
     address: { street: 'Iburger Straße 22', zip: '49082', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const customer7 = await User.create({
     username: 'lbauer',
@@ -183,6 +196,7 @@ async function seed() {
     phone: '+49 541 999000',
     address: { street: 'Martinistraße 7', zip: '49080', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const customer8 = await User.create({
     username: 'dhoffmann',
@@ -195,6 +209,7 @@ async function seed() {
     phone: '+49 541 112233',
     address: { street: 'Große Straße 31', zip: '49074', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const customer9 = await User.create({
     username: 'kschulz',
@@ -207,6 +222,7 @@ async function seed() {
     phone: '+49 541 445566',
     address: { street: 'Rheiner Landstraße 50', zip: '49078', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   const customer10 = await User.create({
     username: 'fmueller',
@@ -219,6 +235,7 @@ async function seed() {
     phone: '+49 541 778899',
     address: { street: 'Pagenstecherstraße 14', zip: '49090', city: 'Osnabrück', country: 'Deutschland' },
     dsgvoAcceptedAt: new Date(),
+    emailVerified: true,
   });
   console.log('Users seeded (19 total: 4 staff + 5 manager + 10 customers).');
 

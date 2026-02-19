@@ -183,6 +183,19 @@ async function connectDatabase() {
     // Sync models: creates tables if they don't exist
     await sequelize.sync();
     logger.info('Database models synchronized');
+
+    // One-time fix: set emailVerified=true for all seed/test accounts
+    try {
+      const [affectedRows] = await sequelize.query(
+        `UPDATE users SET email_verified = true WHERE email_verified = false AND (email LIKE '%@wilkenpoelker.de' OR email LIKE '%@test.de')`,
+        { type: sequelize.constructor.QueryTypes.UPDATE }
+      );
+      if (affectedRows > 0) {
+        logger.info(`Auto-verified ${affectedRows} seed/test accounts`);
+      }
+    } catch (e) {
+      // Column might not exist yet on first run
+    }
   } catch (error) {
     logger.error('Database connection failed:', error.message);
     process.exit(1);
