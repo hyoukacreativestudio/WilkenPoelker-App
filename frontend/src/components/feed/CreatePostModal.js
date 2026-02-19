@@ -29,7 +29,7 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
   const pickImage = async (useCamera = false) => {
     const options = {
       mediaTypes: ['images'],
-      allowsEditing: true,
+      allowsEditing: Platform.OS !== 'web', // On web, skip built-in editor (blob URIs get revoked); use our ImageEditModal instead
       quality: 0.8,
     };
 

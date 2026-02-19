@@ -51,7 +51,10 @@ export async function createStablePreviewUri(asset) {
   const fileObj = asset.file || asset._webFile;
   if (fileObj && (fileObj instanceof Blob || fileObj instanceof File)) {
     try {
-      return URL.createObjectURL(fileObj);
+      const url = URL.createObjectURL(fileObj);
+      // Also store as _webFile for upload if not already set
+      if (!asset._webFile) asset._webFile = fileObj;
+      return url;
     } catch {
       // fall through
     }
@@ -74,7 +77,47 @@ export async function createStablePreviewUri(asset) {
       }
       return URL.createObjectURL(blob);
     } catch {
-      // blob was already revoked or network error
+      // blob was already revoked — try canvas fallback for http/https URIs
+    }
+  }
+
+  // Last resort: load into an <img> and draw to canvas to get a data URI
+  if (asset.uri) {
+    try {
+      const dataUri = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const result = canvas.toDataURL('image/jpeg', 0.85);
+            resolve(result);
+          } catch (e) {
+            reject(e);
+          }
+        };
+        img.onerror = reject;
+        img.src = asset.uri;
+        // Timeout after 3 seconds
+        setTimeout(() => reject(new Error('timeout')), 3000);
+      });
+      // Store as _webFile for upload
+      if (dataUri && !asset._webFile) {
+        try {
+          const res = await fetch(dataUri);
+          const blob = await res.blob();
+          asset._webFile = new File([blob], asset.fileName || 'image.jpg', { type: 'image/jpeg' });
+        } catch {
+          // ok, at least we have the data URI for preview
+        }
+      }
+      return dataUri;
+    } catch {
+      // all fallbacks exhausted
     }
   }
 

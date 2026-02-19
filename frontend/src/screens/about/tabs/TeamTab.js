@@ -576,8 +576,8 @@ function DepartmentSection({
     async (memberIndex) => {
       try {
         const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
+          mediaTypes: ['images'],
+          allowsEditing: Platform.OS !== 'web',
           aspect: [1, 1],
           quality: 0.8,
         });

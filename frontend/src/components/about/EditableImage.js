@@ -18,8 +18,8 @@ export default function EditableImage({
   const handlePickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ['images'],
+        allowsEditing: Platform.OS !== 'web',
         quality: 0.8,
       });
 

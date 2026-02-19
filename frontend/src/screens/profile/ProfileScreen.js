@@ -99,8 +99,8 @@ export default function ProfileScreen({ navigation }) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ['images'],
+        allowsEditing: Platform.OS !== 'web', // Web built-in editor revokes blob URIs
         aspect: [1, 1],
         quality: 0.8,
       });
@@ -111,7 +111,7 @@ export default function ProfileScreen({ navigation }) {
         const formData = new FormData();
 
         if (Platform.OS === 'web') {
-          const webFile = asset.file;
+          const webFile = asset.file || asset._webFile;
           if (webFile) {
             formData.append('avatar', webFile, 'avatar.jpg');
           }
