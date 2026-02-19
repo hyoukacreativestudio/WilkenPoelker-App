@@ -25,7 +25,13 @@ export default function ServiceStack() {
 
   const backButton = (navigation) => (
     <TouchableOpacity
-      onPress={() => navigation.goBack()}
+      onPress={() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('ServiceHome');
+        }
+      }}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       style={{ marginRight: theme.spacing.sm }}
     >
