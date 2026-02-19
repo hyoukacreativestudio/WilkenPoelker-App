@@ -91,7 +91,21 @@ export default function RegisterScreen({ navigation }) {
       showToast({ type: 'success', message: t('auth.registrationSuccess') });
       navigation.navigate('Login');
     } catch (err) {
-      const msg = err.message || err.response?.data?.error?.message || err.response?.data?.message || t('errors.somethingWentWrong');
+      // Normalized errors from interceptor: { message, code, details }
+      let msg = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || t('errors.somethingWentWrong');
+      // Show field-specific validation errors
+      const details = err?.details || err?.response?.data?.error?.details;
+      if (details && Array.isArray(details) && details.length > 0) {
+        // Map validation details to field errors for inline display
+        const fieldErrors = {};
+        details.forEach((d) => {
+          if (d.field) fieldErrors[d.field] = d.message;
+        });
+        if (Object.keys(fieldErrors).length > 0) {
+          setErrors(fieldErrors);
+          msg = details[0].message || msg;
+        }
+      }
       showToast({ type: 'error', message: msg });
     } finally {
       setLoading(false);

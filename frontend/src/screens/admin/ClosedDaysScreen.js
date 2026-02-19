@@ -205,26 +205,30 @@ export default function ClosedDaysScreen() {
   };
 
   const handleDelete = (holiday) => {
-    Alert.alert(
-      t('closedDays.deleteTitle', 'Tag löschen'),
-      t('closedDays.deleteConfirm', 'Diesen geschlossenen Tag wirklich löschen?'),
-      [
-        { text: t('common.cancel', 'Abbrechen'), style: 'cancel' },
-        {
-          text: t('common.delete', 'Löschen'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await settingsApi.removeHoliday(holiday.id);
-              setHolidays((prev) => prev.filter((h) => h.id !== holiday.id));
-              showToast({ type: 'success', message: t('closedDays.deleted', 'Geschlossener Tag gelöscht') });
-            } catch (error) {
-              showToast({ type: 'error', message: t('closedDays.deleteError', 'Fehler beim Löschen') });
-            }
-          },
-        },
-      ]
-    );
+    const doDelete = async () => {
+      try {
+        await settingsApi.removeHoliday(holiday.id);
+        setHolidays((prev) => prev.filter((h) => h.id !== holiday.id));
+        showToast({ type: 'success', message: t('closedDays.deleted', 'Geschlossener Tag gelöscht') });
+      } catch (error) {
+        showToast({ type: 'error', message: t('closedDays.deleteError', 'Fehler beim Löschen') });
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('closedDays.deleteConfirm', 'Diesen geschlossenen Tag wirklich löschen?'))) {
+        doDelete();
+      }
+    } else {
+      Alert.alert(
+        t('closedDays.deleteTitle', 'Tag löschen'),
+        t('closedDays.deleteConfirm', 'Diesen geschlossenen Tag wirklich löschen?'),
+        [
+          { text: t('common.cancel', 'Abbrechen'), style: 'cancel' },
+          { text: t('common.delete', 'Löschen'), style: 'destructive', onPress: doDelete },
+        ]
+      );
+    }
   };
 
   const s = styles(theme);
@@ -727,7 +731,7 @@ const styles = (theme) =>
       padding: theme.spacing.lg,
       width: '100%',
       maxWidth: 440,
-      maxHeight: '85%',
+      maxHeight: '92%',
     },
     modalTitle: {
       ...theme.typography.styles.h5,

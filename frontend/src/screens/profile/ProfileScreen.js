@@ -156,7 +156,11 @@ export default function ProfileScreen({ navigation }) {
       await updateUser(typeof updatedUser === 'object' ? updatedUser : profileData);
       showToast({ type: 'success', message: t('profile.profileSaved') });
     } catch (err) {
-      const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || t('errors.somethingWentWrong');
+      let msg = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || t('errors.somethingWentWrong');
+      const details = err?.details || err?.response?.data?.error?.details;
+      if (details && Array.isArray(details) && details.length > 0) {
+        msg = details[0].message || msg;
+      }
       showToast({ type: 'error', message: msg });
     }
   }, [firstName, lastName, phone, street, zip, city, updateProfileApi, updateUser, t]);
@@ -183,7 +187,13 @@ export default function ProfileScreen({ navigation }) {
       setConfirmPassword('');
       showToast({ type: 'success', message: t('auth.passwordChanged') });
     } catch (err) {
-      const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || t('errors.somethingWentWrong');
+      // Normalized errors from interceptor have { message, details }
+      let msg = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || t('errors.somethingWentWrong');
+      // If validation details are available, show the first specific error
+      const details = err?.details || err?.response?.data?.error?.details;
+      if (details && Array.isArray(details) && details.length > 0) {
+        msg = details[0].message || msg;
+      }
       showToast({ type: 'error', message: msg });
     }
   }, [currentPassword, newPassword, confirmPassword, changePasswordApi, t, showToast]);

@@ -217,6 +217,11 @@ export default function ChatScreen({ route, navigation }) {
       setMessages(messageData);
       if (ticketData?.status === 'closed') {
         setIsClosed(true);
+        // Show rating modal if customer opens a closed ticket they haven't rated yet
+        const ownerId = ticketData.userId || ticketData.user;
+        if (ownerId === userId && !ticketData.rating && !ticketData.ratedAt) {
+          setShowRating(true);
+        }
       }
     } catch (err) {
       showToast({ type: 'error', message: t('chat.loadMessagesError') });
@@ -308,7 +313,7 @@ export default function ChatScreen({ route, navigation }) {
         // Navigate back after closing
         navigation.goBack();
       } catch (err) {
-        const msg = err?.response?.data?.error || err?.response?.data?.message || t('chat.closeTicketError', 'Fehler beim Schließen');
+        const msg = err?.message || err?.response?.data?.error?.message || t('chat.closeTicketError', 'Fehler beim Schließen');
         showToast({ type: 'error', message: msg });
       }
     };

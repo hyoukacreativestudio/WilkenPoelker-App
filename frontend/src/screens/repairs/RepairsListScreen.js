@@ -28,6 +28,7 @@ const STATUS_COLORS = {
   parts_ordered: '#E53E3E',
   repair_done: '#ECC94B',
   ready: '#38A169',
+  completed: '#2D8659',
 };
 
 const ACTIVE_STATUSES = ['in_repair', 'quote_created', 'parts_ordered', 'repair_done', 'ready'];
@@ -116,13 +117,14 @@ export default function RepairsListScreen({ navigation }) {
   const getAdminTabRepairs = useCallback(() => {
     switch (adminTab) {
       case 'open':
-        // All repairs that are not ready (still in progress)
-        return allRepairs.filter((r) => r.status !== 'ready' && !r.archivedAt);
+        // All repairs that are still in progress (not ready, not completed, not archived)
+        return allRepairs.filter((r) => r.status !== 'ready' && r.status !== 'completed' && !r.archivedAt);
       case 'ready':
         // Ready repairs (not archived) - split by acknowledged/not
         return allRepairs.filter((r) => r.status === 'ready' && !r.archivedAt);
       case 'archived':
-        return allRepairs.filter((r) => r.archivedAt);
+        // Completed or explicitly archived repairs
+        return allRepairs.filter((r) => r.archivedAt || r.status === 'completed');
       default:
         return [];
     }
@@ -131,9 +133,9 @@ export default function RepairsListScreen({ navigation }) {
   const adminTabRepairs = useMemo(() => getAdminTabRepairs(), [getAdminTabRepairs]);
 
   // Tab counts
-  const openCount = useMemo(() => allRepairs.filter((r) => r.status !== 'ready' && !r.archivedAt).length, [allRepairs]);
+  const openCount = useMemo(() => allRepairs.filter((r) => r.status !== 'ready' && r.status !== 'completed' && !r.archivedAt).length, [allRepairs]);
   const readyCount = useMemo(() => allRepairs.filter((r) => r.status === 'ready' && !r.archivedAt).length, [allRepairs]);
-  const archivedCount = useMemo(() => allRepairs.filter((r) => r.archivedAt).length, [allRepairs]);
+  const archivedCount = useMemo(() => allRepairs.filter((r) => r.archivedAt || r.status === 'completed').length, [allRepairs]);
 
   const getStatusLabel = useCallback((status) => {
     const labels = {
@@ -142,6 +144,7 @@ export default function RepairsListScreen({ navigation }) {
       parts_ordered: t('repairs.statusPartsOrdered'),
       repair_done: t('repairs.statusRepairDone'),
       ready: t('repairs.statusReady'),
+      completed: t('repairs.statusCompleted', 'Abgeschlossen'),
     };
     return labels[status] || status;
   }, [t]);

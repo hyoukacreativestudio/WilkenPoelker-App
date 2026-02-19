@@ -71,7 +71,7 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
         uri,
         name: fileName,
         type: mimeMap[ext] || image.mimeType || 'image/jpeg',
-        file: image.file || null, // expo-image-picker provides native File on web
+        file: image.file || image._webFile || null, // expo-image-picker provides native File on web
       };
     }
     onSubmit(postData);

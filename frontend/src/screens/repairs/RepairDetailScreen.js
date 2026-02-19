@@ -27,6 +27,7 @@ const STATUS_COLORS = {
   parts_ordered: '#D69E2E',
   repair_done: '#38A169',
   ready: '#38A169',
+  completed: '#2D8659',
 };
 
 export default function RepairDetailScreen({ route, navigation }) {
@@ -69,6 +70,7 @@ export default function RepairDetailScreen({ route, navigation }) {
       parts_ordered: t('repairs.statusPartsOrdered'),
       repair_done: t('repairs.statusRepairDone'),
       ready: t('repairs.statusReady'),
+      completed: t('repairs.statusCompleted', 'Abgeschlossen'),
     };
     return labels[status] || status;
   }, [t]);
@@ -89,8 +91,11 @@ export default function RepairDetailScreen({ route, navigation }) {
       await repairsApi.acknowledgeRepair(repairId);
       setAcknowledged(true);
       showToast({ type: 'success', message: t('repairs.acknowledgeSuccess') });
-    } catch {
-      showToast({ type: 'error', message: t('errors.somethingWentWrong') });
+      // Reload repair data so status updates to 'completed'
+      loadRepairData();
+    } catch (err) {
+      const msg = err?.message || err?.response?.data?.error?.message || t('errors.somethingWentWrong');
+      showToast({ type: 'error', message: msg });
     } finally {
       setAcknowledging(false);
     }

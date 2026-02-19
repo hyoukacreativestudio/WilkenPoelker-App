@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { serviceApi } from '../../api/service';
@@ -26,9 +27,12 @@ export default function ActiveChatsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadChats();
-  }, []);
+  // Refresh chats when screen comes into focus (e.g., after closing a ticket)
+  useFocusEffect(
+    useCallback(() => {
+      loadChats();
+    }, [])
+  );
 
   const loadChats = async () => {
     setLoading(true);

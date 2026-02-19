@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { aiApi } from '../../api/ai';
 import { useToast } from '../../components/ui/Toast';
+import { createStablePreviewUri, getDisplayUri } from '../../utils/imageHelpers';
 
 const CATEGORY_ICONS = {
   bike: 'bicycle',
@@ -73,12 +74,15 @@ export default function ServiceAiChatScreen({ route, navigation }) {
     }
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         quality: 0.8,
         allowsMultipleSelection: false,
       });
       if (!result.canceled && result.assets?.[0]) {
-        setSelectedImages((prev) => [...prev, result.assets[0]]);
+        const asset = result.assets[0];
+        // Create a stable preview URI for web (blob URIs get revoked)
+        asset._previewUri = await createStablePreviewUri(asset);
+        setSelectedImages((prev) => [...prev, asset]);
       }
     } catch (err) {
       showToast({ type: 'error', message: t('errors.somethingWentWrong') });
@@ -100,7 +104,7 @@ export default function ServiceAiChatScreen({ route, navigation }) {
     const userMessage = {
       role: 'user',
       content: trimmed,
-      images: selectedImages.map((img) => img.uri),
+      images: selectedImages.map((img) => getDisplayUri(img)),
       timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, userMessage]);
@@ -341,7 +345,7 @@ export default function ServiceAiChatScreen({ route, navigation }) {
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.xs }}>
             {selectedImages.map((img, idx) => (
               <View key={idx} style={{ position: 'relative' }}>
-                <Image source={{ uri: img.uri }} style={{ width: 60, height: 60, borderRadius: theme.borderRadius.sm }} />
+                <Image source={{ uri: getDisplayUri(img) }} style={{ width: 60, height: 60, borderRadius: theme.borderRadius.sm }} />
                 <TouchableOpacity
                   onPress={() => handleRemoveImage(idx)}
                   style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: theme.colors.error, alignItems: 'center', justifyContent: 'center' }}

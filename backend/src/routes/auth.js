@@ -10,12 +10,17 @@ router.post(
   '/register',
   registerLimiter,
   validate([
+    body('firstName').optional().isString().trim().isLength({ max: 100 }).withMessage('Vorname darf max. 100 Zeichen lang sein'),
+    body('lastName').optional().isString().trim().isLength({ max: 100 }).withMessage('Nachname darf max. 100 Zeichen lang sein'),
     validators.username,
     validators.email,
     validators.password,
     validators.passwordConfirm,
-    body('customerNumber').optional().matches(/^\d{4,}$/).withMessage('Customer number must contain at least 4 digits'),
-    body('dsgvoAccepted').isBoolean().withMessage('DSGVO consent is required'),
+    body('customerNumber').optional().matches(/^\d{4,}$/).withMessage('Kundennummer muss mindestens 4 Ziffern haben'),
+    body('dsgvoAccepted').custom((value) => {
+      if (value === true || value === 'true' || value === 1 || value === '1') return true;
+      throw new Error('Datenschutzerklärung muss akzeptiert werden');
+    }),
   ]),
   authController.register
 );
