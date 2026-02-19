@@ -7,12 +7,14 @@ export function usePagination(apiFunc, limit = 20) {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState(null);
   const pageRef = useRef(1);
+  const cursorRef = useRef(null);
 
   const fetchItems = useCallback(async (params = {}, reset = false) => {
     if (loading && !reset) return;
 
     if (reset) {
       pageRef.current = 1;
+      cursorRef.current = null;
       setHasMore(true);
     }
 
@@ -20,11 +22,18 @@ export function usePagination(apiFunc, limit = 20) {
     setError(null);
 
     try {
-      const result = await apiFunc({
+      const requestParams = {
         page: pageRef.current,
         limit,
         ...params,
-      });
+      };
+
+      // Add cursor for cursor-based pagination (feed uses this)
+      if (cursorRef.current && !reset) {
+        requestParams.cursor = cursorRef.current;
+      }
+
+      const result = await apiFunc(requestParams);
 
       const innerData = result.data?.data || {};
       let rawItems = innerData?.items || innerData?.posts || innerData?.tickets || innerData?.appointments || innerData?.notifications || innerData?.repairs || innerData?.products || (Array.isArray(innerData) ? innerData : []);
@@ -40,6 +49,11 @@ export function usePagination(apiFunc, limit = 20) {
         setItems(newItems);
       } else {
         setItems((prev) => [...prev, ...newItems]);
+      }
+
+      // Support cursor-based pagination (nextCursor from feed API)
+      if (innerData?.nextCursor !== undefined) {
+        cursorRef.current = innerData.nextCursor;
       }
 
       const moreAvailable = innerData?.hasMore !== undefined ? innerData.hasMore : newItems.length === limit;
@@ -72,6 +86,7 @@ export function usePagination(apiFunc, limit = 20) {
     setHasMore(true);
     setError(null);
     pageRef.current = 1;
+    cursorRef.current = null;
   }, []);
 
   return {

@@ -94,10 +94,10 @@ async function registerUser(data, User, taifunDb) {
 async function loginUser(data, User) {
   const { email, password, customerNumber, rememberMe } = data;
 
-  // Find user by email or last name
+  // Find user by email or customer number
   const whereClause = email.includes('@')
     ? { email }
-    : { lastName: email };
+    : { customerNumber: email };
 
   const user = await User.findOne({ where: whereClause });
 

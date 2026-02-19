@@ -11,14 +11,12 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../hooks/useAuth';
 import { useApi } from '../../hooks/useApi';
 import { repairsApi } from '../../api/repairs';
-import { ratingsApi } from '../../api/ratings';
 import { formatDate } from '../../utils/formatters';
 import StatusTimeline from '../../components/repair/StatusTimeline';
-import RatingStars from '../../components/shared/RatingStars';
 import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import { useToast } from '../../components/ui/Toast';
@@ -36,16 +34,15 @@ export default function RepairDetailScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const { user } = useAuth();
 
-  const [rating, setRating] = useState(0);
-  const [ratingComment, setRatingComment] = useState('');
-  const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
 
+  const isStaff = user && ['admin', 'super_admin', 'service_manager'].includes(user.role);
+
   const repairApi = useApi(repairsApi.getRepair);
   const statusApi = useApi(repairsApi.getRepairStatus);
-  const submitRatingApi = useApi(ratingsApi.createServiceRating);
 
   useEffect(() => {
     loadRepairData();
@@ -85,22 +82,6 @@ export default function RepairDetailScreen({ route, navigation }) {
       }
     }
   }, [repair, t, showToast]);
-
-  const handleSubmitRating = useCallback(async () => {
-    if (rating === 0) return;
-
-    try {
-      await submitRatingApi.execute({
-        repairId,
-        rating,
-        comment: ratingComment,
-      });
-      setRatingSubmitted(true);
-      showToast({ type: 'success', message: t('repairs.rateService') });
-    } catch (err) {
-      showToast({ type: 'error', message: t('errors.somethingWentWrong') });
-    }
-  }, [rating, ratingComment, repairId, submitRatingApi, t, showToast]);
 
   const handleAcknowledge = useCallback(async () => {
     try {
@@ -162,7 +143,6 @@ export default function RepairDetailScreen({ route, navigation }) {
   if (!repair) return null;
 
   const statusColor = STATUS_COLORS[repair.status] || theme.colors.textSecondary;
-  const canRate = repair.status === 'ready' && !repair.review && !ratingSubmitted;
 
   const styles = s(theme);
 
@@ -203,7 +183,7 @@ export default function RepairDetailScreen({ route, navigation }) {
         </View>
       </View>
 
-      {/* Acknowledge ready repair */}
+      {/* Acknowledge ready repair - visible to owner and staff */}
       {repair.status === 'ready' && (
         <Card style={{ marginBottom: theme.spacing.lg, backgroundColor: theme.colors.success + '10', borderWidth: 1, borderColor: theme.colors.success + '30' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
@@ -323,56 +303,6 @@ export default function RepairDetailScreen({ route, navigation }) {
         </Card>
       ) : null}
 
-      {/* Rate Service Section */}
-      {canRate ? (
-        <Card style={{ marginBottom: theme.spacing.lg }}>
-          <Text style={styles.sectionTitle}>{t('repairs.rateService')}</Text>
-
-          <View style={{ alignItems: 'center', marginVertical: theme.spacing.md }}>
-            <RatingStars
-              rating={rating}
-              size={36}
-              interactive
-              onRatingChange={setRating}
-            />
-          </View>
-
-          <Input
-            label={t('common.description')}
-            value={ratingComment}
-            onChangeText={setRatingComment}
-            placeholder={t('common.optional')}
-            multiline
-            maxLength={500}
-          />
-
-          <Button
-            title={t('common.save')}
-            onPress={handleSubmitRating}
-            variant="primary"
-            fullWidth
-            loading={submitRatingApi.loading}
-            disabled={rating === 0}
-          />
-        </Card>
-      ) : null}
-
-      {/* Rating submitted confirmation */}
-      {ratingSubmitted ? (
-        <Card style={{ marginBottom: theme.spacing.lg }}>
-          <View style={{ alignItems: 'center', padding: theme.spacing.md }}>
-            <MaterialCommunityIcons name="check-circle" size={48} color={theme.colors.success} />
-            <Text
-              style={[
-                theme.typography.styles.body,
-                { color: theme.colors.text, marginTop: theme.spacing.sm, textAlign: 'center' },
-              ]}
-            >
-              {t('common.success')}
-            </Text>
-          </View>
-        </Card>
-      ) : null}
     </ScrollView>
   );
 }

@@ -13,10 +13,12 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../hooks/useAuth';
 import { settingsApi } from '../../api/settings';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
@@ -37,6 +39,9 @@ export default function ClosedDaysScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const { user } = useAuth();
+
+  const isAdmin = user && ['admin', 'super_admin'].includes(user.role);
 
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +53,8 @@ export default function ClosedDaysScreen() {
 
   // Form state
   const [formDate, setFormDate] = useState('');
+  const [formEndDate, setFormEndDate] = useState('');
+  const [isRange, setIsRange] = useState(false);
   const [formName, setFormName] = useState('');
   const [formIsClosed, setFormIsClosed] = useState(true);
   const [formIsRecurring, setFormIsRecurring] = useState(false);
@@ -83,7 +90,13 @@ export default function ClosedDaysScreen() {
   }, [showToast, t]);
 
   const openCreateModal = () => {
+    if (!isAdmin) {
+      showToast({ type: 'error', message: t('closedDays.adminOnly', 'Nur Admins können geschlossene Tage verwalten') });
+      return;
+    }
     setFormDate('');
+    setFormEndDate('');
+    setIsRange(false);
     setFormName('');
     setFormIsClosed(true);
     setFormIsRecurring(false);
@@ -96,6 +109,20 @@ export default function ClosedDaysScreen() {
     setModalVisible(false);
   };
 
+  // Generate all dates between start and end (inclusive)
+  const getDateRange = (startStr, endStr) => {
+    const dates = [];
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return dates;
+    const current = new Date(start);
+    while (current <= end) {
+      dates.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
+
   const handleSave = async () => {
     if (!formDate.trim()) {
       showToast({ type: 'error', message: t('closedDays.date', 'Datum') + ' ' + t('common.required', 'erforderlich') });
@@ -106,29 +133,68 @@ export default function ClosedDaysScreen() {
       return;
     }
 
-    // Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(formDate.trim())) {
       showToast({ type: 'error', message: t('closedDays.datePlaceholder', 'JJJJ-MM-TT') + ' Format' });
       return;
     }
 
-    const payload = {
-      date: formDate.trim(),
-      name: formName.trim(),
-      isClosed: formIsClosed,
-      isRecurring: formIsRecurring,
-    };
-
-    if (!formIsClosed) {
-      payload.specialHours = [{ open: formOpenTime.trim(), close: formCloseTime.trim() }];
+    if (isRange && !formEndDate.trim()) {
+      showToast({ type: 'error', message: t('closedDays.endDate', 'Enddatum') + ' ' + t('common.required', 'erforderlich') });
+      return;
     }
+
+    if (isRange && !dateRegex.test(formEndDate.trim())) {
+      showToast({ type: 'error', message: t('closedDays.datePlaceholder', 'JJJJ-MM-TT') + ' Format' });
+      return;
+    }
+
+    const specialHours = !formIsClosed ? [{ open: formOpenTime.trim(), close: formCloseTime.trim() }] : undefined;
 
     try {
       setSaving(true);
-      const created = await settingsApi.addHoliday(payload);
-      setHolidays((prev) => [...prev, created].sort((a, b) => a.date.localeCompare(b.date)));
-      showToast({ type: 'success', message: t('closedDays.saved', 'Geschlossener Tag gespeichert') });
+
+      if (isRange) {
+        const dates = getDateRange(formDate.trim(), formEndDate.trim());
+        if (dates.length === 0) {
+          showToast({ type: 'error', message: t('closedDays.invalidRange', 'Ungültiger Zeitraum') });
+          return;
+        }
+        if (dates.length > 60) {
+          showToast({ type: 'error', message: t('closedDays.rangeTooLong', 'Maximal 60 Tage') });
+          return;
+        }
+
+        const created = [];
+        for (const date of dates) {
+          try {
+            const payload = {
+              date,
+              name: formName.trim(),
+              isClosed: formIsClosed,
+              isRecurring: formIsRecurring,
+            };
+            if (specialHours) payload.specialHours = specialHours;
+            const result = await settingsApi.addHoliday(payload);
+            created.push(result);
+          } catch (err) {
+            // Skip duplicates silently
+          }
+        }
+        setHolidays((prev) => [...prev, ...created].sort((a, b) => a.date.localeCompare(b.date)));
+        showToast({ type: 'success', message: t('closedDays.savedRange', `${created.length} Tage gespeichert`) });
+      } else {
+        const payload = {
+          date: formDate.trim(),
+          name: formName.trim(),
+          isClosed: formIsClosed,
+          isRecurring: formIsRecurring,
+        };
+        if (specialHours) payload.specialHours = specialHours;
+        const result = await settingsApi.addHoliday(payload);
+        setHolidays((prev) => [...prev, result].sort((a, b) => a.date.localeCompare(b.date)));
+        showToast({ type: 'success', message: t('closedDays.saved', 'Geschlossener Tag gespeichert') });
+      }
       closeModal();
     } catch (error) {
       const msg = error?.response?.data?.error || t('closedDays.saveError', 'Fehler beim Speichern');
@@ -300,14 +366,16 @@ export default function ClosedDaysScreen() {
         }
       />
 
-      {/* Floating Add Button */}
-      <TouchableOpacity
-        style={[s.fab, { backgroundColor: theme.colors.primary }]}
-        onPress={openCreateModal}
-        activeOpacity={0.8}
-      >
-        <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
-      </TouchableOpacity>
+      {/* Floating Add Button (admin only) */}
+      {isAdmin && (
+        <TouchableOpacity
+          style={[s.fab, { backgroundColor: theme.colors.primary }]}
+          onPress={openCreateModal}
+          activeOpacity={0.8}
+        >
+          <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
 
       {/* Create Modal */}
       <Modal
@@ -329,14 +397,82 @@ export default function ClosedDaysScreen() {
 
               <View style={{ height: theme.spacing.md }} />
 
-              {/* Date input */}
-              <Input
-                label={t('closedDays.date', 'Datum')}
-                value={formDate}
-                onChangeText={setFormDate}
-                placeholder={t('closedDays.datePlaceholder', 'JJJJ-MM-TT')}
-                maxLength={10}
-              />
+              {/* Date Range Toggle */}
+              <View style={s.switchRow}>
+                <Text style={s.switchLabel}>
+                  {t('closedDays.dateRange', 'Zeitraum (von-bis)')}
+                </Text>
+                <Switch
+                  value={isRange}
+                  onValueChange={setIsRange}
+                  trackColor={{ false: theme.colors.border, true: theme.colors.primary + '60' }}
+                  thumbColor={isRange ? theme.colors.primary : theme.colors.textTertiary}
+                />
+              </View>
+
+              {/* Date input(s) */}
+              {Platform.OS === 'web' ? (
+                <View style={{ marginBottom: theme.spacing.md }}>
+                  <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, marginBottom: 4 }]}>
+                    {isRange ? t('closedDays.startDate', 'Startdatum') : t('closedDays.date', 'Datum')}
+                  </Text>
+                  <input
+                    type="date"
+                    value={formDate}
+                    onChange={(e) => setFormDate(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: 12,
+                      borderRadius: 8,
+                      border: `1px solid ${theme.colors.border}`,
+                      backgroundColor: theme.colors.inputBackground || theme.colors.background,
+                      color: theme.colors.text,
+                      fontSize: 16,
+                    }}
+                  />
+                  {isRange && (
+                    <View style={{ marginTop: theme.spacing.sm }}>
+                      <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, marginBottom: 4 }]}>
+                        {t('closedDays.endDate', 'Enddatum')}
+                      </Text>
+                      <input
+                        type="date"
+                        value={formEndDate}
+                        onChange={(e) => setFormEndDate(e.target.value)}
+                        min={formDate}
+                        style={{
+                          width: '100%',
+                          padding: 12,
+                          borderRadius: 8,
+                          border: `1px solid ${theme.colors.border}`,
+                          backgroundColor: theme.colors.inputBackground || theme.colors.background,
+                          color: theme.colors.text,
+                          fontSize: 16,
+                        }}
+                      />
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View>
+                  <Input
+                    label={isRange ? t('closedDays.startDate', 'Startdatum') : t('closedDays.date', 'Datum')}
+                    value={formDate}
+                    onChangeText={setFormDate}
+                    placeholder={t('closedDays.datePlaceholder', 'JJJJ-MM-TT')}
+                    maxLength={10}
+                  />
+                  {isRange && (
+                    <Input
+                      label={t('closedDays.endDate', 'Enddatum')}
+                      value={formEndDate}
+                      onChangeText={setFormEndDate}
+                      placeholder={t('closedDays.datePlaceholder', 'JJJJ-MM-TT')}
+                      maxLength={10}
+                    />
+                  )}
+                </View>
+              )}
 
               {/* Name input */}
               <Input

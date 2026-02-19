@@ -14,7 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
-import { getPreviewUri, revokePreviewUri } from '../../utils/imageHelpers';
+import { getPreviewUri, revokePreviewUri, createStablePreviewUri } from '../../utils/imageHelpers';
 
 const MIN_CROP_SIZE = 40;
 const HANDLE_SIZE = 28;
@@ -212,8 +212,9 @@ export default function ImageEditModal({ visible, image, onSave, onClose }) {
         { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
       );
       if (previewUri) revokePreviewUri(previewUri);
-      const newPreview = getPreviewUri({ ...result, file: null });
-      setPreviewUri(newPreview !== result.uri ? newPreview : result.uri);
+      // Create a stable preview URI (on web, blob URIs from manipulator may be revoked)
+      const newPreview = await createStablePreviewUri(result);
+      setPreviewUri(newPreview);
       setActions(newActions);
     } catch (err) {
       console.error('Image manipulation error:', err);
@@ -306,6 +307,7 @@ export default function ImageEditModal({ visible, image, onSave, onClose }) {
         }
       }
 
+      const stablePreview = await createStablePreviewUri({ ...result, file: newFile });
       const editedImage = {
         ...image,
         uri: result.uri,
@@ -313,7 +315,7 @@ export default function ImageEditModal({ visible, image, onSave, onClose }) {
         height: result.height,
         file: newFile || image.file,
         mimeType: 'image/jpeg',
-        _previewUri: getPreviewUri({ ...result, file: newFile }),
+        _previewUri: stablePreview,
       };
 
       if (previewUri) revokePreviewUri(previewUri);

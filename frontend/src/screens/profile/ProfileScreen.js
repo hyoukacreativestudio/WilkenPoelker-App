@@ -16,6 +16,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useApi } from '../../hooks/useApi';
 import { usersApi } from '../../api/users';
+import { authApi } from '../../api/auth';
 import Avatar from '../../components/ui/Avatar';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -43,6 +44,8 @@ export default function ProfileScreen({ navigation }) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
 
   const profileApi = useApi(usersApi.getProfile);
@@ -149,11 +152,12 @@ export default function ProfileScreen({ navigation }) {
       };
 
       const result = await updateProfileApi.execute(profileData);
-      const updatedUser = result?.data?.user || result?.data || profileData;
-      await updateUser(updatedUser);
+      const updatedUser = result?.data?.user || result?.user || result?.data || result;
+      await updateUser(typeof updatedUser === 'object' ? updatedUser : profileData);
       showToast({ type: 'success', message: t('profile.profileSaved') });
     } catch (err) {
-      showToast({ type: 'error', message: t('errors.somethingWentWrong') });
+      const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || t('errors.somethingWentWrong');
+      showToast({ type: 'error', message: msg });
     }
   }, [firstName, lastName, phone, street, zip, city, updateProfileApi, updateUser, t]);
 
@@ -179,7 +183,7 @@ export default function ProfileScreen({ navigation }) {
       setConfirmPassword('');
       showToast({ type: 'success', message: t('auth.passwordChanged') });
     } catch (err) {
-      const msg = err?.message || err?.details?.[0]?.msg || t('errors.somethingWentWrong');
+      const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || t('errors.somethingWentWrong');
       showToast({ type: 'error', message: msg });
     }
   }, [currentPassword, newPassword, confirmPassword, changePasswordApi, t, showToast]);
@@ -200,6 +204,42 @@ export default function ProfileScreen({ navigation }) {
       ]
     );
   }, [logout, t]);
+
+  const handleDeleteAccount = useCallback(() => {
+    if (!deletePassword) {
+      showToast({ type: 'error', message: t('errors.requiredField') });
+      return;
+    }
+
+    const doDelete = async () => {
+      try {
+        setDeletingAccount(true);
+        await authApi.deleteAccount(deletePassword);
+        showToast({ type: 'success', message: t('profile.accountDeleted', 'Konto wurde gelöscht') });
+        await logout();
+      } catch (err) {
+        const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || t('errors.somethingWentWrong');
+        showToast({ type: 'error', message: msg });
+      } finally {
+        setDeletingAccount(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('profile.deleteAccountConfirm', 'Sind Sie sicher? Diese Aktion kann nicht rückgängig gemacht werden.'))) {
+        doDelete();
+      }
+    } else {
+      Alert.alert(
+        t('profile.deleteAccount', 'Konto löschen'),
+        t('profile.deleteAccountConfirm', 'Sind Sie sicher? Diese Aktion kann nicht rückgängig gemacht werden.'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.delete', 'Löschen'), style: 'destructive', onPress: doDelete },
+        ]
+      );
+    }
+  }, [deletePassword, logout, t, showToast]);
 
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -391,8 +431,33 @@ export default function ProfileScreen({ navigation }) {
               color="#FFFFFF"
             />
           }
-          style={{ marginBottom: theme.spacing.xxl }}
+          style={{ marginBottom: theme.spacing.lg }}
         />
+
+        {/* Delete Account */}
+        <Card style={{ marginBottom: theme.spacing.xxl }}>
+          <Text style={styles.sectionTitle}>{t('profile.deleteAccount', 'Konto löschen')}</Text>
+          <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, marginBottom: theme.spacing.md }]}>
+            {t('profile.deleteAccountWarning', 'Ihr Konto und alle zugehörigen Daten werden unwiderruflich gelöscht.')}
+          </Text>
+          <Input
+            label={t('auth.password', 'Passwort')}
+            value={deletePassword}
+            onChangeText={setDeletePassword}
+            placeholder={t('profile.enterPasswordToDelete', 'Passwort zur Bestätigung eingeben')}
+            secureTextEntry
+          />
+          <Button
+            title={t('profile.deleteAccount', 'Konto löschen')}
+            onPress={handleDeleteAccount}
+            variant="danger"
+            fullWidth
+            loading={deletingAccount}
+            icon={
+              <MaterialCommunityIcons name="delete-outline" size={20} color="#FFFFFF" />
+            }
+          />
+        </Card>
       </ScrollView>
     </KeyboardAvoidingView>
   );

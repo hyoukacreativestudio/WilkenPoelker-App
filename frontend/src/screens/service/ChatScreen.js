@@ -299,27 +299,34 @@ export default function ChatScreen({ route, navigation }) {
 
   const handleCloseTicket = () => {
     setShowMenu(false);
-    Alert.alert(
-      t('chat.closeTicketTitle'),
-      t('chat.closeTicketConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('chat.closeTicket'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await serviceApi.closeTicket(ticketId);
-              setIsClosed(true);
-              showToast({ type: 'success', message: t('chat.ticketClosedSuccess') });
-            } catch (err) {
-              const msg = err.response?.data?.message || t('chat.closeTicketError');
-              showToast({ type: 'error', message: msg });
-            }
-          },
-        },
-      ]
-    );
+
+    const doClose = async () => {
+      try {
+        await serviceApi.closeTicket(ticketId);
+        setIsClosed(true);
+        showToast({ type: 'success', message: t('chat.ticketClosedSuccess', 'Ticket geschlossen') });
+        // Navigate back after closing
+        navigation.goBack();
+      } catch (err) {
+        const msg = err?.response?.data?.error || err?.response?.data?.message || t('chat.closeTicketError', 'Fehler beim Schließen');
+        showToast({ type: 'error', message: msg });
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('chat.closeTicketConfirm', 'Möchten Sie dieses Ticket wirklich schließen?'))) {
+        doClose();
+      }
+    } else {
+      Alert.alert(
+        t('chat.closeTicketTitle', 'Ticket schließen'),
+        t('chat.closeTicketConfirm', 'Möchten Sie dieses Ticket wirklich schließen?'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('chat.closeTicket', 'Schließen'), style: 'destructive', onPress: doClose },
+        ]
+      );
+    }
   };
 
   const handleForward = () => {

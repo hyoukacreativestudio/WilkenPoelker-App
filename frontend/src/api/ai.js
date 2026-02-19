@@ -2,8 +2,9 @@ import { Platform } from 'react-native';
 import apiClient from './client';
 
 export const aiApi = {
-  chat: async (data, images = []) => {
-    if (images.length > 0) {
+  chat: async (data, imagesParam = []) => {
+    const images = data.images || imagesParam;
+    if (images && images.length > 0) {
       const formData = new FormData();
       formData.append('category', data.category);
       formData.append('message', data.message);

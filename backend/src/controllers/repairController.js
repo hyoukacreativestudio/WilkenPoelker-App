@@ -137,11 +137,16 @@ const reviewRepair = asyncHandler(async (req, res) => {
   });
 });
 
-// POST /:id/acknowledge - Customer acknowledges ready repair
+// POST /:id/acknowledge - Customer or admin acknowledges ready repair
 const acknowledgeRepair = asyncHandler(async (req, res) => {
-  const repair = await Repair.findOne({
-    where: { id: req.params.id, userId: req.user.id },
-  });
+  const isStaff = ['admin', 'super_admin', 'service_manager'].includes(req.user.role);
+
+  const whereClause = { id: req.params.id };
+  if (!isStaff) {
+    whereClause.userId = req.user.id;
+  }
+
+  const repair = await Repair.findOne({ where: whereClause });
 
   if (!repair) {
     throw new NotFoundError('Repair');
@@ -155,7 +160,15 @@ const acknowledgeRepair = asyncHandler(async (req, res) => {
     return res.json({ success: true, message: 'Bereits bestätigt', data: { repair } });
   }
 
-  await repair.update({ acknowledgedAt: new Date() });
+  // Acknowledge and move to completed
+  await repair.update({
+    acknowledgedAt: new Date(),
+    status: 'completed',
+    statusHistory: [
+      ...(repair.statusHistory || []),
+      { status: 'completed', timestamp: new Date().toISOString(), note: 'Abholung bestätigt' },
+    ],
+  });
 
   // Notify staff that customer acknowledged
   const managers = await User.findAll({
@@ -163,7 +176,7 @@ const acknowledgeRepair = asyncHandler(async (req, res) => {
     attributes: ['id'],
   });
   if (managers.length > 0) {
-    const customer = await User.findByPk(req.user.id, { attributes: ['firstName', 'lastName'] });
+    const customer = await User.findByPk(repair.userId, { attributes: ['firstName', 'lastName'] });
     const customerName = customer ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() : 'Kunde';
     pushService.sendToMultiple(
       managers.map((m) => m.id),

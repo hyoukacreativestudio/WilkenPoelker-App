@@ -59,7 +59,7 @@ async function listPosts({ cursor, limit = 20, userId }, { Post, User, Like }) {
 /**
  * Create a new post.
  */
-async function createPost({ content, type, userId, file }, { Post }) {
+async function createPost({ content, type, userId, file }, { Post, User }) {
   const postData = {
     content,
     type: type || 'text',
@@ -77,6 +77,20 @@ async function createPost({ content, type, userId, file }, { Post }) {
   const post = await Post.create(postData);
 
   logger.info('Post created', { postId: post.id, userId, type: postData.type });
+
+  // Re-fetch with author so the frontend gets complete data
+  if (User) {
+    const fullPost = await Post.findByPk(post.id, {
+      include: [
+        {
+          model: User,
+          as: 'author',
+          attributes: ['id', 'username', 'profilePicture', 'firstName', 'lastName'],
+        },
+      ],
+    });
+    return fullPost || post;
+  }
 
   return post;
 }

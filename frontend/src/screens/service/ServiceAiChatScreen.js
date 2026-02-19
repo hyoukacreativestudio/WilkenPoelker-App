@@ -10,8 +10,10 @@ import {
   Platform,
   ActivityIndicator,
   Animated,
+  Image,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { aiApi } from '../../api/ai';
@@ -37,6 +39,7 @@ export default function ServiceAiChatScreen({ route, navigation }) {
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
+  const [selectedImages, setSelectedImages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [sending, setSending] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
@@ -63,17 +66,47 @@ export default function ServiceAiChatScreen({ route, navigation }) {
     }).start(() => setShowTutorial(false));
   }, [tutorialOpacity]);
 
+  const handlePickImage = useCallback(async () => {
+    if (selectedImages.length >= 3) {
+      showToast({ type: 'info', message: t('aiChat.maxImages', 'Maximal 3 Bilder') });
+      return;
+    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+      if (!result.canceled && result.assets?.[0]) {
+        setSelectedImages((prev) => [...prev, result.assets[0]]);
+      }
+    } catch (err) {
+      showToast({ type: 'error', message: t('errors.somethingWentWrong') });
+    }
+  }, [selectedImages, t, showToast]);
+
+  const handleRemoveImage = useCallback((index) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   const handleSend = useCallback(async () => {
     const trimmed = inputText.trim();
-    if (!trimmed || sending) return;
+    if ((!trimmed && selectedImages.length === 0) || sending) return;
 
     // Hide tutorial on first message
     if (showTutorial) hideTutorial();
 
     // Add user message
-    const userMessage = { role: 'user', content: trimmed, timestamp: new Date().toISOString() };
+    const userMessage = {
+      role: 'user',
+      content: trimmed,
+      images: selectedImages.map((img) => img.uri),
+      timestamp: new Date().toISOString(),
+    };
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
+    const imagesToSend = [...selectedImages];
+    setSelectedImages([]);
     setSending(true);
 
     try {
@@ -81,6 +114,7 @@ export default function ServiceAiChatScreen({ route, navigation }) {
         category,
         message: trimmed,
         sessionId,
+        images: imagesToSend,
       });
 
       const data = response.data?.data || response.data;
@@ -116,7 +150,7 @@ export default function ServiceAiChatScreen({ route, navigation }) {
     } finally {
       setSending(false);
     }
-  }, [inputText, sending, category, sessionId, showTutorial, hideTutorial, t, showToast]);
+  }, [inputText, selectedImages, sending, category, sessionId, showTutorial, hideTutorial, t, showToast]);
 
   const handleEscalate = useCallback(async () => {
     if (!sessionId) return;
@@ -202,7 +236,14 @@ export default function ServiceAiChatScreen({ route, navigation }) {
           </View>
         )}
         <View style={[s.messageBubble, isUser ? [s.userBubble, { backgroundColor: categoryColor }] : s.aiBubble]}>
-          <Text style={[s.messageText, isUser ? s.userText : s.aiText]}>{msg.content}</Text>
+          {msg.images && msg.images.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: msg.content ? theme.spacing.xs : 0 }}>
+              {msg.images.map((uri, i) => (
+                <Image key={i} source={{ uri }} style={{ width: 80, height: 80, borderRadius: theme.borderRadius.sm }} />
+              ))}
+            </View>
+          )}
+          {msg.content ? <Text style={[s.messageText, isUser ? s.userText : s.aiText]}>{msg.content}</Text> : null}
 
           {msg.showAppointmentLink && (
             <TouchableOpacity style={[s.appointmentLink, { borderColor: theme.colors.primary }]} onPress={handleAppointment}>
@@ -295,7 +336,34 @@ export default function ServiceAiChatScreen({ route, navigation }) {
 
       {/* Input Area */}
       <View style={s.inputArea}>
+        {/* Image preview */}
+        {selectedImages.length > 0 && (
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.xs }}>
+            {selectedImages.map((img, idx) => (
+              <View key={idx} style={{ position: 'relative' }}>
+                <Image source={{ uri: img.uri }} style={{ width: 60, height: 60, borderRadius: theme.borderRadius.sm }} />
+                <TouchableOpacity
+                  onPress={() => handleRemoveImage(idx)}
+                  style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: theme.colors.error, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <MaterialCommunityIcons name="close" size={14} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
         <View style={s.inputRow}>
+          <TouchableOpacity
+            onPress={handlePickImage}
+            disabled={sending}
+            style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}
+          >
+            <MaterialCommunityIcons
+              name="image-plus"
+              size={24}
+              color={sending ? theme.colors.border : categoryColor}
+            />
+          </TouchableOpacity>
           <TextInput
             style={[s.textInput, { borderColor: sending ? theme.colors.border : categoryColor + '60' }]}
             value={inputText}
@@ -309,9 +377,9 @@ export default function ServiceAiChatScreen({ route, navigation }) {
             blurOnSubmit={false}
           />
           <TouchableOpacity
-            style={[s.sendButton, { backgroundColor: inputText.trim() && !sending ? categoryColor : theme.colors.border }]}
+            style={[s.sendButton, { backgroundColor: (inputText.trim() || selectedImages.length > 0) && !sending ? categoryColor : theme.colors.border }]}
             onPress={handleSend}
-            disabled={!inputText.trim() || sending}
+            disabled={(!inputText.trim() && selectedImages.length === 0) || sending}
           >
             <MaterialCommunityIcons name="send" size={20} color="#FFFFFF" />
           </TouchableOpacity>

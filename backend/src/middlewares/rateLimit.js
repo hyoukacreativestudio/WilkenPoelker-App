@@ -22,10 +22,10 @@ const loginLimiter = createLimiter(
   'Too many login attempts. Please try again in 15 minutes.'
 );
 
-// Registration: 3 attempts per hour
+// Registration: 10 attempts per hour
 const registerLimiter = createLimiter(
   60 * 60 * 1000,
-  3,
+  10,
   'Too many registration attempts. Please try again later.'
 );
 

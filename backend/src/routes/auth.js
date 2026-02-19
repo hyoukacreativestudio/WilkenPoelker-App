@@ -25,7 +25,7 @@ router.post(
   '/login',
   loginLimiter,
   validate([
-    body('email').notEmpty().withMessage('Email or last name is required'),
+    body('email').notEmpty().withMessage('Email or customer number is required'),
     body('password').notEmpty().withMessage('Password is required'),
     body('customerNumber').optional(),
   ]),

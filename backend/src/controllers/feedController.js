@@ -26,7 +26,7 @@ const createPost = asyncHandler(async (req, res) => {
 
   const post = await feedService.createPost(
     { content, type, userId: req.user.id, file: req.file },
-    { Post }
+    { Post, User }
   );
 
   res.status(201).json({

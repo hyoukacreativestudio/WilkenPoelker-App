@@ -22,9 +22,8 @@ export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
   const { showToast } = useToast();
 
-  const [email, setEmail] = useState('');
+  const [emailOrCustomerNumber, setEmailOrCustomerNumber] = useState('');
   const [password, setPassword] = useState('');
-  const [customerNumber, setCustomerNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -32,7 +31,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     setErrors({});
-    if (!email.trim()) {
+    if (!emailOrCustomerNumber.trim()) {
       setErrors({ email: t('errors.requiredField') });
       return;
     }
@@ -43,7 +42,7 @@ export default function LoginScreen({ navigation }) {
 
     setLoading(true);
     try {
-      await login({ email: email.trim(), password, customerNumber: customerNumber.trim() || undefined, rememberMe });
+      await login({ email: emailOrCustomerNumber.trim(), password, rememberMe });
     } catch (err) {
       const msg = err.response?.data?.message || t('errors.invalidCredentials');
       showToast({ type: 'error', message: msg });
@@ -87,11 +86,10 @@ export default function LoginScreen({ navigation }) {
         {/* Form Card */}
         <View style={s.formCard}>
           <Input
-            label={t('auth.emailOrLastName')}
-            value={email}
-            onChangeText={setEmail}
-            placeholder={t('auth.emailOrLastName')}
-            keyboardType="email-address"
+            label={t('auth.emailOrCustomerNumber', 'Email / Kundennummer')}
+            value={emailOrCustomerNumber}
+            onChangeText={setEmailOrCustomerNumber}
+            placeholder={t('auth.emailOrCustomerNumber', 'Email / Kundennummer')}
             autoCapitalize="none"
             error={errors.email}
           />
@@ -105,14 +103,6 @@ export default function LoginScreen({ navigation }) {
             error={errors.password}
             rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
             onRightIconPress={() => setShowPassword(!showPassword)}
-          />
-
-          <Input
-            label={`${t('auth.customerNumber')} (${t('common.optional')})`}
-            value={customerNumber}
-            onChangeText={setCustomerNumber}
-            placeholder={t('auth.customerNumber')}
-            keyboardType="numeric"
           />
 
           {/* Remember Me & Forgot Password Row */}

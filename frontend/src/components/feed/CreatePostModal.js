@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
 import Button from '../ui/Button';
-import { getPreviewUri, revokePreviewUri, getDisplayUri } from '../../utils/imageHelpers';
+import { getPreviewUri, revokePreviewUri, getDisplayUri, createStablePreviewUri } from '../../utils/imageHelpers';
 import ImageEditModal from '../shared/ImageEditModal';
 
 export default function CreatePostModal({ visible, onClose, onSubmit }) {
@@ -46,7 +46,8 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
 
     if (!result.canceled && result.assets?.[0]) {
       const asset = result.assets[0];
-      asset._previewUri = getPreviewUri(asset);
+      // Create a stable preview URI (async to handle web blob URIs properly)
+      asset._previewUri = await createStablePreviewUri(asset);
       // Revoke old preview if replacing
       if (image?._previewUri) revokePreviewUri(image._previewUri);
       setImage(asset);

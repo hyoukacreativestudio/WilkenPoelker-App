@@ -24,6 +24,35 @@ export function getPreviewUri(asset) {
       return asset.uri; // fallback
     }
   }
+  // For data: URIs (from ImageManipulator or edited images), keep as-is — they are stable
+  if (asset.uri && asset.uri.startsWith('data:')) {
+    return asset.uri;
+  }
+  return asset.uri;
+}
+
+/**
+ * Asynchronously create a stable blob URL from an asset's URI on web.
+ * Use this after image manipulation to ensure the preview stays valid.
+ */
+export async function createStablePreviewUri(asset) {
+  if (Platform.OS !== 'web') return asset.uri;
+  if (asset.file) {
+    try {
+      return URL.createObjectURL(asset.file);
+    } catch {
+      return asset.uri;
+    }
+  }
+  if (asset.uri) {
+    try {
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      return URL.createObjectURL(blob);
+    } catch {
+      return asset.uri;
+    }
+  }
   return asset.uri;
 }
 

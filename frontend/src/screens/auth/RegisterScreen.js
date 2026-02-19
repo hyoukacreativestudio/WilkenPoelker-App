@@ -91,7 +91,7 @@ export default function RegisterScreen({ navigation }) {
       showToast({ type: 'success', message: t('auth.registrationSuccess') });
       navigation.navigate('Login');
     } catch (err) {
-      const msg = err.response?.data?.message || t('errors.somethingWentWrong');
+      const msg = err.message || err.response?.data?.error?.message || err.response?.data?.message || t('errors.somethingWentWrong');
       showToast({ type: 'error', message: msg });
     } finally {
       setLoading(false);
