@@ -161,6 +161,25 @@ async function connectDatabase() {
       }
     }
 
+    // Auto-update PostgreSQL ENUM types (sync() doesn't alter existing enums)
+    if (sequelize.getDialect() === 'postgres') {
+      const enumUpdates = [
+        { name: 'enum_repairs_status', value: 'completed' },
+        { name: 'enum_notifications_type', value: 'ticket_closed' },
+      ];
+      for (const { name, value } of enumUpdates) {
+        try {
+          await sequelize.query(
+            `ALTER TYPE "${name}" ADD VALUE IF NOT EXISTS '${value}';`
+          );
+          logger.info(`ENUM ${name}: ensured value '${value}' exists`);
+        } catch (e) {
+          // Enum type may not exist yet (first run) or value already exists
+          logger.debug(`ENUM update skipped for ${name}.${value}: ${e.message}`);
+        }
+      }
+    }
+
     // Sync models: creates tables if they don't exist
     await sequelize.sync();
     logger.info('Database models synchronized');

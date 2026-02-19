@@ -35,7 +35,8 @@ const Repair = sequelize.define('Repair', {
       'quote_created',
       'parts_ordered',
       'repair_done',
-      'ready'
+      'ready',
+      'completed'
     ),
     defaultValue: 'in_repair',
   },

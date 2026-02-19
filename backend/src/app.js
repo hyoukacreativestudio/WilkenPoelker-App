@@ -223,11 +223,12 @@ cron.schedule('59 23 * * 0', async () => {
 
 // Start server
 async function startServer() {
+  // Load models and create associations BEFORE connecting
+  // so that connectDatabase() can auto-add missing columns
+  require('./models');
+
   await connectDatabase();
   initializeFirebase();
-
-  // Load models and create associations
-  require('./models');
 
   // Create performance indexes for PostgreSQL (optimized for 10k+ users)
   const { sequelize } = require('./config/database');

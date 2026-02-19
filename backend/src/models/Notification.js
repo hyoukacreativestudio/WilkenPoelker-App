@@ -27,7 +27,8 @@ const Notification = sequelize.define('Notification', {
       'chat_message',
       'feed_post',
       'offer',
-      'system'
+      'system',
+      'ticket_closed'
     ),
     allowNull: false,
   },
