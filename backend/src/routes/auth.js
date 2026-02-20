@@ -86,4 +86,33 @@ router.delete(
   authController.deleteAccount
 );
 
+// GET /api/auth/test-email - Test email configuration (admin only)
+router.get('/test-email', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    return res.status(403).json({ success: false, message: 'Admin only' });
+  }
+  const emailService = require('../services/emailService');
+  const configResult = await emailService.testEmailConfig();
+
+  // Also try sending a real test email
+  if (configResult.success) {
+    try {
+      await emailService.sendEmail({
+        to: req.user.email,
+        subject: 'WilkenPoelker - E-Mail-Test',
+        html: '<h2>E-Mail funktioniert!</h2><p>Diese Test-E-Mail wurde erfolgreich über SendGrid versendet.</p>',
+        text: 'E-Mail funktioniert! Diese Test-E-Mail wurde erfolgreich über SendGrid versendet.',
+      });
+      configResult.testEmailSent = true;
+      configResult.testEmailTo = req.user.email;
+    } catch (err) {
+      configResult.testEmailSent = false;
+      configResult.testEmailError = err.message;
+      configResult.testEmailResponse = err.response || null;
+    }
+  }
+
+  res.json({ success: true, data: configResult });
+});
+
 module.exports = router;

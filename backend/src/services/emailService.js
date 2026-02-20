@@ -32,20 +32,64 @@ async function sendEmail({ to, subject, html, text }) {
     logger.info('Email sent', { to, subject, messageId: info.messageId });
     return info;
   } catch (error) {
-    logger.error('Email send failed', { to, subject, error: error.message });
-    // Don't throw - email failures shouldn't break the flow
+    logger.error('Email send failed', {
+      to,
+      subject,
+      error: error.message,
+      code: error.code,
+      response: error.response,
+      host: config.email.host,
+      port: config.email.port,
+      from: config.email.from,
+      hasPassword: !!config.email.password,
+    });
+    throw error; // Re-throw so callers know email failed
+  }
+}
+
+async function testEmailConfig() {
+  const transport = getTransporter();
+  try {
+    await transport.verify();
+    return {
+      success: true,
+      host: config.email.host,
+      port: config.email.port,
+      from: config.email.from,
+      user: config.email.user,
+      hasPassword: !!config.email.password,
+      passwordLength: config.email.password ? config.email.password.length : 0,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      code: error.code,
+      host: config.email.host,
+      port: config.email.port,
+      from: config.email.from,
+      user: config.email.user,
+      hasPassword: !!config.email.password,
+      passwordLength: config.email.password ? config.email.password.length : 0,
+    };
   }
 }
 
 async function sendVerificationEmail(email, name, token, requestOrigin) {
-  // Use API_URL from config, fall back to request origin or Render URL
+  // Build the API base URL for the verification link
   let baseUrl = config.urls.api;
   if (baseUrl.includes('localhost') && requestOrigin) {
-    baseUrl = requestOrigin + '/api';
+    baseUrl = requestOrigin;
   } else if (baseUrl.includes('localhost')) {
-    baseUrl = 'https://wilkenpoelker-app.onrender.com/api';
+    baseUrl = 'https://wilkenpoelker-app.onrender.com';
+  }
+  // Ensure baseUrl ends with /api (API_URL might not include it)
+  baseUrl = baseUrl.replace(/\/+$/, '');
+  if (!baseUrl.endsWith('/api')) {
+    baseUrl += '/api';
   }
   const verifyUrl = `${baseUrl}/auth/verify-email/${token}`;
+  logger.info('Verification email URL constructed', { verifyUrl: verifyUrl.replace(token, 'TOKEN_HIDDEN'), to: email });
 
   await sendEmail({
     to: email,
@@ -175,4 +219,5 @@ module.exports = {
   sendPasswordResetEmail,
   sendAppointmentReminder,
   sendTicketConfirmation,
+  testEmailConfig,
 };

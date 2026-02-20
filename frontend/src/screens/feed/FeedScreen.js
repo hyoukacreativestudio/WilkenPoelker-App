@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  SafeAreaView,
   TouchableOpacity,
   StyleSheet,
   Share,
@@ -12,6 +11,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -401,7 +401,7 @@ export default function FeedScreen({ navigation }) {
           keyExtractor={(item) => String(item._id || item.id)}
           ListHeaderComponent={<OpeningHoursBanner />}
           contentContainerStyle={
-            posts.length === 0 ? { flex: 1, alignItems: 'center' } : { paddingTop: theme.spacing.sm }
+            posts.length === 0 ? { flex: 1, alignItems: 'center' } : { paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.xxl }
           }
           refreshControl={
             <RefreshControl

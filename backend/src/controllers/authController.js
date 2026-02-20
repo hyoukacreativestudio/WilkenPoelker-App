@@ -13,12 +13,13 @@ const register = asyncHandler(async (req, res) => {
     taifunDb
   );
 
-  // Send verification email (non-blocking)
+  // Send verification email (non-blocking, but log errors clearly)
   const requestOrigin = `${req.protocol}://${req.get('host')}`;
   emailService
     .sendVerificationEmail(email, username, result.verificationToken, requestOrigin)
+    .then(() => console.log(`Verification email sent to ${email}`))
     .catch((err) => {
-      console.error('Failed to send verification email:', err.message);
+      console.error(`CRITICAL: Failed to send verification email to ${email}:`, err.message, err.response || '');
     });
 
   res.status(201).json({
@@ -152,12 +153,13 @@ const resendVerification = asyncHandler(async (req, res) => {
   user.emailVerificationToken = hashToken(verificationToken);
   await user.save();
 
-  // Send verification email (non-blocking)
+  // Send verification email (non-blocking, but log errors clearly)
   const resendOrigin = `${req.protocol}://${req.get('host')}`;
   emailService
     .sendVerificationEmail(email, user.firstName || user.username, verificationToken, resendOrigin)
+    .then(() => console.log(`Resend verification email sent to ${email}`))
     .catch((err) => {
-      console.error('Failed to resend verification email:', err.message);
+      console.error(`CRITICAL: Failed to resend verification email to ${email}:`, err.message, err.response || '');
     });
 
   res.json({

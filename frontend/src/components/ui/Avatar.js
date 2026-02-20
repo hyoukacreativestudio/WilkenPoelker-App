@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { getServerUrl } from '../../api/client';
@@ -32,9 +32,13 @@ export default function Avatar({
 }) {
   const { theme } = useTheme();
 
+  const [imageError, setImageError] = useState(false);
   const fontSize = Math.round(size * 0.4);
 
-  if (source) {
+  const bgColor = hashStringToColor(name);
+  const initials = getInitials(name);
+
+  if (source && !imageError) {
     const imageUri = typeof source === 'string'
       ? (source.startsWith('http') ? source : `${getServerUrl()}${source}`)
       : null;
@@ -50,12 +54,10 @@ export default function Avatar({
           },
           style,
         ]}
+        onError={() => setImageError(true)}
       />
     );
   }
-
-  const bgColor = hashStringToColor(name);
-  const initials = getInitials(name);
 
   return (
     <View

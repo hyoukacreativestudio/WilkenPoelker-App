@@ -13,6 +13,8 @@ export default function PostCard({ post, onLike, onComment, onShare, onPress, on
   const [showFullContent, setShowFullContent] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [imageAspect, setImageAspect] = useState(4 / 3);
+  const [avatarError, setAvatarError] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
 
   const onImageLoad = useCallback((e) => {
@@ -51,10 +53,11 @@ export default function PostCard({ post, onLike, onComment, onShare, onPress, on
           style={s.userRow}
           activeOpacity={0.7}
         >
-          {author?.avatar || author?.profilePicture ? (
+          {(author?.avatar || author?.profilePicture) && !avatarError ? (
             <Image
               source={{ uri: (() => { const u = author.avatar || author.profilePicture; return u.startsWith('http') ? u : `${getServerUrl()}${u}`; })() }}
               style={[s.avatar, { borderRadius: 20 }]}
+              onError={() => setAvatarError(true)}
             />
           ) : (
             <View
@@ -126,13 +129,32 @@ export default function PostCard({ post, onLike, onComment, onShare, onPress, on
 
       {/* Media */}
       {type === 'image' && mediaUrl ? (
-        <View style={{ backgroundColor: '#F5F5F5', alignItems: 'center' }}>
-          <Image
-            source={{ uri: mediaUrl.startsWith('http') ? mediaUrl : `${getServerUrl()}${mediaUrl}` }}
-            style={{ width: '100%', aspectRatio: imageAspect }}
-            resizeMode="contain"
-            onLoad={onImageLoad}
-          />
+        <View style={{ backgroundColor: theme.colors.skeleton || '#F5F5F5', alignItems: 'center' }}>
+          {mediaError ? (
+            <View
+              style={{
+                width: '100%',
+                aspectRatio: 4 / 3,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.colors.surfaceVariant || '#F0F0F0',
+              }}
+            >
+              <MaterialCommunityIcons
+                name="image-off-outline"
+                size={48}
+                color={theme.colors.textTertiary}
+              />
+            </View>
+          ) : (
+            <Image
+              source={{ uri: mediaUrl.startsWith('http') ? mediaUrl : `${getServerUrl()}${mediaUrl}` }}
+              style={{ width: '100%', aspectRatio: imageAspect }}
+              resizeMode="contain"
+              onLoad={onImageLoad}
+              onError={() => setMediaError(true)}
+            />
+          )}
         </View>
       ) : null}
 

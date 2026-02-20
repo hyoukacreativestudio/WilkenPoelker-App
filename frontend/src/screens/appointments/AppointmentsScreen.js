@@ -3,13 +3,13 @@ import {
   View,
   Text,
   FlatList,
-  SafeAreaView,
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
   Alert,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';

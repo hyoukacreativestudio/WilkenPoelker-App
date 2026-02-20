@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, Platform, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../hooks/useTheme';
@@ -32,6 +33,7 @@ const TAB_IMAGES = {
 export default function MainTabs() {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -60,9 +62,9 @@ export default function MainTabs() {
           backgroundColor: theme.colors.tabBar,
           borderTopColor: theme.colors.tabBarBorder,
           borderTopWidth: StyleSheet.hairlineWidth || 0.5,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+          paddingBottom: insets.bottom + 4,
           paddingTop: 8,
-          height: Platform.OS === 'ios' ? 75 : 56,
+          height: 52 + insets.bottom + 4,
         },
         tabBarItemStyle: {
           flex: 1,
