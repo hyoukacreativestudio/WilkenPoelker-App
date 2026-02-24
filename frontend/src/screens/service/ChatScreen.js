@@ -72,11 +72,23 @@ export default function ChatScreen({ route, navigation }) {
       ? partnerAvatar.startsWith('/uploads') ? `${getServerUrl()}${partnerAvatar}` : partnerAvatar
       : null;
 
+    const handleHeaderPress = () => {
+      if (!chatPartner) return;
+      // Staff tapping on customer name → navigate to customer profile with ticket history
+      if (isStaff && chatPartner.role === 'customer' && ticket) {
+        const customerId = chatPartner._id || chatPartner.id;
+        const name = [chatPartner.firstName, chatPartner.lastName].filter(Boolean).join(' ') || chatPartner.username || '';
+        navigation.navigate('CustomerProfile', { customerId, customerName: name });
+      } else {
+        setProfileModal(chatPartner);
+      }
+    };
+
     navigation.setOptions({
       headerTitle: () => (
         <TouchableOpacity
           style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-          onPress={() => chatPartner && setProfileModal(chatPartner)}
+          onPress={handleHeaderPress}
           activeOpacity={chatPartner ? 0.7 : 1}
           disabled={!chatPartner}
         >
@@ -562,8 +574,8 @@ export default function ChatScreen({ route, navigation }) {
         >
           <View style={s.menuDropdown}>
             <TouchableOpacity style={s.menuItem} onPress={handleForward} activeOpacity={0.7}>
-              <MaterialCommunityIcons name="share" size={20} color={theme.colors.text} />
-              <Text style={s.menuItemText}>{t('chat.forward')}</Text>
+              <MaterialCommunityIcons name="account-switch" size={20} color={theme.colors.text} />
+              <Text style={s.menuItemText}>{t('chat.transferChat')}</Text>
             </TouchableOpacity>
             <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.divider }} />
             <TouchableOpacity style={s.menuItem} onPress={handleCloseTicket} activeOpacity={0.7}>

@@ -27,4 +27,6 @@ export const serviceApi = {
     apiClient.post(`/service/tickets/${ticketId}/confirm-appointment`, { date }),
   assignTicket: (ticketId, staffId) =>
     apiClient.put(`/service/tickets/${ticketId}/assign`, { staffId }),
+  getCustomerTickets: (customerId, params) =>
+    apiClient.get(`/service/customers/${customerId}/tickets`, { params }),
 };

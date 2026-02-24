@@ -88,6 +88,15 @@ router.get(
   serviceController.getAvailableStaff
 );
 
+// GET /api/service/customers/:id/tickets - Get all tickets for a customer (staff only)
+router.get(
+  '/customers/:id/tickets',
+  authenticate,
+  hasPermission('service', 'bike', 'cleaning', 'motor'),
+  validate([validators.uuid('id')]),
+  serviceController.getCustomerTickets
+);
+
 // GET /api/service/staff/:id/ratings - Get ratings for a staff member
 router.get(
   '/staff/:id/ratings',

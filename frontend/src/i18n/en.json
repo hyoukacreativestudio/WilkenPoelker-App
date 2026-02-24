@@ -1175,6 +1175,7 @@
     "userIsTyping": "{{name}} is typing...",
     "someoneIsTyping": "Someone is typing...",
     "forward": "Forward",
+    "transferChat": "Transfer chat",
     "closeTicket": "Close chat",
     "closeTicketTitle": "Close chat",
     "closeTicketConfirm": "Are you sure you want to close this chat? The customer will be asked to rate the service.",
@@ -1185,6 +1186,17 @@
     "chatClosed": "This chat has ended.",
     "staff": "Staff",
     "waitingForStaff": "Waiting for staff"
+  },
+  "customerProfile": {
+    "title": "Customer Profile",
+    "loadError": "Could not load customer data.",
+    "totalTickets": "Total",
+    "closedTickets": "Closed",
+    "activeTickets": "Active",
+    "noTickets": "No tickets found",
+    "noTicketsMessage": "This customer has not created any service requests yet.",
+    "customerNumber": "Customer no.",
+    "ticketHistory": "Ticket History"
   },
   "customerNumber": {
     "title": "Request Customer Number",

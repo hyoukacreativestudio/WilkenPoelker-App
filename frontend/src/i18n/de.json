@@ -1161,6 +1161,7 @@
     "userIsTyping": "{{name}} schreibt...",
     "someoneIsTyping": "Jemand schreibt...",
     "forward": "Weiterleiten",
+    "transferChat": "Chat weitergeben",
     "closeTicket": "Chat schließen",
     "closeTicketTitle": "Chat schließen",
     "closeTicketConfirm": "Möchten Sie diesen Chat wirklich schließen? Der Kunde wird gebeten, den Service zu bewerten.",
@@ -1171,6 +1172,17 @@
     "chatClosed": "Dieser Chat wurde beendet.",
     "staff": "Mitarbeiter",
     "waitingForStaff": "Wartet auf Mitarbeiter"
+  },
+  "customerProfile": {
+    "title": "Kundenprofil",
+    "loadError": "Kundendaten konnten nicht geladen werden.",
+    "totalTickets": "Gesamt",
+    "closedTickets": "Geschlossen",
+    "activeTickets": "Aktiv",
+    "noTickets": "Keine Tickets vorhanden",
+    "noTicketsMessage": "Dieser Kunde hat noch keine Service-Anfragen erstellt.",
+    "customerNumber": "Kundennr.",
+    "ticketHistory": "Ticket-Verlauf"
   },
   "customerNumber": {
     "title": "Kundennummer anfragen",

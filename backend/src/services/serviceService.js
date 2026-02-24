@@ -265,8 +265,8 @@ async function getTicketById(ticketId, userId, models) {
 
   const ticket = await Ticket.findByPk(ticketId, {
     include: [
-      { model: User, as: 'creator', attributes: ['id', 'username', 'firstName', 'lastName', 'email'] },
-      { model: User, as: 'assignee', attributes: ['id', 'username', 'firstName', 'lastName'] },
+      { model: User, as: 'creator', attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'role', 'profilePicture'] },
+      { model: User, as: 'assignee', attributes: ['id', 'username', 'firstName', 'lastName', 'role', 'profilePicture'] },
     ],
   });
 
@@ -794,6 +794,52 @@ async function confirmAppointment(ticketId, userId, data, models) {
   return appointment;
 }
 
+// Get all tickets for a specific customer (staff only)
+async function getCustomerTickets(customerId, query, models) {
+  const { Ticket, User, ChatMessage } = models;
+  const { page = 1, limit = 50 } = query;
+
+  const customer = await User.findByPk(customerId, {
+    attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'profilePicture', 'role', 'customerNumber'],
+  });
+  if (!customer) {
+    throw new NotFoundError('Customer');
+  }
+
+  const offset = (parseInt(page) - 1) * parseInt(limit);
+
+  const { rows: tickets, count: total } = await Ticket.findAndCountAll({
+    where: { userId: customerId },
+    include: [
+      { model: User, as: 'assignee', attributes: ['id', 'username', 'firstName', 'lastName'] },
+    ],
+    order: [['createdAt', 'DESC']],
+    limit: parseInt(limit),
+    offset,
+  });
+
+  // Enrich with message counts
+  const enrichedTickets = await Promise.all(
+    tickets.map(async (ticket) => {
+      const messageCount = await ChatMessage.count({ where: { ticketId: ticket.id } });
+      const data = ticket.toJSON();
+      data.messageCount = messageCount;
+      return data;
+    })
+  );
+
+  return {
+    customer: customer.toJSON(),
+    tickets: enrichedTickets,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      totalPages: Math.ceil(total / parseInt(limit)),
+    },
+  };
+}
+
 module.exports = {
   createTicket,
   getUserTickets,
@@ -808,6 +854,7 @@ module.exports = {
   rateTicket,
   getStaffRatings,
   getAvailableStaff,
+  getCustomerTickets,
   sendChatMessage,
   getChatMessages,
   editMessage,

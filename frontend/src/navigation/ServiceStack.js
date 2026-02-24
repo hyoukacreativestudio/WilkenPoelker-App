@@ -16,6 +16,7 @@ import ForwardTicketScreen from '../screens/service/ForwardTicketScreen';
 import ActiveChatsScreen from '../screens/service/ActiveChatsScreen';
 import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import CustomerNumberRequestScreen from '../screens/service/CustomerNumberRequestScreen';
+import CustomerProfileScreen from '../screens/service/CustomerProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -133,6 +134,14 @@ export default function ServiceStack() {
         component={CustomerNumberRequestScreen}
         options={({ navigation }) => ({
           title: t('customerNumber.title'),
+          headerLeft: () => backButton(navigation),
+        })}
+      />
+      <Stack.Screen
+        name="CustomerProfile"
+        component={CustomerProfileScreen}
+        options={({ navigation }) => ({
+          title: t('customerProfile.title', 'Kundenprofil'),
           headerLeft: () => backButton(navigation),
         })}
       />
