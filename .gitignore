@@ -71,6 +71,21 @@ test-*.js
 test-*.ps1
 kill-*.vbs
 
+# Frontend dev/build-helper scripts (Expo token helpers, one-off)
+frontend/check-*.js
+frontend/fetch-*.js
+frontend/download-*.js
+frontend/get-logs.js
+frontend/quick-check.js
+frontend/setup-credentials.js
+frontend/start-build.js
+frontend/wait-and-download.js
+frontend/generate-keystore.js
+
+# Stray root package files (project uses backend/ and frontend/ subdirs)
+/package.json
+/package-lock.json
+
 # Claude
 .claude/
 
