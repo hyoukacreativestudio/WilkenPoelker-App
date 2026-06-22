@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "de.wilkenpoelker.app",
+      "bundleIdentifier": "com.hyoukacreativestudios.wilkenpoelker",
       "buildNumber": "1",
       "associatedDomains": [
         "applinks:wilkenpoelker.de",
@@ -35,7 +35,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2E7D32"
       },
-      "package": "de.wilkenpoelker.app",
+      "package": "com.hyoukacreativestudios.wilkenpoelker",
       "versionCode": 1,
       "permissions": [
         "CAMERA",

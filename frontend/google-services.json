@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "921005413236",
-    "project_id": "wpapp-c7eab",
-    "storage_bucket": "wpapp-c7eab.firebasestorage.app"
+    "project_number": "15394509412",
+    "project_id": "wilkenpoelker-app",
+    "storage_bucket": "wilkenpoelker-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:921005413236:android:a7dca4d590b16dfc2dd221",
+        "mobilesdk_app_id": "1:15394509412:android:7add0eb5b0c2fe86590571",
         "android_client_info": {
-          "package_name": "de.wilkenpoelker.app"
+          "package_name": "com.hyoukacreativestudios.wilkenpoelker"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD0swphJEQ23l6iBVVvfSsom-h3XUsoD08"
+          "current_key": "AIzaSyAkYufuDRWiAtaHjkD1GnNq7164zMDRUN4"
         }
       ],
       "services": {
