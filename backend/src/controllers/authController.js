@@ -100,6 +100,16 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+// Escape any text before injecting into HTML to prevent stored XSS via err.message
+function escapeHtml(unsafe) {
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const verifyEmail = asyncHandler(async (req, res) => {
   const { token } = req.params;
 
@@ -120,6 +130,9 @@ const verifyEmail = asyncHandler(async (req, res) => {
       </div></body></html>
     `);
   } catch (err) {
+    const safeMessage = escapeHtml(
+      err.message || 'Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Verifizierungslink in der App an.'
+    );
     res.status(400).send(`
       <!DOCTYPE html>
       <html lang="de">
@@ -129,7 +142,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
       .card{background:#fff;border-radius:16px;padding:40px;max-width:420px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.1)}
       .icon{font-size:64px;margin-bottom:16px}</style></head>
       <body><div class="card"><div class="icon">❌</div><h2>Verifizierung fehlgeschlagen</h2>
-      <p>${err.message || 'Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Verifizierungslink in der App an.'}</p>
+      <p>${safeMessage}</p>
       </div></body></html>
     `);
   }

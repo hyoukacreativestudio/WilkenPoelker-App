@@ -1,6 +1,7 @@
 const config = require('../config/env');
 const { AISession, AIUsage, Ticket, User } = require('../models');
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
+const { generateTicketNumber } = require('../utils/crypto');
 const logger = require('../utils/logger');
 
 // Fachbereiche, zu denen die KI antworten darf
@@ -321,9 +322,8 @@ async function escalateSession(sessionId, userId) {
     throw new NotFoundError('AI Session');
   }
 
-  // Generate ticket number
-  const ticketCount = await Ticket.count();
-  const ticketNumber = `WP-${String(ticketCount + 1).padStart(5, '0')}`;
+  // Collision-safe ticket number (cryptographically random suffix per generator util)
+  const ticketNumber = generateTicketNumber();
 
   // Determine ticket type based on session category
   const categoryTypeMap = {

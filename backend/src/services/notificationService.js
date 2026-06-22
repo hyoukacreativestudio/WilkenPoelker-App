@@ -140,10 +140,10 @@ async function registerFCMToken(userId, token, platform) {
 }
 
 /**
- * Remove a device FCM token (e.g. on logout).
+ * Remove a device FCM token (e.g. on logout). Requires the caller's userId to prevent hijack.
  */
-async function removeFCMToken(token) {
-  return pushService.removeToken(token);
+async function removeFCMToken(token, userId) {
+  return pushService.removeToken(token, userId);
 }
 
 /**

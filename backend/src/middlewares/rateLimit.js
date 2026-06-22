@@ -57,6 +57,27 @@ const uploadLimiter = createLimiter(
   'Too many file uploads. Please try again later.'
 );
 
+// Refresh token: 30 per 15 min (legit clients refresh ~every 15 min)
+const refreshLimiter = createLimiter(
+  15 * 60 * 1000,
+  30,
+  'Too many token refresh attempts. Please log in again.'
+);
+
+// Chat message send: 60 per minute per IP
+const chatLimiter = createLimiter(
+  60 * 1000,
+  60,
+  'Too many chat messages. Please slow down.'
+);
+
+// FCM token register: 10 per hour (prevents enumeration / hijack spam)
+const fcmRegisterLimiter = createLimiter(
+  60 * 60 * 1000,
+  10,
+  'Too many device-registration attempts. Please try again later.'
+);
+
 module.exports = {
   loginLimiter,
   registerLimiter,
@@ -64,4 +85,7 @@ module.exports = {
   apiLimiter,
   aiLimiter,
   uploadLimiter,
+  refreshLimiter,
+  chatLimiter,
+  fcmRegisterLimiter,
 };

@@ -551,8 +551,9 @@ async function respondToProposal(appointmentId, userId, { accept, message }) {
 
 /**
  * Get appointment details by ID with staff info.
+ * Access: appointment owner, staff with matching role, or admin.
  */
-async function getAppointmentById(appointmentId) {
+async function getAppointmentById(appointmentId, requestingUserId, requestingUserRole) {
   const appointment = await Appointment.findByPk(appointmentId, {
     include: [
       {
@@ -585,6 +586,17 @@ async function getAppointmentById(appointmentId) {
 
   if (!appointment) {
     throw new NotFoundError('Appointment');
+  }
+
+  // Authorization: owner, assignee, admin, or matching-role staff
+  const isOwner = appointment.userId === requestingUserId;
+  const isAssignee = appointment.assignedTo === requestingUserId;
+  const isAdmin = requestingUserRole === 'admin' || requestingUserRole === 'super_admin';
+  const isPropertyStaff = appointment.type === 'property_viewing' && requestingUserRole === 'robby_manager';
+  const isServiceStaff = appointment.type !== 'property_viewing' && requestingUserRole === 'service_manager';
+
+  if (!isOwner && !isAssignee && !isAdmin && !isPropertyStaff && !isServiceStaff) {
+    throw new AppError('Sie haben keinen Zugriff auf diesen Termin', 403, 'APPOINTMENT_ACCESS_DENIED');
   }
 
   return appointment;

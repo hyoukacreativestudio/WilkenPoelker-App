@@ -147,18 +147,24 @@ module.exports = {
     app: env.APP_URL,
     corsOrigins: (() => {
       const origins = env.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
+      // Reject wildcard outright — combined with credentials:true it would allow ANY site
+      // to call the API with the user's session attached.
+      const safeOrigins = origins.filter((o) => o !== '*');
+      if (safeOrigins.length !== origins.length) {
+        console.warn('WARNING: CORS_ORIGINS contained "*" — rejected because credentials are enabled.');
+      }
       if (env.NODE_ENV === 'production') {
-        const filtered = origins.filter(o => !o.includes('localhost') && !o.includes('127.0.0.1') && !o.includes('192.168.'));
+        const filtered = safeOrigins.filter(o => !o.includes('localhost') && !o.includes('127.0.0.1') && !o.includes('192.168.'));
         if (filtered.length === 0) {
           console.warn('WARNING: No production CORS origins configured. Set CORS_ORIGINS in .env to your production domain(s).');
-          return origins; // fallback to configured origins
+          return safeOrigins; // fallback to configured origins
         }
-        if (filtered.length < origins.length) {
+        if (filtered.length < safeOrigins.length) {
           console.warn('WARNING: Localhost/private-IP CORS origins removed in production mode.');
         }
         return filtered;
       }
-      return origins;
+      return safeOrigins;
     })(),
   },
 };

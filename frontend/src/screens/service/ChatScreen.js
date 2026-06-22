@@ -47,6 +47,9 @@ export default function ChatScreen({ route, navigation }) {
 
   const flatListRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  // Tracks whether the user is near the bottom of the chat. We auto-scroll only
+  // when they are — so reading history isn't interrupted by new messages.
+  const nearBottomRef = useRef(true);
 
   const { onMessage, onTyping, onStopTyping, emitTyping, emitStopTyping, socket } = useSocket(ticketId);
 
@@ -141,17 +144,25 @@ export default function ChatScreen({ route, navigation }) {
     loadTicketAndMessages();
   }, [ticketId]);
 
-  // Socket: listen for new messages
+  // Socket: listen for new messages.
+  // Deduplicate by message id so a message that arrives via both REST and socket
+  // is only shown once, and don't filter out own-userId messages — otherwise a
+  // second device of the same user never sees the message it just sent.
   useEffect(() => {
     const cleanup = onMessage((newMessage) => {
-      const senderId = newMessage.sender?.id || newMessage.user?._id || newMessage.user?.id || newMessage.userId;
-      if (senderId !== userId) {
-        setMessages((prev) => [...prev, newMessage]);
+      const newId = newMessage._id || newMessage.id;
+      setMessages((prev) => {
+        if (newId && prev.some((m) => (m._id || m.id) === newId)) {
+          return prev;
+        }
+        return [...prev, newMessage];
+      });
+      if (nearBottomRef.current) {
         scrollToBottom();
       }
     });
     return cleanup;
-  }, [onMessage, userId]);
+  }, [onMessage]);
 
   // Socket: listen for ticket closed
   useEffect(() => {
@@ -208,13 +219,16 @@ export default function ChatScreen({ route, navigation }) {
     return cleanup;
   }, [onStopTyping]);
 
-  // Cleanup
+  // Cleanup on unmount only — empty deps so stopTyping fires exactly once,
+  // not every time the emitStopTyping reference changes (which left "tippt..."
+  // stuck on the other side).
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      emitStopTyping();
+      try { emitStopTyping(); } catch {}
     };
-  }, [emitStopTyping]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadTicketAndMessages = async () => {
     setLoading(true);
@@ -423,13 +437,13 @@ export default function ChatScreen({ route, navigation }) {
     const fullName = [p.firstName, p.lastName].filter(Boolean).join(' ') || p.username || '';
 
     const roleLabels = {
-      admin: 'Administrator',
-      super_admin: 'Super Admin',
-      bike_manager: 'Fahrrad-Manager',
-      cleaning_manager: 'Reinigung-Manager',
-      motor_manager: 'Motor-Manager',
-      service_manager: 'Service-Manager',
-      customer: 'Kunde',
+      admin: t('admin.roles.admin'),
+      super_admin: t('admin.roles.super_admin'),
+      bike_manager: t('admin.roles.bike_manager'),
+      cleaning_manager: t('admin.roles.cleaning_manager'),
+      motor_manager: t('admin.roles.motor_manager'),
+      service_manager: t('admin.roles.service_manager'),
+      customer: t('admin.roles.customer'),
     };
 
     return (
@@ -534,13 +548,23 @@ export default function ChatScreen({ route, navigation }) {
         ListEmptyComponent={renderEmptyMessages}
         ListFooterComponent={renderTypingIndicator}
         showsVerticalScrollIndicator={false}
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          const distanceFromBottom =
+            contentSize.height - (contentOffset.y + layoutMeasurement.height);
+          // Threshold: consider "near bottom" if within ~120px
+          nearBottomRef.current = distanceFromBottom < 120;
+        }}
+        scrollEventThrottle={100}
         onContentSizeChange={() => {
-          if (messages.length > 0) {
+          // Only auto-scroll if the user is already viewing the bottom
+          if (messages.length > 0 && nearBottomRef.current) {
             flatListRef.current?.scrollToEnd({ animated: false });
           }
         }}
         onLayout={() => {
-          if (messages.length > 0) {
+          // First-render scroll to bottom
+          if (messages.length > 0 && nearBottomRef.current) {
             flatListRef.current?.scrollToEnd({ animated: false });
           }
         }}

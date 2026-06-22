@@ -74,7 +74,11 @@ const createAppointment = asyncHandler(async (req, res) => {
 });
 
 const getAppointmentById = asyncHandler(async (req, res) => {
-  const appointment = await appointmentService.getAppointmentById(req.params.id);
+  const appointment = await appointmentService.getAppointmentById(
+    req.params.id,
+    req.user.id,
+    req.user.role
+  );
 
   res.json({
     success: true,

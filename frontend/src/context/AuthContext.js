@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { storage } from '../utils/storage';
 import { authApi } from '../api/auth';
 import { notificationsApi } from '../api/notifications';
+import { subscribeAuthEvents, AUTH_EVENT_LOGOUT } from '../utils/authEvents';
 
 export const AuthContext = createContext(null);
 
@@ -13,6 +14,23 @@ export function AuthProvider({ children }) {
   // Check stored tokens on mount
   useEffect(() => {
     checkAuth();
+  }, []);
+
+  // Listen for forced logouts triggered outside of React (e.g. expired refresh token)
+  useEffect(() => {
+    const unsubscribe = subscribeAuthEvents(async (type) => {
+      if (type === AUTH_EVENT_LOGOUT) {
+        try {
+          await storage.deleteItem('accessToken');
+          await storage.deleteItem('refreshToken');
+          await storage.deleteItem('user');
+          await storage.deleteItem('expoPushToken');
+        } catch {}
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    });
+    return unsubscribe;
   }, []);
 
   const checkAuth = async () => {

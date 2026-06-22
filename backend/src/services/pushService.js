@@ -54,26 +54,42 @@ async function sendToAll(notification) {
 
 /**
  * Register a device token for push notifications.
+ * Refuses to overwrite a token already owned by another user (hijack defense).
  */
 async function registerToken(userId, token, platform) {
-  const [fcmToken, created] = await FCMToken.findOrCreate({
-    where: { token },
-    defaults: { userId, token, platform, isActive: true },
-  });
+  const existing = await FCMToken.findOne({ where: { token } });
 
-  if (!created) {
-    await fcmToken.update({ userId, platform, isActive: true });
+  if (existing) {
+    if (existing.userId && existing.userId !== userId) {
+      // Token already registered to another user — likely shared device or hijack attempt.
+      // Mark old binding as inactive instead of re-binding silently.
+      logger.warn('FCM token registration rejected: token already owned by another user', {
+        attemptingUserId: userId,
+        currentOwnerId: existing.userId,
+      });
+      throw new (require('../middlewares/errorHandler').AppError)(
+        'Dieses Geraet ist bereits einem anderen Konto zugeordnet. Bitte zuerst dort abmelden.',
+        409,
+        'FCM_TOKEN_OWNED_BY_OTHER'
+      );
+    }
+    await existing.update({ userId, platform, isActive: true });
+    logger.info('Push token reactivated', { userId, platform });
+    return existing;
   }
 
-  logger.info('Push token registered', { userId, platform, created });
+  const fcmToken = await FCMToken.create({ userId, token, platform, isActive: true });
+  logger.info('Push token registered', { userId, platform });
   return fcmToken;
 }
 
 /**
- * Remove a device token (e.g. on logout).
+ * Remove a device token (e.g. on logout). Restricted to caller's own tokens.
  */
-async function removeToken(token) {
-  const deleted = await FCMToken.destroy({ where: { token } });
+async function removeToken(token, userId) {
+  const where = { token };
+  if (userId) where.userId = userId;
+  const deleted = await FCMToken.destroy({ where });
   logger.info('Push token removed', { token: token.substring(0, 10) + '...', deleted });
   return deleted;
 }

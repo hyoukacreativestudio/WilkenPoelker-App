@@ -8,9 +8,11 @@ export function usePagination(apiFunc, limit = 20) {
   const [error, setError] = useState(null);
   const pageRef = useRef(1);
   const cursorRef = useRef(null);
+  // Synchronous lock so rapid onEndReached firings don't double-fetch
+  const loadingRef = useRef(false);
 
   const fetchItems = useCallback(async (params = {}, reset = false) => {
-    if (loading && !reset) return;
+    if (loadingRef.current && !reset) return;
 
     if (reset) {
       pageRef.current = 1;
@@ -18,6 +20,7 @@ export function usePagination(apiFunc, limit = 20) {
       setHasMore(true);
     }
 
+    loadingRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -58,16 +61,21 @@ export function usePagination(apiFunc, limit = 20) {
 
       const moreAvailable = innerData?.hasMore !== undefined ? innerData.hasMore : newItems.length === limit;
       setHasMore(moreAvailable);
-      pageRef.current += 1;
+      // Only advance the page counter when we actually got items, so a failed/empty
+      // first call doesn't skip page 2.
+      if (newItems.length > 0) {
+        pageRef.current += 1;
+      }
 
       return { items: newItems, total };
     } catch (err) {
       setError(err);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
       setRefreshing(false);
     }
-  }, [apiFunc, limit, loading]);
+  }, [apiFunc, limit]);
 
   const refresh = useCallback(async (params = {}) => {
     setRefreshing(true);
@@ -75,12 +83,13 @@ export function usePagination(apiFunc, limit = 20) {
   }, [fetchItems]);
 
   const loadMore = useCallback(async (params = {}) => {
-    if (!hasMore || loading) return;
+    if (!hasMore || loadingRef.current) return;
     await fetchItems(params);
-  }, [fetchItems, hasMore, loading]);
+  }, [fetchItems, hasMore]);
 
   const reset = useCallback(() => {
     setItems([]);
+    loadingRef.current = false;
     setLoading(false);
     setRefreshing(false);
     setHasMore(true);

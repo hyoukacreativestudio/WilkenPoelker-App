@@ -2,7 +2,7 @@
   "expo": {
     "name": "WilkenPoelker",
     "slug": "wilkenpoelker",
-    "owner": "hyoukaeu",
+    "owner": "wilkenpoelker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -58,7 +58,10 @@
               "pathPrefix": "/"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -84,14 +87,14 @@
       ]
     ],
     "extra": {
-      "apiBaseUrl": "https://wilkenpoelker-app.onrender.com/api",
+      "apiBaseUrl": "https://api.wilkenpoelker.de/api",
       "sentryDsn": "https://639710648792f8628edfb8552a94d15c@o4510895813820416.ingest.de.sentry.io/4510895927394384",
       "eas": {
-        "projectId": "eb70f600-3921-4ce9-b547-d3a83665d4d8"
+        "projectId": "5e6e7adf-e7fc-4693-8382-d5bc1c51d842"
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/eb70f600-3921-4ce9-b547-d3a83665d4d8"
+      "url": "https://u.expo.dev/5e6e7adf-e7fc-4693-8382-d5bc1c51d842"
     },
     "runtimeVersion": {
       "policy": "appVersion"

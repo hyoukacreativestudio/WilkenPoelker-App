@@ -168,13 +168,60 @@ initializeSentry(app);
 // Global error handler
 app.use(errorHandler);
 
+// Socket.io JWT authentication middleware
+const jwt = require('jsonwebtoken');
+io.use((socket, next) => {
+  try {
+    const token =
+      socket.handshake.auth?.token ||
+      (socket.handshake.headers?.authorization || '').replace(/^Bearer\s+/i, '');
+
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+
+    const decoded = jwt.verify(token, config.jwt.secret);
+    socket.userId = decoded.id;
+    socket.userRole = decoded.role;
+    return next();
+  } catch (err) {
+    logger.warn('Socket auth failed', { error: err.message });
+    return next(new Error('Authentication failed'));
+  }
+});
+
+// Verify a user is allowed to join a ticket's chat room.
+async function canAccessTicket(userId, userRole, ticketId) {
+  const { Ticket } = require('./models');
+  const ticket = await Ticket.findByPk(ticketId, { attributes: ['id', 'userId', 'assignedTo'] });
+  if (!ticket) return false;
+
+  const isOwner = ticket.userId === userId;
+  const isAssigned = ticket.assignedTo === userId;
+  const isUnassigned = !ticket.assignedTo;
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const isStaff = userRole && userRole !== 'customer';
+
+  return isOwner || isAssigned || isAdmin || (isStaff && isUnassigned);
+}
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
-  logger.info(`Socket connected: ${socket.id}`);
+  logger.info(`Socket connected: ${socket.id} user=${socket.userId}`);
 
-  socket.on('joinChat', (ticketId) => {
-    socket.join(`ticket:${ticketId}`);
-    logger.debug(`Socket ${socket.id} joined ticket:${ticketId}`);
+  socket.on('joinChat', async (ticketId) => {
+    try {
+      const allowed = await canAccessTicket(socket.userId, socket.userRole, ticketId);
+      if (!allowed) {
+        logger.warn('joinChat denied', { userId: socket.userId, ticketId });
+        socket.emit('chatAccessDenied', { ticketId });
+        return;
+      }
+      socket.join(`ticket:${ticketId}`);
+      logger.debug(`Socket ${socket.id} (user ${socket.userId}) joined ticket:${ticketId}`);
+    } catch (err) {
+      logger.error('joinChat error', { error: err.message });
+    }
   });
 
   socket.on('leaveChat', (ticketId) => {
@@ -182,12 +229,20 @@ io.on('connection', (socket) => {
   });
 
   socket.on('typing', (data) => {
-    const { ticketId, userId, username } = data;
-    socket.to(`ticket:${ticketId}`).emit('typing', { userId, username });
+    const { ticketId } = data || {};
+    if (!ticketId) return;
+    // Only forward if the socket has actually joined this room (auth gate)
+    if (!socket.rooms.has(`ticket:${ticketId}`)) return;
+    socket.to(`ticket:${ticketId}`).emit('typing', {
+      userId: socket.userId,
+      username: data.username,
+    });
   });
 
   socket.on('stopTyping', (data) => {
-    const { ticketId } = data;
+    const { ticketId } = data || {};
+    if (!ticketId) return;
+    if (!socket.rooms.has(`ticket:${ticketId}`)) return;
     socket.to(`ticket:${ticketId}`).emit('stopTyping');
   });
 

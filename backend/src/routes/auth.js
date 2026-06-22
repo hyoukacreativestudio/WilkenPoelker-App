@@ -3,7 +3,7 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { authenticate } = require('../middlewares/auth');
 const { validate, validators, body } = require('../middlewares/validate');
-const { loginLimiter, registerLimiter, passwordResetLimiter } = require('../middlewares/rateLimit');
+const { loginLimiter, registerLimiter, passwordResetLimiter, refreshLimiter } = require('../middlewares/rateLimit');
 
 // POST /api/auth/register
 router.post(
@@ -43,6 +43,7 @@ router.post('/logout', authenticate, authController.logout);
 // POST /api/auth/refresh-token
 router.post(
   '/refresh-token',
+  refreshLimiter,
   validate([
     body('refreshToken').notEmpty().withMessage('Refresh token is required'),
   ]),

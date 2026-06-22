@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/env');
+const { sequelize } = require('../config/database');
 const { hashPassword, comparePassword, generateToken, hashToken } = require('../utils/crypto');
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
@@ -280,27 +281,29 @@ async function deleteAccount(userId, password, models) {
     throw new AppError('Falsches Passwort', 401, 'WRONG_PASSWORD');
   }
 
-  // Delete all related data (DSGVO Art. 17 - Right to be Forgotten)
-  await Notification.destroy({ where: { userId } });
-  await Repair.destroy({ where: { userId } });
-  await Appointment.destroy({ where: { userId } });
-  await Comment.destroy({ where: { userId } });
-  await Like.destroy({ where: { userId } });
-  await Favorite.destroy({ where: { userId } });
-  await FCMToken.destroy({ where: { userId } });
-  await ServiceRating.destroy({ where: { userId } });
-  await ProductReview.destroy({ where: { userId } });
-  await StaffRating.destroy({ where: { userId } });
-  await ShareTracking.destroy({ where: { userId } });
-  await AIUsage.destroy({ where: { userId } });
-  await AISession.destroy({ where: { userId } });
-  await ChatMessage.destroy({ where: { userId } });
-  await Ticket.destroy({ where: { userId } });
-  await AuditLog.destroy({ where: { userId } });
-  await Post.destroy({ where: { userId } });
-
-  // Finally delete the user record (hard delete)
-  await user.destroy();
+  // Delete all related data atomically (DSGVO Art. 17 - Right to be Forgotten).
+  // Any failure rolls back so the user isn't left half-deleted with orphan rows.
+  await sequelize.transaction(async (t) => {
+    const opts = { where: { userId }, transaction: t };
+    await Notification.destroy(opts);
+    await Repair.destroy(opts);
+    await Appointment.destroy(opts);
+    await Comment.destroy(opts);
+    await Like.destroy(opts);
+    await Favorite.destroy(opts);
+    await FCMToken.destroy(opts);
+    await ServiceRating.destroy(opts);
+    await ProductReview.destroy(opts);
+    await StaffRating.destroy(opts);
+    await ShareTracking.destroy(opts);
+    await AIUsage.destroy(opts);
+    await AISession.destroy(opts);
+    await ChatMessage.destroy(opts);
+    await Ticket.destroy(opts);
+    await AuditLog.destroy(opts);
+    await Post.destroy(opts);
+    await user.destroy({ transaction: t });
+  });
 
   logger.info('Account deleted (DSGVO Art. 17)', { userId });
 

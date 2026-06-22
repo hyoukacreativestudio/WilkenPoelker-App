@@ -89,7 +89,7 @@ const registerFCMToken = asyncHandler(async (req, res) => {
 const removeFCMToken = asyncHandler(async (req, res) => {
   const { token } = req.body;
 
-  await notificationService.removeFCMToken(token);
+  await notificationService.removeFCMToken(token, req.user.id);
 
   res.json({
     success: true,

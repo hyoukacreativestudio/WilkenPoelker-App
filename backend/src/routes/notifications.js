@@ -4,6 +4,7 @@ const notificationController = require('../controllers/notificationController');
 const { authenticate } = require('../middlewares/auth');
 const { authorize, isAdmin, isSuperAdmin, canPost, ROLES } = require('../middlewares/roles');
 const { validate, validators, body, query, param } = require('../middlewares/validate');
+const { fcmRegisterLimiter } = require('../middlewares/rateLimit');
 
 // ──────────────────────────────────────────────
 // User notification routes
@@ -74,6 +75,7 @@ router.delete(
 router.post(
   '/fcm-token',
   authenticate,
+  fcmRegisterLimiter,
   validate([
     body('token').notEmpty().withMessage('FCM token is required'),
     body('platform')

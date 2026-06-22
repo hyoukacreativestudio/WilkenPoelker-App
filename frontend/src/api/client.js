@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { storage } from '../utils/storage';
+import { emitAuthEvent, AUTH_EVENT_LOGOUT } from '../utils/authEvents';
 
 // Environment-based API URL with fallback
 const getBaseUrl = () => {
@@ -80,11 +81,15 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401 with tokenExpired and not already retrying
+    // Refresh on any 401 (not only tokenExpired flag), as long as we still have a refresh token
+    // and the failing request was not itself the refresh call.
+    const isAuthRefreshCall =
+      typeof originalRequest?.url === 'string' && originalRequest.url.includes('/auth/refresh-token');
+
     if (
       error.response?.status === 401 &&
-      error.response?.data?.error?.tokenExpired &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !isAuthRefreshCall
     ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -122,6 +127,8 @@ apiClient.interceptors.response.use(
         await storage.deleteItem('accessToken');
         await storage.deleteItem('refreshToken');
         await storage.deleteItem('user');
+        // Notify AuthContext so the UI resets to the login screen
+        emitAuthEvent(AUTH_EVENT_LOGOUT, { reason: 'refresh_failed' });
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

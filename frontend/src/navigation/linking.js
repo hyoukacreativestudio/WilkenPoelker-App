@@ -1,5 +1,11 @@
+// Only handle deep links from the dedicated app subdomain, NOT the marketing site root.
+// Otherwise every visit to wilkenpoelker.de would attempt to open the app.
 const linking = {
-  prefixes: ['wilkenpoelker://', 'https://wilkenpoelker.de'],
+  prefixes: [
+    'wilkenpoelker://',
+    'https://app.wilkenpoelker.de',
+    'https://api.wilkenpoelker.de',
+  ],
   config: {
     screens: {
       Auth: {
@@ -11,6 +17,9 @@ const linking = {
       },
       Main: {
         screens: {
+          // Allow reset-password links to land in the Main stack too —
+          // logged-in users tapping the email link previously had no route to land on.
+          ResetPassword: 'reset-password/:token',
           Feed: {
             screens: {
               FeedHome: 'feed',

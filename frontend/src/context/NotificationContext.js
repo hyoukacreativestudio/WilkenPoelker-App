@@ -30,6 +30,9 @@ export function NotificationProvider({ children }) {
   const pollInterval = useRef(null);
 
   const previousUnreadRef = useRef(0);
+  // True until the very first fetchUnreadCount completes — so we don't chime
+  // on app launch just because there are already-unread items.
+  const initialUnreadFetchRef = useRef(true);
 
   // Play in-app notification sound (web-safe) - pleasant two-tone chime
   const playNotificationSound = useCallback(() => {
@@ -72,19 +75,26 @@ export function NotificationProvider({ children }) {
       const { data } = await notificationsApi.getUnreadCount();
       const newCount = data.data?.unreadCount || data.data?.count || 0;
 
-      // Play sound when new notifications arrive
-      if (newCount > previousUnreadRef.current && previousUnreadRef.current >= 0) {
+      // Only chime on actual increases AFTER the first fetch has completed —
+      // otherwise launching the app with existing unread plays the sound every time.
+      if (!initialUnreadFetchRef.current && newCount > previousUnreadRef.current) {
         playNotificationSound();
       }
+      initialUnreadFetchRef.current = false;
       previousUnreadRef.current = newCount;
 
       setUnreadCount(newCount);
     } catch {}
   }, [playNotificationSound]);
 
+  // Reset the "first fetch" guard whenever auth state changes,
+  // so the next login starts cleanly without a stale baseline.
+
   useEffect(() => {
     if (!isAuthenticated) {
       setUnreadCount(0);
+      previousUnreadRef.current = 0;
+      initialUnreadFetchRef.current = true;
       if (pollInterval.current) {
         clearInterval(pollInterval.current);
         pollInterval.current = null;
@@ -92,6 +102,7 @@ export function NotificationProvider({ children }) {
       return;
     }
 
+    initialUnreadFetchRef.current = true;
     fetchUnreadCount();
 
     // Poll for unread count periodically
@@ -159,18 +170,30 @@ export function NotificationProvider({ children }) {
 
       if (finalStatus !== 'granted') return;
 
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'eb70f600-3921-4ce9-b547-d3a83665d4d8',
-      });
+      // Read the projectId from Expo config so it stays in sync with app.json
+      // instead of being hardcoded to a stale id.
+      const Constants = require('expo-constants').default;
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ||
+        Constants?.easConfig?.projectId;
+      const tokenData = await Notifications.getExpoPushTokenAsync(
+        projectId ? { projectId } : undefined
+      );
       const token = tokenData.data;
       setExpoPushToken(token);
 
-      // Persist token for cleanup on logout
+      // Skip re-registration if the token hasn't changed since last launch —
+      // avoids hammering the backend's FCM register endpoint on every cold start.
+      const lastRegistered = await storage.getItem('expoPushToken').catch(() => null);
       await storage.setItem('expoPushToken', token).catch(() => {});
 
-      // Register token with backend
-      const platform = Platform.OS;
-      await notificationsApi.registerFcmToken(token, platform).catch(() => {});
+      if (lastRegistered !== token) {
+        try {
+          await notificationsApi.registerFcmToken(token, Platform.OS);
+        } catch (err) {
+          if (__DEV__) console.warn('FCM register failed:', err?.message);
+        }
+      }
 
       // Android notification channels with sound
       if (Platform.OS === 'android') {

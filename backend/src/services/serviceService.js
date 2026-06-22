@@ -274,11 +274,20 @@ async function getTicketById(ticketId, userId, models) {
     throw new NotFoundError('Ticket');
   }
 
-  // Access control: non-admin staff cannot view tickets assigned to other staff
+  // Access control: customers can ONLY see their own tickets; staff see assigned/unassigned/admin-all
   const requestingUser = await User.findByPk(userId, { attributes: ['id', 'role'] });
-  if (requestingUser && requestingUser.role !== 'customer') {
+  if (!requestingUser) {
+    throw new AppError('Authentifizierung erforderlich', 401, 'UNAUTHENTICATED');
+  }
+
+  const isTicketCreator = ticket.userId === userId;
+
+  if (requestingUser.role === 'customer') {
+    if (!isTicketCreator) {
+      throw new AppError('Sie haben keinen Zugriff auf dieses Ticket', 403, 'TICKET_ACCESS_DENIED');
+    }
+  } else {
     const isAdmin = requestingUser.role === 'admin' || requestingUser.role === 'super_admin';
-    const isTicketCreator = ticket.userId === userId;
     const isAssigned = ticket.assignedTo === userId;
     const isUnassigned = !ticket.assignedTo;
 
