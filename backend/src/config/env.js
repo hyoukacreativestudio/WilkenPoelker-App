@@ -65,6 +65,9 @@ const envSchema = Joi.object({
   API_URL: Joi.string().default('http://localhost:5000'),
   APP_URL: Joi.string().default('http://localhost:3000'),
   CORS_ORIGINS: Joi.string().default('http://localhost:3000,http://localhost:19006'),
+
+  // Taifun XML sync — Bruno sends this in the X-API-Key header on every push
+  TAIFUN_SYNC_API_KEY: Joi.string().allow('').default(''),
 }).unknown(true);
 
 const { error, value: env } = envSchema.validate(process.env, {
@@ -134,6 +137,11 @@ module.exports = {
     apiKey: env.CLOUDINARY_API_KEY,
     apiSecret: env.CLOUDINARY_API_SECRET,
     isConfigured: !!(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET),
+  },
+
+  taifunSync: {
+    apiKey: env.TAIFUN_SYNC_API_KEY,
+    isEnabled: !!env.TAIFUN_SYNC_API_KEY,
   },
 
   security: {

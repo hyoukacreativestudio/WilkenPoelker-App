@@ -25,6 +25,8 @@ const ShareTracking = require('./ShareTracking');
 const FAQ = require('./FAQ');
 const AboutContent = require('./AboutContent');
 const CustomerNumberRequest = require('./CustomerNumberRequest');
+const TaifunCustomer = require('./TaifunCustomer');
+const TaifunOrder = require('./TaifunOrder');
 
 // ==========================================
 // ASSOCIATIONS
@@ -165,6 +167,10 @@ CustomerNumberRequest.belongsTo(User, { foreignKey: 'userId', as: 'requester' })
 // CustomerNumberRequest -> reviewer (admin who reviewed)
 CustomerNumberRequest.belongsTo(User, { foreignKey: 'reviewedBy', as: 'reviewer' });
 
+// Taifun mirror data: order linked to customer by Taifun GUID
+TaifunCustomer.hasMany(TaifunOrder, { foreignKey: 'kdGuid', sourceKey: 'kdGuid', as: 'orders' });
+TaifunOrder.belongsTo(TaifunCustomer, { foreignKey: 'kdGuid', targetKey: 'kdGuid', as: 'customer' });
+
 module.exports = {
   sequelize,
   User,
@@ -191,4 +197,6 @@ module.exports = {
   FAQ,
   AboutContent,
   CustomerNumberRequest,
+  TaifunCustomer,
+  TaifunOrder,
 };
