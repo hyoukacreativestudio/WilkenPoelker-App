@@ -3,10 +3,10 @@ import apiClient from './client';
 export const usersApi = {
   getProfile: () => apiClient.get('/users/profile'),
   updateProfile: (data) => apiClient.put('/users/profile', data),
-  uploadAvatar: (formData) =>
-    apiClient.put('/users/avatar', formData, {
-      headers: { 'Content-Type': undefined },
-    }),
+  // Do NOT set Content-Type explicitly — axios already detects FormData and the
+  // request interceptor strips Content-Type so the boundary parameter is added
+  // by the underlying transport. Setting it to undefined breaks on web/axios.
+  uploadAvatar: (formData) => apiClient.put('/users/avatar', formData),
   changePassword: (data) => apiClient.put('/users/password', data),
   exportMyData: () => apiClient.get('/users/export'),
 

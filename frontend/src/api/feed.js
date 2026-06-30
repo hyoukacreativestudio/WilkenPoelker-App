@@ -3,10 +3,9 @@ import apiClient from './client';
 export const feedApi = {
   getPosts: (params) => apiClient.get('/feed', { params }),
   getPost: (id) => apiClient.get(`/feed/${id}`),
-  createPost: (formData) =>
-    apiClient.post('/feed', formData, {
-      headers: { 'Content-Type': undefined },
-    }),
+  // Let axios + request interceptor handle FormData Content-Type;
+  // setting it to undefined breaks the multipart boundary on web.
+  createPost: (formData) => apiClient.post('/feed', formData),
   updatePost: (id, data) => apiClient.put(`/feed/${id}`, data),
   deletePost: (id) => apiClient.delete(`/feed/${id}`),
   likePost: (id) => apiClient.post(`/feed/${id}/like`),

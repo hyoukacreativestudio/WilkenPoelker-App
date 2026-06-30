@@ -23,11 +23,13 @@ router.get(
 );
 
 // POST /api/feed
+// uploadLimiter was applied unconditionally — it would 429 on text-only posts
+// after a shop-floor NAT shared 20 posts/h. multer's size/type/count caps still
+// fire on real uploads, and the global apiLimiter (200/min) still applies.
 router.post(
   '/',
   authenticate,
   canPost,
-  uploadLimiter,
   uploadSingle('media'),
   validate([
     body('content').optional().isLength({ max: 5000 }).withMessage('Content must be at most 5000 characters'),

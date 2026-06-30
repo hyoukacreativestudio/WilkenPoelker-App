@@ -290,8 +290,21 @@ async function getTicketById(ticketId, userId, models) {
     const isAdmin = requestingUser.role === 'admin' || requestingUser.role === 'super_admin';
     const isAssigned = ticket.assignedTo === userId;
     const isUnassigned = !ticket.assignedTo;
+    // A category manager (e.g. bike_manager) can legitimately open ANY ticket
+    // in their category — even if it's assigned to a different manager in that
+    // category. service_manager sees everything. Without this, tapping a ticket
+    // assigned to a colleague 403'd and the UI looked like it did nothing.
+    const categoryRoleMap = {
+      bike: 'bike_manager',
+      cleaning: 'cleaning_manager',
+      motor: 'motor_manager',
+      service: 'service_manager',
+    };
+    const isCategoryManager =
+      requestingUser.role === 'service_manager' ||
+      requestingUser.role === categoryRoleMap[ticket.category];
 
-    if (!isAdmin && !isTicketCreator && !isAssigned && !isUnassigned) {
+    if (!isAdmin && !isCategoryManager && !isTicketCreator && !isAssigned && !isUnassigned) {
       throw new AppError('Dieses Ticket ist einem anderen Mitarbeiter zugewiesen.', 403, 'TICKET_ACCESS_DENIED');
     }
   }

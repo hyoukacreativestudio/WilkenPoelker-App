@@ -151,12 +151,51 @@ export default function RepairDetailScreen({ route, navigation }) {
 
   const styles = s(theme);
 
+  // Staff/admin always need name + phone + repair number visible at a glance.
+  // We render a sticky info bar before the regular content so it stays at the
+  // top of the screen while scrolling.
+  const customer = repair.customer || {};
+  const customerName = [customer.firstName, customer.lastName].filter(Boolean).join(' ') || customer.username || customer.name || '';
+  const customerPhone = customer.phone || repair.customerPhone || null;
+
+  const handleCallCustomer = () => {
+    if (customerPhone) {
+      Linking.openURL(`tel:${customerPhone}`).catch(() => {});
+    }
+  };
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      stickyHeaderIndices={isStaff ? [0] : undefined}
     >
+      {/* Sticky admin info bar — staff sees this above everything else, always */}
+      {isStaff && (
+        <View style={styles.adminBar}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.adminBarName} numberOfLines={1}>{customerName || t('common.unknown', 'Unbekannt')}</Text>
+            <Text style={styles.adminBarMeta} numberOfLines={1}>
+              {t('repairs.repairNumber')} {repair.repairNumber || repair.number || '–'}
+            </Text>
+            {customerPhone ? (
+              <Text style={styles.adminBarMeta} numberOfLines={1}>{customerPhone}</Text>
+            ) : null}
+          </View>
+          {customerPhone ? (
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text
+                onPress={handleCallCustomer}
+                style={styles.adminBarCall}
+              >
+                <MaterialCommunityIcons name="phone" size={20} color={theme.colors.primary} />
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      )}
+
       {/* Repair Number */}
       <Text style={styles.repairNumber}>
         {t('repairs.repairNumber')} {repair.repairNumber || repair.number}
@@ -358,5 +397,29 @@ const s = (theme) =>
       ...theme.typography.styles.body,
       color: theme.colors.text,
       marginTop: 2,
+    },
+    adminBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary + '12',
+      borderLeftWidth: 4,
+      borderLeftColor: theme.colors.primary,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      marginHorizontal: -theme.spacing.md,
+      marginTop: -theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    adminBarName: {
+      ...theme.typography.styles.body,
+      color: theme.colors.text,
+      fontWeight: theme.typography.weights.bold,
+    },
+    adminBarMeta: {
+      ...theme.typography.styles.caption,
+      color: theme.colors.textSecondary,
+    },
+    adminBarCall: {
+      padding: theme.spacing.sm,
     },
   });

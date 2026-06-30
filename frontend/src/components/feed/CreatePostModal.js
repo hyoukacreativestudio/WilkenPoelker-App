@@ -104,7 +104,7 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
         }}
         onPress={handleClose}
       >
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <Pressable
             style={{
               backgroundColor: theme.colors.background,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,14 @@ import {
   StyleSheet,
   Image,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
+import { customerNumberApi } from '../../api/customerNumber';
 import { isAdmin, isManager } from '../../utils/helpers';
 import { getInitials } from '../../utils/helpers';
 import { getServerUrl } from '../../api/client';
@@ -81,6 +83,26 @@ export default function MoreMenuScreen({ navigation }) {
   const { theme } = useTheme();
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
+
+  // Refresh the customer-number-request pending count whenever the More menu
+  // is focused, so the badge is up to date after the admin approves/rejects.
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!isManager(user)) return;
+      let cancelled = false;
+      (async () => {
+        try {
+          const res = await customerNumberApi.getAllRequests({ status: 'pending' });
+          const list = res.data?.data?.requests || res.data?.data || res.data?.requests || [];
+          if (!cancelled) setPendingRequestCount(Array.isArray(list) ? list.length : 0);
+        } catch {
+          if (!cancelled) setPendingRequestCount(0);
+        }
+      })();
+      return () => { cancelled = true; };
+    }, [user])
+  );
 
   const firstName = user?.firstName || user?.name?.split(' ')[0] || '';
   const initials = getInitials(user?.firstName && user?.lastName
@@ -166,6 +188,7 @@ export default function MoreMenuScreen({ navigation }) {
                 icon="account-multiple-check-outline"
                 label={t('adminRequests.title', 'Kundennummer-Anfragen')}
                 onPress={() => navigation.navigate('AdminRequests')}
+                badge={pendingRequestCount}
                 theme={theme}
               />
               <Divider style={{ marginVertical: 0 }} />

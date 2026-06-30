@@ -25,6 +25,8 @@ export function navigateFromNotification(deepLink) {
         navigationRef.navigate('Service', { screen: 'TicketDetail', params: { ticketId: parts[2] } });
       } else if (parts[0] === 'feed' && parts[1] === 'post' && parts[2]) {
         navigationRef.navigate('Feed', { screen: 'PostDetail', params: { postId: parts[2] } });
+      } else if (parts[0] === 'admin' && parts[1] === 'customer-requests') {
+        navigationRef.navigate('More', { screen: 'AdminRequests' });
       } else if (parts[0] === 'notifications') {
         navigationRef.navigate('More', { screen: 'Notifications' });
       }
@@ -59,6 +61,10 @@ export function navigateFromNotification(deepLink) {
         case 'feed':
           if (id) navigationRef.navigate('Feed', { screen: 'PostDetail', params: { postId: id } });
           else navigationRef.navigate('Feed', { screen: 'FeedHome' });
+          break;
+        case 'customer_number_request':
+        case 'customer_number':
+          navigationRef.navigate('More', { screen: 'AdminRequests' });
           break;
         default:
           // Fallback: go to notifications

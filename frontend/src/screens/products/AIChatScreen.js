@@ -116,7 +116,10 @@ export default function AIChatScreen({ route, navigation }) {
     try {
       const response = await aiApi.chat({
         message: text,
-        category: category || undefined,
+        // Default to 'general' when opened from a context without a category —
+        // backend validates `isIn([bike,cleaning,motor,general])` and would 400
+        // on `undefined`, which surfaced as the "no answer" bug.
+        category: category || 'general',
         sessionId: sessionId || undefined,
       });
 
@@ -276,7 +279,7 @@ export default function AIChatScreen({ route, navigation }) {
   return (
     <KeyboardAvoidingView
       style={s.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {/* Messages List (inverted) */}

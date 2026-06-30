@@ -43,7 +43,7 @@ export default function RatingModal({ visible, onSubmit, onSkip, loading }) {
     >
       <KeyboardAvoidingView
         style={s.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={s.container}>
           {/* Header */}

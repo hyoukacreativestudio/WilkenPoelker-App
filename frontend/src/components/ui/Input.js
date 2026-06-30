@@ -19,15 +19,32 @@ export default function Input({
   keyboardType,
   autoCapitalize,
   style,
+  ...rest
 }) {
   const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
+  // Local toggle for password reveal. Only used when the caller doesn't
+  // provide its own rightIcon — so a screen with a custom right-side action
+  // (e.g. search) keeps its behavior.
+  const [revealPassword, setRevealPassword] = useState(false);
 
   const borderColor = error
     ? theme.colors.error
     : isFocused
     ? theme.colors.primary
     : theme.colors.border;
+
+  // Automatic eye toggle for password fields.
+  // If caller passed their own rightIcon, respect it (back-compat with
+  // screens that already wire up their own toggle, e.g. LoginScreen).
+  const showAutoEye = secureTextEntry && !rightIcon;
+  const effectiveSecure = secureTextEntry && !revealPassword;
+  const effectiveRightIcon = showAutoEye
+    ? (revealPassword ? 'eye-off-outline' : 'eye-outline')
+    : rightIcon;
+  const effectiveRightIconPress = showAutoEye
+    ? () => setRevealPassword((v) => !v)
+    : onRightIconPress;
 
   return (
     <View style={[{ marginBottom: theme.spacing.md }, style]}>
@@ -68,7 +85,7 @@ export default function Input({
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={theme.colors.placeholder}
-          secureTextEntry={secureTextEntry}
+          secureTextEntry={effectiveSecure}
           multiline={multiline}
           textAlignVertical={multiline ? 'top' : 'center'}
           editable={!disabled}
@@ -85,25 +102,26 @@ export default function Input({
               paddingVertical: theme.spacing.sm,
             },
           ]}
+          {...rest}
         />
 
-        {rightIcon ? (
-          typeof rightIcon === 'string' ? (
+        {effectiveRightIcon ? (
+          typeof effectiveRightIcon === 'string' ? (
             <TouchableOpacity
-              onPress={onRightIconPress}
-              disabled={!onRightIconPress}
+              onPress={effectiveRightIconPress}
+              disabled={!effectiveRightIconPress}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={{ padding: theme.spacing.xs, marginLeft: theme.spacing.xs }}
               activeOpacity={0.7}
             >
               <MaterialCommunityIcons
-                name={rightIcon}
+                name={effectiveRightIcon}
                 size={20}
                 color={theme.colors.textSecondary}
               />
             </TouchableOpacity>
           ) : (
-            <View style={{ marginLeft: theme.spacing.xs }}>{rightIcon}</View>
+            <View style={{ marginLeft: theme.spacing.xs }}>{effectiveRightIcon}</View>
           )
         ) : null}
       </View>

@@ -105,14 +105,34 @@ async function sendAndCleanup(tokens, notification) {
   for (let i = 0; i < tokens.length; i += batchSize) {
     const batch = tokens.slice(i, i + batchSize);
 
-    const messages = batch.map((token) => ({
-      to: token,
-      title: notification.title,
-      body: notification.body || notification.message,
-      data: notification.data || {},
-      sound: 'default',
-      channelId: notification.data?.category || 'default',
-    }));
+    // Map notification categories to the Android channels we registered in the
+    // app (see NotificationContext.setNotificationChannelAsync). Unknown
+    // categories fall back to "default" — which DOES have sound enabled.
+    const categoryToChannel = {
+      repair: 'repairs',
+      repair_status: 'repairs',
+      repair_ready: 'repairs',
+      new_repair: 'repairs',
+      appointment: 'appointments',
+      appointment_reminder: 'appointments',
+      appointment_proposal: 'appointments',
+    };
+
+    const messages = batch.map((token) => {
+      const category = notification.data?.category || notification.data?.type;
+      const channelId = categoryToChannel[category] || 'default';
+      return {
+        to: token,
+        title: notification.title,
+        body: notification.body || notification.message,
+        data: notification.data || {},
+        // Critical: `sound: 'default'` must be set on the Expo payload AND the
+        // channel must allow sound. Both are configured.
+        sound: 'default',
+        priority: 'high',
+        channelId,
+      };
+    });
 
     try {
       const response = await axios.post(EXPO_PUSH_URL, messages, {

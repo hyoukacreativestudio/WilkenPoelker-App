@@ -175,9 +175,10 @@ async function chat(userId, { category, message, sessionId, images = [] }) {
 
   // Check if OpenAI API key is configured
   if (!config.openai.apiKey) {
-    // Mock response when no API key
+    // No key configured — surface this clearly so we can spot misconfig in prod
+    logger.warn('OpenAI API key missing — using mock reply', { sessionId: session.id });
     reply = getMockResponse(category, message);
-    needsHuman = reply.includes('Ich verbinde Sie mit einem Mitarbeiter');
+    needsHuman = true;
   } else {
     try {
       const OpenAI = require('openai');
@@ -194,7 +195,14 @@ async function chat(userId, { category, message, sessionId, images = [] }) {
       usage = completion.usage || usage;
       needsHuman = reply.includes('Ich verbinde Sie mit einem Mitarbeiter');
     } catch (err) {
-      logger.error('OpenAI API error', { error: err.message, sessionId: session.id });
+      // Log the full failure (auth/quota/network) so we can diagnose from logs
+      logger.error('OpenAI API error', {
+        error: err.message,
+        status: err.status,
+        code: err.code,
+        type: err.type,
+        sessionId: session.id,
+      });
       reply = 'Es tut mir leid, es gab ein technisches Problem. Ich verbinde Sie mit einem Mitarbeiter.';
       needsHuman = true;
     }

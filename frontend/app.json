@@ -37,6 +37,7 @@
       },
       "package": "com.hyoukacreativestudios.wilkenpoelker",
       "versionCode": 1,
+      "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",

@@ -51,7 +51,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
   return (
     <KeyboardAvoidingView
       style={s.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={s.content}>
         <Text style={s.title}>{t('auth.resetPassword')}</Text>
