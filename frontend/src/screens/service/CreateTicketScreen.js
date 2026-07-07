@@ -143,8 +143,10 @@ export default function CreateTicketScreen({ route, navigation }) {
         navigation.goBack();
       }
     } catch (err) {
-      const msg = err.response?.data?.message || t('service.createTicketError');
-      showToast({ type: 'error', message: msg });
+      // Show the actual backend/network error so we can debug production issues
+      const detail = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || 'unknown';
+      const status = err?.status || err?.response?.status || (err?.isNetworkError ? 'network' : '?');
+      showToast({ type: 'error', message: `${t('service.createTicketError')} [${status}] ${detail}` });
     }
   };
 

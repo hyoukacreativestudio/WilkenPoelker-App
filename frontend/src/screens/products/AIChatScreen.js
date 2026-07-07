@@ -139,10 +139,13 @@ export default function AIChatScreen({ route, navigation }) {
 
       setMessages((prev) => [aiMessage, ...prev]);
     } catch (err) {
+      // Surface the real backend/network error to help debug production issues
+      const detail = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || 'unknown';
+      const status = err?.status || err?.response?.status || (err?.isNetworkError ? 'network' : '?');
       const errorMessage = {
         id: generateId(),
         role: 'ai',
-        text: t('ai.errorMessage'),
+        text: `${t('ai.errorMessage')} [${status}] ${detail}`,
         createdAt: new Date().toISOString(),
         isError: true,
       };

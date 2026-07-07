@@ -133,7 +133,10 @@ export default function FeedScreen({ navigation }) {
       showToast({ type: 'success', message: t('feed.postCreatedSuccess') });
     } catch (err) {
       console.error('Feed upload error:', err);
-      showToast({ type: 'error', message: t('feed.createPostError') });
+      // Show the actual backend/network error so we can debug production issues
+      const detail = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || 'unknown';
+      const status = err?.status || err?.response?.status || (err?.isNetworkError ? 'network' : '?');
+      showToast({ type: 'error', message: `${t('feed.createPostError')} [${status}] ${detail}` });
     }
   };
 
