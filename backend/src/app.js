@@ -52,6 +52,13 @@ try {
 }
 
 // Body parsing
+// TEMPORARY DEBUG: log every incoming request BEFORE body-parsing so we can see
+// what actually reaches Express. Remove once mobile POST issue is diagnosed.
+app.use((req, res, next) => {
+  logger.info(`[REQ] ${req.method} ${req.url} UA=${(req.headers['user-agent'] || '').slice(0, 30)} CT=${req.headers['content-type'] || '-'} CL=${req.headers['content-length'] || '-'}`);
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
