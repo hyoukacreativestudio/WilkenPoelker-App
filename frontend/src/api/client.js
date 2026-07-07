@@ -54,20 +54,46 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Request interceptor - attach auth token & handle FormData
+// Request interceptor — attach auth token & handle FormData.
+// Wrapped defensively because on Android release builds an unhandled throw in
+// here surfaces as a bare "Network Error" without ever firing the request.
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await storage.getItem('accessToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    } catch {}
+      // Ensure headers exists (axios usually creates it, but be paranoid)
+      if (!config.headers) config.headers = {};
 
-    // When sending FormData, remove default JSON Content-Type
-    // so that axios/fetch can set the correct multipart boundary
-    if (config.data instanceof FormData) {
-      delete config.headers['Content-Type'];
+      // Attach auth token
+      let token = null;
+      try {
+        token = await storage.getItem('accessToken');
+      } catch (storageErr) {
+        if (__DEV__) console.warn('[apiClient] storage read failed:', storageErr?.message);
+      }
+      if (token) {
+        // Use bracket access so a proxied AxiosHeaders instance behaves the same
+        // as a plain object.
+        try {
+          config.headers['Authorization'] = `Bearer ${token}`;
+        } catch (headerErr) {
+          if (__DEV__) console.warn('[apiClient] setting Authorization failed:', headerErr?.message);
+        }
+      }
+
+      // For FormData: strip Content-Type so RN's networking layer sets the
+      // multipart boundary. Check both casings in case a header proxy is used.
+      if (config.data instanceof FormData) {
+        try {
+          if (config.headers['Content-Type'] !== undefined) delete config.headers['Content-Type'];
+          if (config.headers['content-type'] !== undefined) delete config.headers['content-type'];
+          if (typeof config.headers.delete === 'function') {
+            config.headers.delete('Content-Type');
+          }
+        } catch {}
+      }
+    } catch (interceptorErr) {
+      // Never let the interceptor break the request — log and continue
+      if (__DEV__) console.warn('[apiClient] request interceptor error:', interceptorErr?.message);
     }
 
     return config;
