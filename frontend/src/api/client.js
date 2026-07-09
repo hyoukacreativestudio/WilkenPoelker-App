@@ -33,6 +33,14 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl();
 
+// Give the fetch-based upload helper the same base URL so /feed and /users/avatar
+// hit the same host as the rest of the axios client.
+try {
+  // Lazy require to avoid a circular import at module init
+  const { setUploadBaseUrl } = require('../utils/fetchUpload');
+  setUploadBaseUrl(BASE_URL);
+} catch {}
+
 const apiClient = axios.create({
   baseURL: BASE_URL,
   timeout: 30000,

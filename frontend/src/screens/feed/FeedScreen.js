@@ -100,16 +100,19 @@ export default function FeedScreen({ navigation }) {
 
   const handleCreatePost = async (postData) => {
     try {
-      const formData = new FormData();
-      formData.append('content', postData.content || '');
-      if (postData.image) {
+      // Text-only posts go as JSON to bypass Android RN's FormData issues.
+      // Only build a multipart body when there's actually a file to upload.
+      let payload;
+      if (!postData.image) {
+        payload = { content: postData.content || '', type: 'text' };
+      } else {
+        const formData = new FormData();
+        formData.append('content', postData.content || '');
         if (Platform.OS === 'web') {
-          // On web, use the native File object from expo-image-picker
           const webFile = postData.image.file;
           if (webFile) {
             formData.append('media', webFile, postData.image.name || webFile.name || 'photo.jpg');
           } else {
-            // Fallback: create File from blob URI via FileReader
             const response = await fetch(postData.image.uri);
             const blob = await response.blob();
             const fileName = postData.image.name || 'photo.jpg';
@@ -123,8 +126,9 @@ export default function FeedScreen({ navigation }) {
           });
         }
         formData.append('type', 'image');
+        payload = formData;
       }
-      const result = await createPostApi.execute(formData);
+      const result = await createPostApi.execute(payload);
       const newPost = result?.data?.post || result?.data || result;
       if (newPost) {
         setItems((prev) => [newPost, ...prev]);

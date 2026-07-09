@@ -1,11 +1,16 @@
 import apiClient from './client';
+import { uploadPost } from '../utils/fetchUpload';
 
 export const feedApi = {
   getPosts: (params) => apiClient.get('/feed', { params }),
   getPost: (id) => apiClient.get(`/feed/${id}`),
-  // Let axios + request interceptor handle FormData Content-Type;
-  // setting it to undefined breaks the multipart boundary on web.
-  createPost: (formData) => apiClient.post('/feed', formData),
+  // Multipart uploads bypass axios and go through native fetch (RN + axios +
+  // FormData on release Android is fragile and manifests as "Network Error").
+  // Plain object payloads for text-only posts still go through axios.
+  createPost: (payload) => {
+    if (payload instanceof FormData) return uploadPost('POST', '/feed', payload);
+    return apiClient.post('/feed', payload);
+  },
   updatePost: (id, data) => apiClient.put(`/feed/${id}`, data),
   deletePost: (id) => apiClient.delete(`/feed/${id}`),
   likePost: (id) => apiClient.post(`/feed/${id}/like`),

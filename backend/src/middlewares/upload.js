@@ -50,11 +50,20 @@ const upload = multer({
   },
 });
 
+// Wrap multer so it ONLY runs on multipart/form-data requests. Without this,
+// multer's .single/.array on a JSON request can wipe req.body (or race with
+// express.json), producing 400 VALIDATION_ERROR on requests that were valid JSON.
+const skipUnlessMultipart = (mw) => (req, res, next) => {
+  const ct = (req.headers['content-type'] || '').toLowerCase();
+  if (!ct.startsWith('multipart/form-data')) return next();
+  return mw(req, res, next);
+};
+
 // Single image upload (avatar, post image)
-const uploadSingle = (fieldName = 'image') => upload.single(fieldName);
+const uploadSingle = (fieldName = 'image') => skipUnlessMultipart(upload.single(fieldName));
 
 // Multiple images (post gallery, ticket attachments)
-const uploadMultiple = (fieldName = 'images', maxCount = 10) => upload.array(fieldName, maxCount);
+const uploadMultiple = (fieldName = 'images', maxCount = 10) => skipUnlessMultipart(upload.array(fieldName, maxCount));
 
 // Mixed upload (different field names)
 const uploadFields = (fields) => upload.fields(fields);
