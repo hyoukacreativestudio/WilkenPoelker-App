@@ -93,7 +93,9 @@ export default function MoreMenuScreen({ navigation }) {
       let cancelled = false;
       (async () => {
         try {
-          const res = await customerNumberApi.getAllRequests({ status: 'pending' });
+          // getAllRequests takes a status string, not an object — passing
+          // an object interpolated as "[object Object]" and blew the enum.
+          const res = await customerNumberApi.getAllRequests('pending');
           const list = res.data?.data?.requests || res.data?.data || res.data?.requests || [];
           if (!cancelled) setPendingRequestCount(Array.isArray(list) ? list.length : 0);
         } catch {

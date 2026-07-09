@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import apiClient from './client';
+import { uploadPost } from '../utils/fetchUpload';
 
 export const aiApi = {
   chat: async (data, imagesParam = []) => {
@@ -14,20 +15,15 @@ export const aiApi = {
         const img = images[index];
         const name = img.fileName || `image_${index}.jpg`;
         const type = img.mimeType || 'image/jpeg';
-
         if (Platform.OS === 'web') {
           const webFile = img.file || img._webFile;
-          if (webFile) {
-            formData.append('images', webFile, name);
-          }
+          if (webFile) formData.append('images', webFile, name);
         } else {
           formData.append('images', { uri: img.uri, name, type });
         }
       }
-
-      return apiClient.post('/ai/chat', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Route through native fetch — axios+FormData breaks on Android release APKs
+      return uploadPost('POST', '/ai/chat', formData);
     }
     return apiClient.post('/ai/chat', data);
   },

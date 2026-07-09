@@ -109,31 +109,42 @@ export default function CreateTicketScreen({ route, navigation }) {
     if (!validate()) return;
 
     try {
-      const formData = new FormData();
-      formData.append('title', resolvedTitle);
-      formData.append('type', TITLE_TYPE_MAP[selectedTitleKey] || 'other');
-      formData.append('category', category);
-      formData.append('description', description.trim());
-      formData.append('urgency', 'normal');
-
-      for (let i = 0; i < images.length; i++) {
-        const image = images[i];
-        const fileName = image.fileName || `attachment_${i}.jpg`;
-        if (Platform.OS === 'web') {
-          const webFile = image.file || image._webFile;
-          if (webFile) {
-            formData.append('attachments', webFile, fileName);
+      // Text-only tickets go as JSON — avoids the Android FormData path entirely.
+      // Only build multipart when there are attachments to upload.
+      let payload;
+      if (images.length === 0) {
+        payload = {
+          title: resolvedTitle,
+          type: TITLE_TYPE_MAP[selectedTitleKey] || 'other',
+          category,
+          description: description.trim(),
+          urgency: 'normal',
+        };
+      } else {
+        const formData = new FormData();
+        formData.append('title', resolvedTitle);
+        formData.append('type', TITLE_TYPE_MAP[selectedTitleKey] || 'other');
+        formData.append('category', category);
+        formData.append('description', description.trim());
+        formData.append('urgency', 'normal');
+        for (let i = 0; i < images.length; i++) {
+          const image = images[i];
+          const fileName = image.fileName || `attachment_${i}.jpg`;
+          if (Platform.OS === 'web') {
+            const webFile = image.file || image._webFile;
+            if (webFile) formData.append('attachments', webFile, fileName);
+          } else {
+            formData.append('attachments', {
+              uri: image.uri,
+              type: image.type || 'image/jpeg',
+              name: fileName,
+            });
           }
-        } else {
-          formData.append('attachments', {
-            uri: image.uri,
-            type: image.type || 'image/jpeg',
-            name: fileName,
-          });
         }
+        payload = formData;
       }
 
-      const result = await createTicketApi.execute(formData);
+      const result = await createTicketApi.execute(payload);
       showToast({ type: 'success', message: t('service.ticketCreatedSuccess') });
       const ticketData = result?.data?.ticket || result?.data || result;
       const ticketId = ticketData?._id || ticketData?.id;

@@ -1,10 +1,14 @@
 import apiClient from './client';
+import { uploadPost } from '../utils/fetchUpload';
 
 export const serviceApi = {
-  createTicket: (formData) =>
-    apiClient.post('/service/tickets', formData, {
-      headers: { 'Content-Type': undefined },
-    }),
+  // FormData payloads go through native fetch (RN+axios+FormData on Android
+  // release APKs fails with bare Network Error). Plain-object (JSON) payloads
+  // stay on axios.
+  createTicket: (payload) => {
+    if (payload instanceof FormData) return uploadPost('POST', '/service/tickets', payload);
+    return apiClient.post('/service/tickets', payload);
+  },
   getTickets: (params) => apiClient.get('/service/tickets', { params }),
   getAllTickets: (params) => apiClient.get('/service/tickets/all', { params }),
   getAdminTickets: (params) => apiClient.get('/service/tickets/admin', { params }),
@@ -17,10 +21,10 @@ export const serviceApi = {
   getStaffRatings: (staffId) => apiClient.get(`/service/staff/${staffId}/ratings`),
   getAvailableStaff: (category) => apiClient.get('/service/staff/available', { params: { category } }),
   getChatMessages: (ticketId, params) => apiClient.get(`/service/tickets/${ticketId}/chat`, { params }),
-  sendChatMessage: (ticketId, formData) =>
-    apiClient.post(`/service/tickets/${ticketId}/chat`, formData, {
-      headers: { 'Content-Type': undefined },
-    }),
+  sendChatMessage: (ticketId, payload) => {
+    if (payload instanceof FormData) return uploadPost('POST', `/service/tickets/${ticketId}/chat`, payload);
+    return apiClient.post(`/service/tickets/${ticketId}/chat`, payload);
+  },
   editMessage: (id, message) => apiClient.put(`/service/messages/${id}`, { message }),
   deleteMessage: (id) => apiClient.delete(`/service/messages/${id}`),
   confirmAppointment: (ticketId, date) =>
