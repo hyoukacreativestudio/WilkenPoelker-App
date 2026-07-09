@@ -822,7 +822,7 @@ async function getCustomerTickets(customerId, query, models) {
   const { page = 1, limit = 50 } = query;
 
   const customer = await User.findByPk(customerId, {
-    attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'profilePicture', 'role', 'customerNumber'],
+    attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'profilePicture', 'role', 'customerNumber', 'phone', 'address', 'createdAt'],
   });
   if (!customer) {
     throw new NotFoundError('Customer');

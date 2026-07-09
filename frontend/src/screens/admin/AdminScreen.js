@@ -162,7 +162,8 @@ export default function AdminScreen() {
   const toggleYearlyOverview = () => {
     const next = !yearlyExpanded;
     setYearlyExpanded(next);
-    if (next && !yearlyData) {
+    // Always refetch on expand — otherwise current year stays frozen at first-open snapshot
+    if (next) {
       fetchYearlyOverview(selectedYear);
     }
   };

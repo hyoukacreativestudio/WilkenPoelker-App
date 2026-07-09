@@ -110,10 +110,32 @@ export default function CustomerProfileScreen({ route, navigation }) {
             <Text style={s.infoText}>{customer.email}</Text>
           </View>
         )}
+        {customer.phone && (
+          <View style={s.infoRow}>
+            <MaterialCommunityIcons name="phone-outline" size={14} color={theme.colors.textSecondary} />
+            <Text style={s.infoText}>{customer.phone}</Text>
+          </View>
+        )}
+        {customer.address && (customer.address.street || customer.address.city) && (
+          <View style={s.infoRow}>
+            <MaterialCommunityIcons name="map-marker-outline" size={14} color={theme.colors.textSecondary} />
+            <Text style={s.infoText}>
+              {[customer.address.street, customer.address.zip, customer.address.city].filter(Boolean).join(', ')}
+            </Text>
+          </View>
+        )}
         {customer.customerNumber && (
           <View style={s.infoRow}>
             <MaterialCommunityIcons name="card-account-details-outline" size={14} color={theme.colors.textSecondary} />
             <Text style={s.infoText}>{t('customerProfile.customerNumber')}: {customer.customerNumber}</Text>
+          </View>
+        )}
+        {customer.createdAt && (
+          <View style={s.infoRow}>
+            <MaterialCommunityIcons name="calendar-account-outline" size={14} color={theme.colors.textSecondary} />
+            <Text style={s.infoText}>
+              {t('customerProfile.customerSince', 'Kunde seit')}: {new Date(customer.createdAt).toLocaleDateString('de-DE')}
+            </Text>
           </View>
         )}
 

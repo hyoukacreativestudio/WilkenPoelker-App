@@ -368,6 +368,15 @@ export default function ChatScreen({ route, navigation }) {
     });
   };
 
+  const handleViewCustomer = () => {
+    setShowMenu(false);
+    const partner = chatPartner;
+    if (!partner) return;
+    const customerId = partner._id || partner.id;
+    const name = [partner.firstName, partner.lastName].filter(Boolean).join(' ') || partner.username || '';
+    navigation.navigate('CustomerProfile', { customerId, customerName: name });
+  };
+
   const handleRatingSubmit = async (ratingValue, commentText) => {
     setRatingLoading(true);
     try {
@@ -597,6 +606,15 @@ export default function ChatScreen({ route, navigation }) {
           onPress={() => setShowMenu(false)}
         >
           <View style={s.menuDropdown}>
+            {chatPartner?.role === 'customer' && (
+              <>
+                <TouchableOpacity style={s.menuItem} onPress={handleViewCustomer} activeOpacity={0.7}>
+                  <MaterialCommunityIcons name="account-details" size={20} color={theme.colors.text} />
+                  <Text style={s.menuItemText}>{t('chat.viewCustomer', 'Kundendaten & Historie')}</Text>
+                </TouchableOpacity>
+                <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.divider }} />
+              </>
+            )}
             <TouchableOpacity style={s.menuItem} onPress={handleForward} activeOpacity={0.7}>
               <MaterialCommunityIcons name="account-switch" size={20} color={theme.colors.text} />
               <Text style={s.menuItemText}>{t('chat.transferChat')}</Text>

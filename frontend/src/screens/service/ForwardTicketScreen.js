@@ -42,8 +42,8 @@ export default function ForwardTicketScreen({ route, navigation }) {
     setLoadingStaff(true);
     try {
       const result = await serviceApi.getAvailableStaff(category);
-      const staffData = result.data?.data || [];
-      setStaff(staffData);
+      const staffData = result.data?.data?.staff || result.data?.staff || [];
+      setStaff(Array.isArray(staffData) ? staffData : []);
     } catch (err) {
       showToast({ type: 'error', message: t('serviceAdmin.loadStaffError') });
     } finally {
