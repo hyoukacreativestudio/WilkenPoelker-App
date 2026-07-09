@@ -32,13 +32,24 @@ export function initializeSentry() {
       return event;
     },
 
-    // Ignore common non-critical errors
+    // Do NOT ignore Network errors — those are the ones we most need to see in production
+    // (Previous config swallowed them, which is why POST failures never surfaced.)
     ignoreErrors: [
-      'Network request failed',
       'AbortError',
-      'timeout',
       'ECONNREFUSED',
     ],
+  });
+}
+
+// Explicit breadcrumb helper so the axios interceptor + screens can drop
+// context ("about to POST /feed", "response 400 …") into the trail Sentry keeps.
+export function addBreadcrumb(category, message, data) {
+  if (!SENTRY_DSN) return;
+  Sentry.addBreadcrumb({
+    category,
+    message,
+    level: 'info',
+    data,
   });
 }
 

@@ -3,6 +3,7 @@ import { storage } from '../utils/storage';
 import { authApi } from '../api/auth';
 import { notificationsApi } from '../api/notifications';
 import { subscribeAuthEvents, AUTH_EVENT_LOGOUT } from '../utils/authEvents';
+import { setUser as setSentryUser } from '../config/sentry';
 
 export const AuthContext = createContext(null);
 
@@ -39,8 +40,11 @@ export function AuthProvider({ children }) {
       const userData = await storage.getItem('user');
 
       if (token && userData) {
-        setUser(JSON.parse(userData));
+        const parsed = JSON.parse(userData);
+        setUser(parsed);
         setIsAuthenticated(true);
+        // Tell Sentry who this user is so errors carry that context automatically
+        setSentryUser(parsed);
       }
     } catch {
       // Token invalid or missing
@@ -59,6 +63,7 @@ export function AuthProvider({ children }) {
 
     setUser(userData);
     setIsAuthenticated(true);
+    setSentryUser(userData);
 
     return userData;
   }, []);
@@ -90,6 +95,7 @@ export function AuthProvider({ children }) {
 
     setUser(null);
     setIsAuthenticated(false);
+    setSentryUser(null);
   }, []);
 
   const updateUser = useCallback(async (updatedData) => {

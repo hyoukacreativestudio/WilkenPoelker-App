@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { storage } from '../utils/storage';
 import { emitAuthEvent, AUTH_EVENT_LOGOUT } from '../utils/authEvents';
+import { addBreadcrumb, captureError } from '../config/sentry';
 
 // Environment-based API URL with fallback
 const getBaseUrl = () => {
@@ -91,9 +92,17 @@ apiClient.interceptors.request.use(
           }
         } catch {}
       }
+
+      // Breadcrumb: what we are about to send. Sentry keeps the last 100 —
+      // when an error hits, we'll see the exact request that preceded it.
+      addBreadcrumb('http.request', `${config.method?.toUpperCase()} ${config.url}`, {
+        hasAuth: !!config.headers?.Authorization,
+        isFormData: config.data instanceof FormData,
+        contentType: config.headers?.['Content-Type'] || config.headers?.['content-type'] || '(unset)',
+      });
     } catch (interceptorErr) {
-      // Never let the interceptor break the request — log and continue
       if (__DEV__) console.warn('[apiClient] request interceptor error:', interceptorErr?.message);
+      captureError(interceptorErr, { hint: 'request-interceptor', url: config?.url });
     }
 
     return config;
@@ -173,6 +182,25 @@ apiClient.interceptors.response.use(
       details: error.response?.data?.error?.details || null,
       isNetworkError: !error.response,
     };
+
+    // Breadcrumb + Sentry capture for every failed API call so we can see
+    // in production exactly which endpoint blew up and what response came back.
+    try {
+      addBreadcrumb('http.response.error', `${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} -> ${normalizedError.status || 'network'}`, {
+        code: normalizedError.code,
+        isNetworkError: normalizedError.isNetworkError,
+        message: normalizedError.message,
+      });
+      // Report so Sentry sees the actual failure with full context
+      const err = new Error(`API ${originalRequest?.method?.toUpperCase() || 'REQ'} ${originalRequest?.url || '?'} failed: ${normalizedError.message}`);
+      captureError(err, {
+        status: normalizedError.status,
+        code: normalizedError.code,
+        isNetworkError: normalizedError.isNetworkError,
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+      });
+    } catch {}
 
     return Promise.reject(normalizedError);
   }
