@@ -82,14 +82,14 @@
       [
         "@sentry/react-native",
         {
-          "organization": "hyouka-creative-studio",
-          "project": "wilkenpoelker-app"
+          "organization": "wilken-poelker",
+          "project": "wilkenpoelker-frontend"
         }
       ]
     ],
     "extra": {
       "apiBaseUrl": "https://api.wilkenpoelker.de/api",
-      "sentryDsn": "https://639710648792f8628edfb8552a94d15c@o4510895813820416.ingest.de.sentry.io/4510895927394384",
+      "sentryDsn": "https://e9129a17401c7b6f8a4af3887e4f453a@o4511693611335680.ingest.de.sentry.io/4511704458264656",
       "eas": {
         "projectId": "5e6e7adf-e7fc-4693-8382-d5bc1c51d842"
       }
