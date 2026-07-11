@@ -395,7 +395,7 @@ const confirmAppointment = asyncHandler(async (req, res) => {
 
 // GET /customers/:id/tickets - Get all tickets for a specific customer (staff only)
 const getCustomerTickets = asyncHandler(async (req, res) => {
-  const result = await serviceService.getCustomerTickets(req.params.id, req.query, models);
+  const result = await serviceService.getCustomerTickets(req.params.id, req.user.id, req.query, models);
 
   res.json({
     success: true,

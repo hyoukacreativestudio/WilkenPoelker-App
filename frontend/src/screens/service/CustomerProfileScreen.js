@@ -57,16 +57,10 @@ export default function CustomerProfileScreen({ route, navigation }) {
       const result = await serviceApi.getCustomerTickets(customerId);
       const data = result.data?.data;
       setCustomer(data?.customer || null);
-      const all = data?.tickets || [];
-      // Non-admin staff only see tickets they have handled themselves — hides
-      // work of colleagues + prevents guessing who dealt with each customer.
-      const visible = isAdmin
-        ? all
-        : all.filter((t) => {
-            const assigneeId = t.assignedTo || t.assignee?._id || t.assignee?.id;
-            return assigneeId && String(assigneeId) === String(currentUserId);
-          });
-      setTickets(visible);
+      // Every staff member sees the full ticket history so recurring problems
+      // can be traced back to what was already tried. Assignee identity is
+      // still hidden for non-admins in the list render — see renderTicketItem.
+      setTickets(data?.tickets || []);
     } catch (err) {
       showToast({ type: 'error', message: t('customerProfile.loadError') });
     } finally {

@@ -304,7 +304,15 @@ async function getTicketById(ticketId, userId, models) {
       requestingUser.role === 'service_manager' ||
       requestingUser.role === categoryRoleMap[ticket.category];
 
+    // Staff currently handling another ticket from the same customer can also
+    // read this one — needed so they can review the customer's history for
+    // recurring problems.
+    let hasContext = false;
     if (!isAdmin && !isCategoryManager && !isTicketCreator && !isAssigned && !isUnassigned) {
+      hasContext = await hasActiveTicketFromCustomer(userId, ticket.userId, models);
+    }
+
+    if (!isAdmin && !isCategoryManager && !isTicketCreator && !isAssigned && !isUnassigned && !hasContext) {
       throw new AppError('Dieses Ticket ist einem anderen Mitarbeiter zugewiesen.', 403, 'TICKET_ACCESS_DENIED');
     }
   }
@@ -674,13 +682,19 @@ async function getChatMessages(ticketId, userId, query, models) {
     throw new NotFoundError('Ticket');
   }
 
-  // Chat access check: only ticket creator, assigned staff, or admin
+  // Chat access check: ticket creator, assigned staff, admin, or staff currently
+  // handling another ticket from the same customer (context read of history).
   const user = await User.findByPk(userId, { attributes: ['id', 'role'] });
   const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
   const isTicketOwner = ticket.userId === userId;
   const isAssigned = ticket.assignedTo === userId;
 
+  let hasContext = false;
   if (!isAdmin && !isTicketOwner && !isAssigned) {
+    hasContext = await hasActiveTicketFromCustomer(userId, ticket.userId, models);
+  }
+
+  if (!isAdmin && !isTicketOwner && !isAssigned && !hasContext) {
     throw new AppError('You do not have access to this chat', 403, 'CHAT_ACCESS_DENIED');
   }
 
@@ -816,8 +830,23 @@ async function confirmAppointment(ticketId, userId, data, models) {
   return appointment;
 }
 
+// Returns true if `staffUserId` is currently assigned to a non-closed ticket
+// belonging to `customerId`. Grants read access to that customer's prior tickets
+// so recurring problems can be traced — but only while actively handling.
+async function hasActiveTicketFromCustomer(staffUserId, customerId, models) {
+  const { Ticket } = models;
+  const active = await Ticket.count({
+    where: {
+      userId: customerId,
+      assignedTo: staffUserId,
+      status: { [Op.notIn]: ['closed', 'completed', 'cancelled'] },
+    },
+  });
+  return active > 0;
+}
+
 // Get all tickets for a specific customer (staff only)
-async function getCustomerTickets(customerId, query, models) {
+async function getCustomerTickets(customerId, staffUserId, query, models) {
   const { Ticket, User, ChatMessage } = models;
   const { page = 1, limit = 50 } = query;
 
@@ -826,6 +855,21 @@ async function getCustomerTickets(customerId, query, models) {
   });
   if (!customer) {
     throw new NotFoundError('Customer');
+  }
+
+  // Access gate: admins/super_admins see any customer. Other staff only when
+  // they currently handle a ticket from this customer.
+  const staff = await User.findByPk(staffUserId, { attributes: ['role'] });
+  const isAdmin = staff && (staff.role === 'admin' || staff.role === 'super_admin');
+  if (!isAdmin) {
+    const allowed = await hasActiveTicketFromCustomer(staffUserId, customerId, models);
+    if (!allowed) {
+      throw new AppError(
+        'Sie können die Kundenhistorie nur einsehen, während Sie ein Ticket dieses Kunden bearbeiten.',
+        403,
+        'CUSTOMER_HISTORY_DENIED'
+      );
+    }
   }
 
   const offset = (parseInt(page) - 1) * parseInt(limit);
