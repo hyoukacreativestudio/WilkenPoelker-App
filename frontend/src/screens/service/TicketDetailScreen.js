@@ -6,12 +6,15 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Image,
+  TouchableOpacity,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { useApi } from '../../hooks/useApi';
 import { serviceApi } from '../../api/service';
+import { getServerUrl } from '../../api/client';
 import Button from '../../components/ui/Button';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import { formatRelativeTime } from '../../utils/formatters';
@@ -208,6 +211,32 @@ export default function TicketDetailScreen({ route, navigation }) {
           {ticket.description}
         </Text>
       </View>
+
+      {/* Attachments Card (only when the ticket has images) */}
+      {Array.isArray(ticket.attachments) && ticket.attachments.length > 0 && (
+        <View style={s.card}>
+          <Text style={s.cardTitle}>{t('service.attachments', 'Anhänge')} ({ticket.attachments.length})</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+            {ticket.attachments.map((att, idx) => {
+              const rawUrl = typeof att === 'string' ? att : (att.url || att.uri || '');
+              const uri = rawUrl.startsWith('http') ? rawUrl : `${getServerUrl()}${rawUrl}`;
+              if (!rawUrl) return null;
+              return (
+                <TouchableOpacity
+                  key={idx}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate('ImageViewer', { uri })}
+                >
+                  <Image
+                    source={{ uri }}
+                    style={{ width: 96, height: 96, borderRadius: theme.borderRadius.md, backgroundColor: theme.colors.surface }}
+                  />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      )}
 
       {/* Status Timeline */}
       <View style={s.card}>

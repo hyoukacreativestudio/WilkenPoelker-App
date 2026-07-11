@@ -194,10 +194,27 @@ apiClient.interceptors.response.use(
     // Breadcrumb + Sentry capture for every failed API call so we can see
     // in production exactly which endpoint blew up and what response came back.
     try {
+      // Redact PII (passwords, tokens) but keep everything else so we can debug validation errors
+      const safeBody = (() => {
+        try {
+          const raw = originalRequest?.data;
+          if (!raw || raw instanceof FormData) return raw instanceof FormData ? '[FormData]' : null;
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          const clone = { ...parsed };
+          for (const k of Object.keys(clone)) {
+            if (/password|token|secret/i.test(k)) clone[k] = '[redacted]';
+            if (typeof clone[k] === 'string' && clone[k].length > 200) clone[k] = clone[k].slice(0, 200) + '…';
+          }
+          return clone;
+        } catch { return '[unparseable]'; }
+      })();
+
       addBreadcrumb('http.response.error', `${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} -> ${normalizedError.status || 'network'}`, {
         code: normalizedError.code,
         isNetworkError: normalizedError.isNetworkError,
         message: normalizedError.message,
+        details: normalizedError.details,
+        body: safeBody,
       });
       // Report so Sentry sees the actual failure with full context
       const err = new Error(`API ${originalRequest?.method?.toUpperCase() || 'REQ'} ${originalRequest?.url || '?'} failed: ${normalizedError.message}`);
@@ -207,6 +224,8 @@ apiClient.interceptors.response.use(
         isNetworkError: normalizedError.isNetworkError,
         url: originalRequest?.url,
         method: originalRequest?.method,
+        details: normalizedError.details,
+        requestBody: safeBody,
       });
     } catch {}
 

@@ -17,6 +17,14 @@ function validate(validations) {
       value: err.value,
     }));
 
+    try {
+      const safeBody = { ...(req.body || {}) };
+      for (const k of Object.keys(safeBody)) {
+        if (/password|token|secret/i.test(k)) safeBody[k] = '[redacted]';
+      }
+      console.log('[VALIDATE FAIL]', req.method, req.originalUrl, 'body=', JSON.stringify(safeBody), 'errors=', JSON.stringify(formattedErrors));
+    } catch {}
+
     next(new ValidationError(formattedErrors));
   };
 }

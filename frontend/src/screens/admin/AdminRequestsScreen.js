@@ -293,7 +293,8 @@ export default function AdminRequestsScreen({ navigation }) {
   const fetchRequests = useCallback(async (status) => {
     try {
       const res = await customerNumberApi.getAllRequests(status || activeTab);
-      setRequests(res.data?.requests || res.data || []);
+      const list = res.data?.data?.requests || res.data?.requests || res.data?.data || [];
+      setRequests(Array.isArray(list) ? list : []);
     } catch (err) {
       // Error handled silently - UI shows empty state
     }

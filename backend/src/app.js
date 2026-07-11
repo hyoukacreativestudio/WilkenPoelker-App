@@ -268,6 +268,62 @@ cron.schedule('*/30 * * * *', async () => {
   await sendAppointmentReminders();
 });
 
+// Auto-delete chat and ticket attachments older than 30 days (runs daily at 03:15)
+cron.schedule('15 3 * * *', async () => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const { Op } = require('sequelize');
+    const ChatMessage = require('./models/ChatMessage');
+    const Ticket = require('./models/Ticket');
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+
+    const removeLocalFile = (url) => {
+      if (!url || typeof url !== 'string') return;
+      if (!url.startsWith('/uploads/')) return; // skip Cloudinary/remote
+      const safe = path.normalize(url.replace(/^\/uploads\//, ''));
+      if (safe.includes('..')) return;
+      const full = path.join(uploadsDir, safe);
+      fs.promises.unlink(full).catch(() => {});
+    };
+
+    // Chat messages older than 30d: strip attachments
+    const oldMessages = await ChatMessage.findAll({
+      where: { createdAt: { [Op.lt]: cutoff }, attachments: { [Op.ne]: null } },
+      attributes: ['id', 'attachments'],
+    });
+    let stripped = 0;
+    for (const msg of oldMessages) {
+      const list = Array.isArray(msg.attachments) ? msg.attachments : [];
+      if (list.length === 0) continue;
+      for (const att of list) removeLocalFile(typeof att === 'string' ? att : att?.url);
+      await msg.update({ attachments: [] });
+      stripped++;
+    }
+
+    // Tickets older than 30d: strip attachments (chat and history remain)
+    const oldTickets = await Ticket.findAll({
+      where: { createdAt: { [Op.lt]: cutoff } },
+      attributes: ['id', 'attachments'],
+    });
+    let ticketStripped = 0;
+    for (const ticket of oldTickets) {
+      const list = Array.isArray(ticket.attachments) ? ticket.attachments : [];
+      if (list.length === 0) continue;
+      for (const att of list) removeLocalFile(typeof att === 'string' ? att : att?.url);
+      await ticket.update({ attachments: [] });
+      ticketStripped++;
+    }
+
+    if (stripped + ticketStripped > 0) {
+      logger.info(`Cron: stripped ${stripped} old chat message attachments + ${ticketStripped} old ticket attachments`);
+    }
+  } catch (err) {
+    logger.error('Cron: attachment cleanup error', { error: err.message });
+  }
+});
+
 // Archive acknowledged repairs every Sunday at 23:59
 cron.schedule('59 23 * * 0', async () => {
   try {
