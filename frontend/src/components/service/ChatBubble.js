@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { formatTime } from '../../utils/formatters';
 import { getServerUrl } from '../../api/client';
 
 export default function ChatBubble({ message, isOwn, onPressUser, style }) {
+  const navigation = useNavigation();
   const { theme } = useTheme();
 
   const { message: text, attachments, createdAt, isSystemMessage } = message;
@@ -153,18 +155,23 @@ export default function ChatBubble({ message, isOwn, onPressUser, style }) {
                     ? `${getServerUrl()}${rawUrl}`
                     : rawUrl;
                   return (
-                    <Image
+                    <TouchableOpacity
                       key={index}
-                      source={{ uri: imageUri }}
-                      style={{
-                        width: 180,
-                        height: 135,
-                        borderRadius: theme.borderRadius.sm,
-                        marginRight: theme.spacing.xs,
-                        marginBottom: theme.spacing.xs,
-                      }}
-                      resizeMode="cover"
-                    />
+                      activeOpacity={0.85}
+                      onPress={() => navigation.navigate('ImageViewer', { uri: imageUri })}
+                    >
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={{
+                          width: 180,
+                          height: 135,
+                          borderRadius: theme.borderRadius.sm,
+                          marginRight: theme.spacing.xs,
+                          marginBottom: theme.spacing.xs,
+                        }}
+                        resizeMode="cover"
+                      />
+                    </TouchableOpacity>
                   );
                 })}
               </View>

@@ -11,6 +11,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../hooks/useAuth';
 import { serviceApi } from '../../api/service';
 import { getServerUrl } from '../../api/client';
 import { formatRelativeTime } from '../../utils/formatters';
@@ -31,6 +32,9 @@ export default function CustomerProfileScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const currentUserId = user?._id || user?.id;
+  const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
 
   const [customer, setCustomer] = useState(null);
   const [tickets, setTickets] = useState([]);
@@ -53,7 +57,16 @@ export default function CustomerProfileScreen({ route, navigation }) {
       const result = await serviceApi.getCustomerTickets(customerId);
       const data = result.data?.data;
       setCustomer(data?.customer || null);
-      setTickets(data?.tickets || []);
+      const all = data?.tickets || [];
+      // Non-admin staff only see tickets they have handled themselves — hides
+      // work of colleagues + prevents guessing who dealt with each customer.
+      const visible = isAdmin
+        ? all
+        : all.filter((t) => {
+            const assigneeId = t.assignedTo || t.assignee?._id || t.assignee?.id;
+            return assigneeId && String(assigneeId) === String(currentUserId);
+          });
+      setTickets(visible);
     } catch (err) {
       showToast({ type: 'error', message: t('customerProfile.loadError') });
     } finally {
@@ -94,7 +107,12 @@ export default function CustomerProfileScreen({ route, navigation }) {
     return (
       <View style={s.headerCard}>
         {avatar ? (
-          <Image source={{ uri: avatar }} style={s.avatar} />
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('ImageViewer', { uri: avatar })}
+          >
+            <Image source={{ uri: avatar }} style={s.avatar} />
+          </TouchableOpacity>
         ) : (
           <View style={[s.avatar, { backgroundColor: theme.colors.primary + '20', alignItems: 'center', justifyContent: 'center' }]}>
             <MaterialCommunityIcons name="account" size={36} color={theme.colors.primary} />
@@ -161,7 +179,9 @@ export default function CustomerProfileScreen({ route, navigation }) {
 
   const renderTicketItem = ({ item }) => {
     const statusColor = getStatusColor(item.status);
-    const assigneeName = item.assignee
+    // Only admins see who handled a ticket — non-admin staff must not know
+    // which colleague dealt with the customer previously.
+    const assigneeName = isAdmin && item.assignee
       ? (item.assignee.firstName || item.assignee.username || '')
       : null;
 

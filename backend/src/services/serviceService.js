@@ -265,7 +265,7 @@ async function getTicketById(ticketId, userId, models) {
 
   const ticket = await Ticket.findByPk(ticketId, {
     include: [
-      { model: User, as: 'creator', attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'role', 'profilePicture'] },
+      { model: User, as: 'creator', attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'role', 'profilePicture', 'phone', 'address', 'customerNumber'] },
       { model: User, as: 'assignee', attributes: ['id', 'username', 'firstName', 'lastName', 'role', 'profilePicture'] },
     ],
   });

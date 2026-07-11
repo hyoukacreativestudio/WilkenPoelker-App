@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Modal, Pressable, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { getServerUrl } from '../../api/client';
 import { formatRelativeTime, truncateText } from '../../utils/formatters';
@@ -10,6 +11,7 @@ import { getInitials } from '../../utils/helpers';
 export default function PostCard({ post, onLike, onComment, onShare, onPress, onUserPress, onDelete, onEdit, isAdmin, style }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const navigation = useNavigation();
   const [showFullContent, setShowFullContent] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [imageAspect, setImageAspect] = useState(4 / 3);
@@ -147,13 +149,21 @@ export default function PostCard({ post, onLike, onComment, onShare, onPress, on
               />
             </View>
           ) : (
-            <Image
-              source={{ uri: mediaUrl.startsWith('http') ? mediaUrl : `${getServerUrl()}${mediaUrl}` }}
-              style={{ width: '100%', aspectRatio: imageAspect }}
-              resizeMode="contain"
-              onLoad={onImageLoad}
-              onError={() => setMediaError(true)}
-            />
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => {
+                const uri = mediaUrl.startsWith('http') ? mediaUrl : `${getServerUrl()}${mediaUrl}`;
+                navigation.navigate('ImageViewer', { uri });
+              }}
+            >
+              <Image
+                source={{ uri: mediaUrl.startsWith('http') ? mediaUrl : `${getServerUrl()}${mediaUrl}` }}
+                style={{ width: '100%', aspectRatio: imageAspect }}
+                resizeMode="contain"
+                onLoad={onImageLoad}
+                onError={() => setMediaError(true)}
+              />
+            </TouchableOpacity>
           )}
         </View>
       ) : null}

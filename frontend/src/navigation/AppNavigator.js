@@ -7,6 +7,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useOffline } from '../hooks/useOffline';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
+import ImageViewerScreen from '../screens/shared/ImageViewerScreen';
 import ConnectionErrorScreen from '../components/shared/ConnectionErrorScreen';
 import linking from './linking';
 import { navigationRef } from './navigationRef';
@@ -58,7 +59,14 @@ export default function AppNavigator() {
     >
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <RootStack.Screen name="Main" component={MainTabs} />
+          <>
+            <RootStack.Screen name="Main" component={MainTabs} />
+            <RootStack.Screen
+              name="ImageViewer"
+              component={ImageViewerScreen}
+              options={{ presentation: 'transparentModal', animation: 'fade' }}
+            />
+          </>
         ) : (
           <RootStack.Screen name="Auth" component={AuthStack} />
         )}

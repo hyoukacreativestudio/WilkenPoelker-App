@@ -117,7 +117,7 @@ export default function ServiceAiChatScreen({ route, navigation }) {
       const response = await aiApi.chat({
         category,
         message: trimmed,
-        sessionId,
+        sessionId: sessionId || undefined,
         images: imagesToSend,
       });
 

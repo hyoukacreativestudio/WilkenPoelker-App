@@ -13,6 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { useApi } from '../../hooks/useApi';
+import { useAuth } from '../../hooks/useAuth';
 import { serviceApi } from '../../api/service';
 import { getServerUrl } from '../../api/client';
 import Button from '../../components/ui/Button';
@@ -27,6 +28,8 @@ export default function TicketDetailScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const isStaff = user && user.role !== 'customer';
 
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -203,6 +206,51 @@ export default function TicketDetailScreen({ route, navigation }) {
           </Text>
         </View>
       </View>
+
+      {/* Customer Card (staff view) */}
+      {isStaff && ticket.creator && ticket.creator.role === 'customer' && (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => {
+            const customerId = ticket.creator._id || ticket.creator.id;
+            const name = [ticket.creator.firstName, ticket.creator.lastName].filter(Boolean).join(' ') || ticket.creator.username || '';
+            navigation.navigate('CustomerProfile', { customerId, customerName: name });
+          }}
+        >
+          <View style={s.card}>
+            <Text style={s.cardTitle}>{t('service.customer', 'Kunde')}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {ticket.creator.profilePicture ? (
+                <Image
+                  source={{ uri: (ticket.creator.profilePicture.startsWith('/uploads') ? getServerUrl() : '') + ticket.creator.profilePicture }}
+                  style={{ width: 48, height: 48, borderRadius: 24, marginRight: theme.spacing.md }}
+                />
+              ) : (
+                <View style={{ width: 48, height: 48, borderRadius: 24, marginRight: theme.spacing.md, backgroundColor: theme.colors.primary + '20', alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialCommunityIcons name="account" size={26} color={theme.colors.primary} />
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={[theme.typography.styles.body, { color: theme.colors.text, fontWeight: theme.typography.weights.semiBold }]}>
+                  {[ticket.creator.firstName, ticket.creator.lastName].filter(Boolean).join(' ') || ticket.creator.username}
+                </Text>
+                {ticket.creator.customerNumber ? (
+                  <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary }]}>
+                    {t('customerProfile.customerNumber', 'Kundennr.')}: {ticket.creator.customerNumber}
+                  </Text>
+                ) : null}
+                {ticket.creator.phone ? (
+                  <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary }]}>{ticket.creator.phone}</Text>
+                ) : null}
+                {ticket.creator.email ? (
+                  <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary }]}>{ticket.creator.email}</Text>
+                ) : null}
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.textTertiary} />
+            </View>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Description Card */}
       <View style={s.card}>

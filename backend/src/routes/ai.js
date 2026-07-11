@@ -22,7 +22,7 @@ router.post(
       .isLength({ max: 2000 })
       .withMessage('Nachricht darf maximal 2000 Zeichen lang sein')
       .trim(),
-    body('sessionId').optional().isUUID().withMessage('Ungueltige Session-ID'),
+    body('sessionId').optional({ nullable: true, checkFalsy: true }).isUUID().withMessage('Ungueltige Session-ID'),
   ]),
   aiController.chat
 );
