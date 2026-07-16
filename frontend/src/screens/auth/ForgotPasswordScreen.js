@@ -67,15 +67,17 @@ export default function ForgotPasswordScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={s.content}>
-        <MaterialCommunityIcons
-          name="lock-reset"
-          size={64}
-          color={theme.colors.primary}
-        />
-        <Text style={s.title}>{t('auth.forgotPassword')}</Text>
-        <Text style={s.subtitle}>
-          {t('auth.resetEmailSent')}
-        </Text>
+        <View style={{ alignItems: 'center', marginBottom: theme.spacing.lg }}>
+          <MaterialCommunityIcons
+            name="lock-reset"
+            size={64}
+            color={theme.colors.primary}
+          />
+          <Text style={s.title}>{t('auth.forgotPassword')}</Text>
+          <Text style={s.subtitle}>
+            {t('auth.forgotPasswordHint', 'Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link zum Zurücksetzen deines Passworts.')}
+          </Text>
+        </View>
 
         <Input
           label={t('auth.email')}
@@ -84,6 +86,8 @@ export default function ForgotPasswordScreen({ navigation }) {
           placeholder={t('auth.email')}
           keyboardType="email-address"
           autoCapitalize="none"
+          autoComplete="email"
+          textContentType="emailAddress"
         />
 
         <Button
@@ -117,8 +121,6 @@ const styles = (theme) =>
       flex: 1,
       justifyContent: 'center',
       padding: theme.spacing.lg,
-      gap: theme.spacing.md,
-      alignItems: 'center',
     },
     title: {
       ...theme.typography.styles.h3,
@@ -129,7 +131,7 @@ const styles = (theme) =>
       ...theme.typography.styles.body,
       color: theme.colors.textSecondary,
       textAlign: 'center',
-      marginBottom: theme.spacing.lg,
+      marginTop: theme.spacing.sm,
     },
     successContent: {
       flex: 1,
