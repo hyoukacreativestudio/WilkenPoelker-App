@@ -324,6 +324,20 @@ cron.schedule('15 3 * * *', async () => {
   }
 });
 
+// Taifun SFTP inbox: import any XML files Bruno dropped, every 5 minutes.
+// Successful imports move to processed/, failures to failed/ with an error log.
+cron.schedule('*/5 * * * *', async () => {
+  try {
+    const { scanAndImport } = require('./services/taifunFolderWatcher');
+    const result = await scanAndImport();
+    if (result.scanned > 0) {
+      logger.info('Cron: Taifun inbox scan', result);
+    }
+  } catch (err) {
+    logger.error('Cron: Taifun inbox scan failed', { error: err.message });
+  }
+});
+
 // Archive acknowledged repairs every Sunday at 23:59
 cron.schedule('59 23 * * 0', async () => {
   try {
