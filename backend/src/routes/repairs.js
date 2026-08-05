@@ -26,6 +26,23 @@ router.get(
   repairController.getAllRepairs
 );
 
+// GET /api/repairs/outreach - Staff: Taifun orders without an app account, for
+// phone outreach. Placed before /:id so "outreach" isn't captured as an id.
+router.get(
+  '/outreach',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.SERVICE_MANAGER, ROLES.BIKE_MANAGER, ROLES.CLEANING_MANAGER, ROLES.MOTOR_MANAGER, ROLES.ROBBY_MANAGER),
+  repairController.getOutreach
+);
+
+// PATCH /api/repairs/outreach/:nr/reached - Staff: toggle "reached" for a customer
+router.patch(
+  '/outreach/:nr/reached',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.SERVICE_MANAGER, ROLES.BIKE_MANAGER, ROLES.CLEANING_MANAGER, ROLES.MOTOR_MANAGER, ROLES.ROBBY_MANAGER),
+  repairController.markOutreachReached
+);
+
 // POST /api/repairs - Request new repair (authenticated)
 router.post(
   '/',

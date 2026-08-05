@@ -64,6 +64,12 @@ export default function RepairsListScreen({ navigation }) {
   const [adminTab, setAdminTab] = useState('open');
   const [categoryTab, setCategoryTab] = useState('reparatur');
 
+  // Staff outreach list (Taifun orders without an app account)
+  const [outreach, setOutreach] = useState([]);
+  const [outreachCounts, setOutreachCounts] = useState({ open: 0, reached: 0, total: 0 });
+  const [outreachLoading, setOutreachLoading] = useState(false);
+  const [outreachFilter, setOutreachFilter] = useState('open'); // 'open' | 'all'
+
   // Admin-Bereich: aufklappbar
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
 
@@ -165,6 +171,42 @@ export default function RepairsListScreen({ navigation }) {
   const openCount = useMemo(() => allRepairs.filter((r) => r.status !== 'ready' && r.status !== 'completed' && !r.archivedAt).length, [allRepairs]);
   const readyCount = useMemo(() => allRepairs.filter((r) => r.status === 'ready' && !r.archivedAt).length, [allRepairs]);
   const archivedCount = useMemo(() => allRepairs.filter((r) => r.archivedAt || r.status === 'completed').length, [allRepairs]);
+
+  // Fetch the staff outreach list (customers without an app account to call)
+  const fetchOutreach = useCallback(async (filter) => {
+    setOutreachLoading(true);
+    try {
+      const res = await repairsApi.getOutreach({ filter: filter || outreachFilter, scope: 'no_account' });
+      const data = res?.data?.data || res?.data;
+      setOutreach(data?.items || []);
+      setOutreachCounts(data?.counts || { open: 0, reached: 0, total: 0 });
+    } catch (e) {
+      // silent — staff can pull-to-refresh
+    } finally {
+      setOutreachLoading(false);
+    }
+  }, [outreachFilter]);
+
+  useEffect(() => {
+    if (isStaff && adminSectionOpen && adminTab === 'kontakte') {
+      fetchOutreach();
+    }
+  }, [isStaff, adminSectionOpen, adminTab, outreachFilter, fetchOutreach]);
+
+  // Toggle "reached" for one customer (optimistic)
+  const toggleReached = useCallback(async (item) => {
+    const next = !item.reachedAt;
+    const nowIso = new Date().toISOString();
+    setOutreach((prev) => prev.map((o) => (o.nr === item.nr ? { ...o, reachedAt: next ? nowIso : null } : o)));
+    setOutreachCounts((c) => ({ ...c, open: c.open + (next ? -1 : 1), reached: c.reached + (next ? 1 : -1) }));
+    try {
+      await repairsApi.markOutreachReached(item.nr, next);
+    } catch (e) {
+      // revert on failure
+      setOutreach((prev) => prev.map((o) => (o.nr === item.nr ? { ...o, reachedAt: item.reachedAt } : o)));
+      setOutreachCounts((c) => ({ ...c, open: c.open + (next ? 1 : -1), reached: c.reached + (next ? -1 : 1) }));
+    }
+  }, []);
 
   const getStatusLabel = useCallback((status, category) => {
     // 'ready' is shared across categories; leasing shows its own label.
@@ -447,6 +489,7 @@ export default function RepairsListScreen({ navigation }) {
       { key: 'open', label: t('repairs.tabOpen', 'Offen'), count: openCount, icon: 'wrench-outline' },
       { key: 'ready', label: t('repairs.tabReady', 'Fertig'), count: readyCount, icon: 'check-circle-outline' },
       { key: 'archived', label: t('repairs.tabArchived', 'Abgeschlossen'), count: archivedCount, icon: 'archive-outline' },
+      { key: 'kontakte', label: t('repairs.tabContacts', 'Kontakte'), count: outreachCounts.open, icon: 'phone-outline' },
     ];
 
     return (
@@ -504,6 +547,143 @@ export default function RepairsListScreen({ navigation }) {
       </View>
     );
   };
+
+  // One customer in the staff outreach (contact) list
+  const renderOutreachItem = (item) => {
+    const reached = !!item.reachedAt;
+    const tel = item.phone || item.mobile;
+    return (
+      <View
+        key={String(item.nr)}
+        style={{
+          backgroundColor: theme.colors.card,
+          borderRadius: theme.borderRadius.lg,
+          padding: theme.spacing.md,
+          marginHorizontal: theme.spacing.md,
+          marginBottom: theme.spacing.sm,
+          opacity: reached ? 0.6 : 1,
+          borderLeftWidth: 4,
+          borderLeftColor: reached ? '#38A169' : '#ECC94B',
+          ...theme.shadows.sm,
+        }}
+      >
+        {/* Name + status */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+          <Text style={[theme.typography.styles.body, { color: theme.colors.text, fontWeight: theme.typography.weights.bold, flex: 1 }]} numberOfLines={1}>
+            {item.customerName || item.kdNr || t('repairs.unknownCustomer', 'Unbekannter Kunde')}
+          </Text>
+          {item.appStatusLabel ? (
+            <Text style={[theme.typography.styles.small, { color: theme.colors.textTertiary, marginLeft: theme.spacing.sm }]} numberOfLines={1}>
+              {item.appStatusLabel}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Address + order info */}
+        {(item.city || item.info) ? (
+          <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary, marginBottom: theme.spacing.xs }]} numberOfLines={1}>
+            {[item.zip, item.city].filter(Boolean).join(' ')}{item.info ? `  ·  ${item.info}` : ''}
+          </Text>
+        ) : null}
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: theme.spacing.xs }}>
+          {/* Call */}
+          {tel ? (
+            <TouchableOpacity
+              onPress={() => Linking.openURL(`tel:${tel}`)}
+              style={{ flexDirection: 'row', alignItems: 'center' }}
+            >
+              <MaterialCommunityIcons name="phone" size={16} color={theme.colors.primary} />
+              <Text style={[theme.typography.styles.caption, { color: theme.colors.primary, marginLeft: 4 }]}>{tel}</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary }]}>
+              {t('repairs.noPhone', 'Keine Nummer')}
+            </Text>
+          )}
+
+          {/* Reached toggle */}
+          <TouchableOpacity
+            onPress={() => toggleReached(item)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: 4,
+              paddingHorizontal: theme.spacing.sm,
+              borderRadius: theme.borderRadius.round,
+              backgroundColor: reached ? '#38A169' : 'transparent',
+              borderWidth: reached ? 0 : 1,
+              borderColor: theme.colors.border,
+            }}
+          >
+            <MaterialCommunityIcons
+              name={reached ? 'check-circle' : 'circle-outline'}
+              size={16}
+              color={reached ? '#FFFFFF' : theme.colors.textSecondary}
+            />
+            <Text style={[theme.typography.styles.small, { marginLeft: 4, color: reached ? '#FFFFFF' : theme.colors.textSecondary, fontWeight: theme.typography.weights.semiBold }]}>
+              {reached ? t('repairs.contactReached', 'Erreicht') : t('repairs.contactMarkReached', 'Erreicht?')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  // The whole outreach (contact) list, shown under the admin "Kontakte" tab
+  const renderOutreachList = () => (
+    <View style={{ marginTop: theme.spacing.xs }}>
+      {/* Filter: only-open vs all */}
+      <View style={{ flexDirection: 'row', marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.sm }}>
+        {[
+          { key: 'open', label: `${t('repairs.contactsOpen', 'Offen')} (${outreachCounts.open})` },
+          { key: 'all', label: `${t('repairs.contactsAll', 'Alle')} (${outreachCounts.total})` },
+        ].map((f) => {
+          const active = outreachFilter === f.key;
+          return (
+            <TouchableOpacity
+              key={f.key}
+              onPress={() => setOutreachFilter(f.key)}
+              style={{
+                paddingVertical: 4,
+                paddingHorizontal: theme.spacing.md,
+                borderRadius: theme.borderRadius.round,
+                backgroundColor: active ? theme.colors.primary : 'transparent',
+                borderWidth: active ? 0 : 1,
+                borderColor: theme.colors.border,
+                marginRight: theme.spacing.sm,
+              }}
+            >
+              <Text style={[theme.typography.styles.small, { color: active ? '#FFFFFF' : theme.colors.textSecondary, fontWeight: theme.typography.weights.semiBold }]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+        <TouchableOpacity onPress={() => fetchOutreach()} style={{ marginLeft: 'auto', padding: 4 }}>
+          <MaterialCommunityIcons name="refresh" size={20} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary, marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.sm }]}>
+        {t('repairs.contactsHint', 'Kunden ohne App-Konto – von oben nach unten abtelefonieren und als erreicht markieren.')}
+      </Text>
+
+      {outreachLoading && outreach.length === 0 ? (
+        <View style={{ padding: theme.spacing.lg, alignItems: 'center' }}>
+          <SkeletonLoader width={200} height={16} borderRadius={theme.borderRadius.sm} />
+        </View>
+      ) : outreach.length === 0 ? (
+        <View style={{ padding: theme.spacing.lg, alignItems: 'center' }}>
+          <Text style={[theme.typography.styles.body, { color: theme.colors.textSecondary }]}>
+            {t('repairs.contactsNone', 'Keine offenen Kontakte')}
+          </Text>
+        </View>
+      ) : (
+        outreach.map((item) => renderOutreachItem(item))
+      )}
+    </View>
+  );
 
   // Admin-Bereich als Footer in der FlatList
   const renderListFooter = () => (
@@ -571,7 +751,9 @@ export default function RepairsListScreen({ navigation }) {
               {renderAdminTabs()}
 
               {/* Tab Content */}
-              {allLoading && allRepairs.length === 0 ? (
+              {adminTab === 'kontakte' ? (
+                renderOutreachList()
+              ) : allLoading && allRepairs.length === 0 ? (
                 <View style={{ padding: theme.spacing.md }}>
                   {[1, 2].map((key) => (
                     <View

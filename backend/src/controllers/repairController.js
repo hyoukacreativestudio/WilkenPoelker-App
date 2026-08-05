@@ -137,6 +137,25 @@ const reviewRepair = asyncHandler(async (req, res) => {
   });
 });
 
+// GET /outreach - Staff: Taifun orders whose customer has no app account yet,
+// so service can call them and tick off who they've reached.
+const getOutreach = asyncHandler(async (req, res) => {
+  const outreach = require('../services/taifunOutreachService');
+  const result = await outreach.listOutreach({
+    filter: req.query.filter || 'open',   // open | reached | all
+    scope: req.query.scope || 'no_account', // no_account | all
+  });
+  res.json({ success: true, data: result });
+});
+
+// PATCH /outreach/:nr/reached - Staff: mark a customer as reached / not reached
+const markOutreachReached = asyncHandler(async (req, res) => {
+  const outreach = require('../services/taifunOutreachService');
+  const reached = req.body.reached !== false; // default true
+  const result = await outreach.markReached(req.params.nr, req.user.id, reached);
+  res.json({ success: true, data: result });
+});
+
 // POST /:id/acknowledge - Customer or admin acknowledges ready repair
 const acknowledgeRepair = asyncHandler(async (req, res) => {
   const isStaff = ['admin', 'super_admin', 'service_manager'].includes(req.user.role);
@@ -205,4 +224,6 @@ module.exports = {
   getRepairInvoice,
   reviewRepair,
   acknowledgeRepair,
+  getOutreach,
+  markOutreachReached,
 };

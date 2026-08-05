@@ -10,4 +10,7 @@ export const repairsApi = {
   getInvoice: (id) => apiClient.get(`/repairs/${id}/invoice`),
   createReview: (id, data) => apiClient.post(`/repairs/${id}/review`, data),
   acknowledgeRepair: (id) => apiClient.post(`/repairs/${id}/acknowledge`),
+  // Staff outreach: Taifun orders whose customer has no app account yet
+  getOutreach: (params) => apiClient.get('/repairs/outreach', { params }),
+  markOutreachReached: (nr, reached) => apiClient.patch(`/repairs/outreach/${encodeURIComponent(nr)}/reached`, { reached }),
 };

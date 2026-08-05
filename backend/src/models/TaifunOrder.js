@@ -79,6 +79,15 @@ const TaifunOrder = sequelize.define('TaifunOrder', {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
   },
+  // --- Staff outreach tracking (for customers without an app account) ---
+  // When set, a staff member has already reached out to this customer about
+  // this order. Null = not yet contacted. Lets service work a top-down list.
+  reachedAt: {
+    type: DataTypes.DATE,
+  },
+  reachedBy: {
+    type: DataTypes.UUID,
+  },
   // Link to the customer (by Taifun's GUID, not our internal UUID,
   // so the order survives even if we re-import the customer)
   kdGuid: {
