@@ -338,6 +338,39 @@ cron.schedule('*/5 * * * *', async () => {
   }
 });
 
+// Hard-delete acknowledged repairs 7 days after the customer confirmed pickup
+// (Bruno's rule: after that window the Taifun order + our repair record go).
+cron.schedule('30 3 * * *', async () => {
+  try {
+    const { Op } = require('sequelize');
+    const Repair = require('./models/Repair');
+    const { TaifunOrder } = require('./models');
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const doomed = await Repair.findAll({
+      where: { acknowledgedAt: { [Op.ne]: null, [Op.lt]: cutoff } },
+      attributes: ['id', 'taifunRepairId'],
+    });
+    const taifunNrs = doomed.map((r) => r.taifunRepairId).filter(Boolean);
+
+    const deletedRepairs = await Repair.destroy({
+      where: { id: { [Op.in]: doomed.map((r) => r.id) } },
+    });
+    const deletedOrders = taifunNrs.length
+      ? await TaifunOrder.destroy({ where: { nr: { [Op.in]: taifunNrs } } })
+      : 0;
+
+    if (deletedRepairs > 0) {
+      logger.info('Cron: purged acknowledged repairs after 7d', {
+        repairs: deletedRepairs,
+        taifunOrders: deletedOrders,
+      });
+    }
+  } catch (err) {
+    logger.error('Cron: 7-day repair purge failed', { error: err.message });
+  }
+});
+
 // Archive acknowledged repairs every Sunday at 23:59
 cron.schedule('59 23 * * 0', async () => {
   try {

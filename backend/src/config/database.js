@@ -165,6 +165,11 @@ async function connectDatabase() {
     if (sequelize.getDialect() === 'postgres') {
       const enumUpdates = [
         { name: 'enum_repairs_status', value: 'completed' },
+        // Taifun-synced repair statuses (see services/taifunStatusMap.js)
+        { name: 'enum_repairs_status', value: 'ordered' },
+        { name: 'enum_repairs_status', value: 'leasing_in_progress' },
+        { name: 'enum_repairs_status', value: 'sale_in_progress' },
+        { name: 'enum_repairs_status', value: 'sale_test_drive' },
         { name: 'enum_notifications_type', value: 'ticket_closed' },
       ];
       for (const { name, value } of enumUpdates) {

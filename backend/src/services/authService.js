@@ -1,9 +1,43 @@
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 const config = require('../config/env');
 const { sequelize } = require('../config/database');
 const { hashPassword, comparePassword, generateToken, hashToken } = require('../utils/crypto');
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
+
+// Try to find a matching Taifun customer by last name + street + zip.
+// Returns kdNr string on a UNIQUE match, null on none/multiple (safe: never
+// assigns a wrong customer number silently).
+async function findTaifunCustomerNumber({ firstName, lastName, address }) {
+  const { TaifunCustomer } = require('../models');
+  if (!TaifunCustomer || !lastName || !address?.street || !address?.zip) return null;
+
+  const normalize = (s) => String(s || '').trim().toLowerCase();
+  const last = normalize(lastName);
+  const street = normalize(address.street);
+  const zip = normalize(address.zip);
+
+  const candidates = await TaifunCustomer.findAll({
+    where: {
+      zip: { [Op.iLike]: zip },
+    },
+    attributes: ['kdNr', 'name1', 'name2', 'street', 'zip'],
+  });
+
+  const matches = candidates.filter((c) => {
+    const streetMatch = normalize(c.street).replace(/\s+/g, '') === street.replace(/\s+/g, '');
+    if (!streetMatch) return false;
+    // last name might live in name1 (Firma), name2 (person), or KdName3 (extras)
+    const bag = `${normalize(c.name1)} ${normalize(c.name2)}`;
+    return bag.includes(last);
+  });
+
+  if (matches.length === 1 && matches[0].kdNr) {
+    return matches[0].kdNr;
+  }
+  return null;
+}
 
 function generateAccessToken(user) {
   return jwt.sign(
@@ -61,6 +95,22 @@ async function registerUser(data, User, taifunDb) {
     }
   }
 
+  // Auto-match Taifun customer number by name + address when the user did not
+  // enter one. Silent: unique match assigns, ambiguous/none leaves it empty
+  // so the customer can request approval manually.
+  let autoMatchedNumber = null;
+  if (!customerNumber) {
+    try {
+      autoMatchedNumber = await findTaifunCustomerNumber({ firstName, lastName, address });
+      if (autoMatchedNumber) {
+        const taken = await User.findOne({ where: { customerNumber: autoMatchedNumber } });
+        if (taken) autoMatchedNumber = null;
+      }
+    } catch (err) {
+      logger.warn('Auto customer-number match failed', { error: err.message });
+    }
+  }
+
   // Hash password
   const hashedPassword = await hashPassword(password);
 
@@ -72,7 +122,7 @@ async function registerUser(data, User, taifunDb) {
     username,
     email,
     password: hashedPassword,
-    customerNumber: customerNumber || null,
+    customerNumber: customerNumber || autoMatchedNumber || null,
     firstName: firstName || customerData?.firstName || '',
     lastName: lastName || customerData?.lastName || '',
     phone: phone || null,
@@ -85,6 +135,18 @@ async function registerUser(data, User, taifunDb) {
   });
 
   logger.info('New user registered', { userId: user.id, email });
+
+  // If the user already has a customer number (entered or auto-matched), pull in
+  // any existing Taifun orders for them as Repairs. Non-blocking.
+  if (user.customerNumber) {
+    try {
+      const repairSync = require('./taifunRepairSync');
+      const r = await repairSync.syncRepairsForUser({ id: user.id, customerNumber: user.customerNumber });
+      if (r.created) logger.info('Backfilled Taifun repairs for new user', { userId: user.id, ...r });
+    } catch (err) {
+      logger.warn('Repair backfill on registration failed', { userId: user.id, error: err.message });
+    }
+  }
 
   return {
     user: sanitizeUser(user),

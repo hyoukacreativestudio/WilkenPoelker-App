@@ -5,18 +5,19 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { formatDateTime } from '../../utils/formatters';
 
-const STATUS_ORDER = [
-  'in_repair',
-  'quote_created',
-  'parts_ordered',
-  'repair_done',
-  'ready',
-];
+// Step order per category. 'ready' is the shared pickup-ready end state.
+const STATUS_ORDERS = {
+  reparatur: ['ordered', 'in_repair', 'quote_created', 'parts_ordered', 'repair_done', 'ready'],
+  leasing: ['leasing_in_progress', 'ready'],
+  neu: ['sale_in_progress', 'sale_test_drive', 'ready'],
+};
 
-export default function StatusTimeline({ statusHistory = [], currentStatus, style }) {
+export default function StatusTimeline({ statusHistory = [], currentStatus, category, style }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const STATUS_ORDER = STATUS_ORDERS[category] || STATUS_ORDERS.reparatur;
 
   useEffect(() => {
     Animated.loop(
@@ -42,12 +43,19 @@ export default function StatusTimeline({ statusHistory = [], currentStatus, styl
   };
 
   const getStatusLabel = (statusKey) => {
+    if (statusKey === 'ready' && category === 'leasing') {
+      return t('repairs.statusLeasingDone', 'Leasing abgeschlossen');
+    }
     const labels = {
+      ordered: t('repairs.statusOrdered', 'Bestellt'),
       in_repair: t('repairs.statusInRepair', 'In Arbeit'),
       quote_created: t('repairs.statusQuoteCreated', 'KVA erstellt'),
       parts_ordered: t('repairs.statusPartsOrdered', 'Teile bestellt'),
       repair_done: t('repairs.statusRepairDone', 'Reparatur fertig'),
       ready: t('repairs.statusReady', 'Abholbereit'),
+      leasing_in_progress: t('repairs.statusLeasingInProgress', 'Leasing in Bearbeitung'),
+      sale_in_progress: t('repairs.statusInProgress', 'In Bearbeitung'),
+      sale_test_drive: t('repairs.statusTestDrive', 'Zur Probefahrt'),
     };
     return labels[statusKey] || statusKey;
   };

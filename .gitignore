@@ -6,6 +6,9 @@ node_modules/
 .env.local
 .env.*.local
 
+# Secrets (never commit)
+SFTP_TAIFUN_CREDENTIALS.txt
+
 # IDE
 .vscode/
 .idea/

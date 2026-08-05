@@ -4,6 +4,7 @@ const iconv = require('iconv-lite');
 const { sequelize, TaifunCustomer, TaifunOrder } = require('../models');
 const { AppError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
+const { resolveByGuid } = require('./taifunStatusMap');
 
 // In-memory status (per-process; resets on restart). Sufficient for the
 // "is the sync alive?" check; durable history goes through AuditLog.
@@ -69,16 +70,19 @@ function decodeXmlBuffer(buffer) {
 }
 
 function mapAhToCustomer(ah) {
+  // Prefer GUID when Taifun ships it; otherwise use KdNr as the primary key
+  // (Bruno's AU-APP export does not include KdGUID). Skip only if neither is present.
   const guid = asTrimmedString(ah.KdGUID);
-  if (!guid) return null;
+  const kdNr = asTrimmedString(ah.KdNr);
+  if (!guid && !kdNr) return null;
 
   // Email field can contain non-email markers like "per Post" — keep them out
   const rawEmail = asTrimmedString(ah.KdEMail);
   const email = looksLikeEmail(rawEmail) ? rawEmail : null;
 
   return {
-    kdGuid: guid,
-    kdNr: asTrimmedString(ah.KdNr),
+    kdGuid: guid || `kdnr:${kdNr}`, // synthetic GUID so upsert has a stable key
+    kdNr,
     kdRec: asTrimmedString(ah.KdRec),
     kdMatch: asTrimmedString(ah.KdMatch),
     name1: asTrimmedString(ah.KdName1),
@@ -102,8 +106,13 @@ function mapAhToCustomer(ah) {
 
 function mapAhToOrder(ah) {
   const nr = asTrimmedString(ah.Nr);
-  const kdGuid = asTrimmedString(ah.KdGUID);
-  if (!nr || !kdGuid) return null;
+  const kdGuid = asTrimmedString(ah.KdGUID) || `kdnr:${asTrimmedString(ah.KdNr) || ''}`;
+  if (!nr || kdGuid === 'kdnr:') return null;
+
+  // Resolve the Taifun status GUID to a consolidated app status right here, so
+  // the app never has to know Taifun's 47 raw stands.
+  const ahStandGuid = asTrimmedString(ah.AhStandGUID);
+  const st = resolveByGuid(ahStandGuid);
 
   return {
     nr,
@@ -117,6 +126,11 @@ function mapAhToOrder(ah) {
     dspDel: asBool(ah.AhDspDel),
     mobile: asBool(ah.AhMobile),
     technicianState: ah.TechnicianState != null ? Number(ah.TechnicianState) : 0,
+    ahStandGuid,
+    appStatus: st.appStatus,
+    appStatusLabel: st.appStatusLabel,
+    appCategory: st.appCategory,
+    appHidden: st.hidden,
     kdGuid,
     kdNr: asTrimmedString(ah.KdNr),
     lastSyncedAt: new Date(),
@@ -197,7 +211,9 @@ async function importXml(buffer, { isFullExport = true, source = 'unknown' } = {
         updateOnDuplicate: [
           'date', 'time', 'info', 'priority',
           'erledigt', 'storno', 'offen', 'dspDel', 'mobile',
-          'technicianState', 'kdGuid', 'kdNr',
+          'technicianState', 'ahStandGuid',
+          'appStatus', 'appStatusLabel', 'appCategory', 'appHidden',
+          'kdGuid', 'kdNr',
           'lastSyncedAt', 'vanishedAt',
         ],
       });
@@ -218,6 +234,19 @@ async function importXml(buffer, { isFullExport = true, source = 'unknown' } = {
       counts.vanished = vanished;
     }
   });
+
+  // Push the freshly-imported orders into app-visible Repair records. Runs
+  // after the mirror transaction committed, so a repair-sync hiccup never rolls
+  // back the import. Only orders whose customer has an app account become Repairs.
+  try {
+    const repairSync = require('./taifunRepairSync');
+    const r = await repairSync.syncRepairsForOrderNrs(syncedOrderNumbers);
+    if (r.created || r.updated) {
+      logger.info('Taifun repair sync', { ...r, source });
+    }
+  } catch (err) {
+    logger.error('Taifun repair sync failed', { error: err.message, source });
+  }
 
   logger.info('Taifun sync completed', { counts, source });
   return finishSync(t0, counts, null);

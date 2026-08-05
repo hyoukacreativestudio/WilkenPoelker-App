@@ -23,15 +23,28 @@ import NoCustomerNumberGate from '../../components/shared/NoCustomerNumberGate';
 
 // Ampelfarben: Rot = In Bearbeitung, Gelb = Fertig, Grün = Abholbereit
 const STATUS_COLORS = {
+  ordered: '#E53E3E',
   in_repair: '#E53E3E',
   quote_created: '#E53E3E',
   parts_ordered: '#E53E3E',
   repair_done: '#ECC94B',
   ready: '#38A169',
   completed: '#2D8659',
+  // Leasing
+  leasing_in_progress: '#E53E3E',
+  // Neu / Verkauf
+  sale_in_progress: '#E53E3E',
+  sale_test_drive: '#ECC94B',
 };
 
-const ACTIVE_STATUSES = ['in_repair', 'quote_created', 'parts_ordered', 'repair_done', 'ready'];
+const ACTIVE_STATUSES = [
+  'ordered', 'in_repair', 'quote_created', 'parts_ordered', 'repair_done', 'ready',
+  'leasing_in_progress',
+  'sale_in_progress', 'sale_test_drive',
+];
+
+// App tabs for the customer's own repairs (matches Repair.category)
+const CATEGORY_TABS = ['reparatur', 'neu', 'leasing'];
 
 // Rollen die alle Reparaturen sehen dürfen
 const STAFF_ROLES = ['admin', 'super_admin', 'service_manager', 'bike_manager', 'cleaning_manager', 'motor_manager', 'robby_manager'];
@@ -49,6 +62,7 @@ export default function RepairsListScreen({ navigation }) {
 
   const [initialLoad, setInitialLoad] = useState(true);
   const [adminTab, setAdminTab] = useState('open');
+  const [categoryTab, setCategoryTab] = useState('reparatur');
 
   // Admin-Bereich: aufklappbar
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
@@ -97,8 +111,23 @@ export default function RepairsListScreen({ navigation }) {
     if (myHasMore && !myLoading) loadMoreMy();
   }, [myHasMore, myLoading, loadMoreMy]);
 
+  // Active repairs for the currently selected category tab. Repairs without a
+  // category (app-created) fall back to 'reparatur'.
   const displayedRepairs = useMemo(() => {
-    return myRepairs.filter((r) => ACTIVE_STATUSES.includes(r.status));
+    return myRepairs.filter(
+      (r) => ACTIVE_STATUSES.includes(r.status) && (r.category || 'reparatur') === categoryTab
+    );
+  }, [myRepairs, categoryTab]);
+
+  // Per-category counts for the tab badges.
+  const categoryCounts = useMemo(() => {
+    const counts = { reparatur: 0, neu: 0, leasing: 0 };
+    myRepairs.forEach((r) => {
+      if (!ACTIVE_STATUSES.includes(r.status)) return;
+      const cat = r.category || 'reparatur';
+      if (counts[cat] !== undefined) counts[cat] += 1;
+    });
+    return counts;
   }, [myRepairs]);
 
   // Admin tab filtered repairs
@@ -137,14 +166,22 @@ export default function RepairsListScreen({ navigation }) {
   const readyCount = useMemo(() => allRepairs.filter((r) => r.status === 'ready' && !r.archivedAt).length, [allRepairs]);
   const archivedCount = useMemo(() => allRepairs.filter((r) => r.archivedAt || r.status === 'completed').length, [allRepairs]);
 
-  const getStatusLabel = useCallback((status) => {
+  const getStatusLabel = useCallback((status, category) => {
+    // 'ready' is shared across categories; leasing shows its own label.
+    if (status === 'ready' && category === 'leasing') {
+      return t('repairs.statusLeasingDone', 'Leasing abgeschlossen');
+    }
     const labels = {
+      ordered: t('repairs.statusOrdered', 'Bestellt'),
       in_repair: t('repairs.statusInRepair'),
       quote_created: t('repairs.statusQuoteCreated'),
       parts_ordered: t('repairs.statusPartsOrdered'),
       repair_done: t('repairs.statusRepairDone'),
       ready: t('repairs.statusReady'),
       completed: t('repairs.statusCompleted', 'Abgeschlossen'),
+      leasing_in_progress: t('repairs.statusLeasingInProgress', 'Leasing in Bearbeitung'),
+      sale_in_progress: t('repairs.statusInProgress', 'In Bearbeitung'),
+      sale_test_drive: t('repairs.statusTestDrive', 'Zur Probefahrt'),
     };
     return labels[status] || status;
   }, [t]);
@@ -203,7 +240,7 @@ export default function RepairsListScreen({ navigation }) {
           </View>
           <View style={{ backgroundColor: statusColor, borderRadius: theme.borderRadius.round, paddingHorizontal: theme.spacing.sm, paddingVertical: 2 }}>
             <Text style={[theme.typography.styles.small, { color: '#FFFFFF', fontWeight: theme.typography.weights.semiBold }]}>
-              {getStatusLabel(item.status)}
+              {getStatusLabel(item.status, item.category)}
             </Text>
           </View>
         </View>
@@ -272,7 +309,7 @@ export default function RepairsListScreen({ navigation }) {
           </View>
           <View style={{ backgroundColor: statusColor, borderRadius: theme.borderRadius.round, paddingHorizontal: theme.spacing.sm, paddingVertical: 2 }}>
             <Text style={[theme.typography.styles.small, { color: '#FFFFFF', fontWeight: theme.typography.weights.semiBold }]}>
-              {getStatusLabel(item.status)}
+              {getStatusLabel(item.status, item.category)}
             </Text>
           </View>
         </View>
@@ -337,6 +374,70 @@ export default function RepairsListScreen({ navigation }) {
         title={t('repairs.noRepairs')}
         message={t('repairs.noRepairs')}
       />
+    );
+  };
+
+  // Category tabs for the customer's own repairs: Reparatur / Neu / Leasing
+  const renderCategoryTabs = () => {
+    const tabs = [
+      { key: 'reparatur', label: t('repairs.categoryReparatur', 'Reparatur'), count: categoryCounts.reparatur, icon: 'wrench-outline' },
+      { key: 'neu', label: t('repairs.categoryNeu', 'Neu'), count: categoryCounts.neu, icon: 'star-outline' },
+      { key: 'leasing', label: t('repairs.categoryLeasing', 'Leasing'), count: categoryCounts.leasing, icon: 'bike' },
+    ];
+
+    return (
+      <View style={{ flexDirection: 'row', paddingHorizontal: theme.spacing.md, backgroundColor: theme.colors.headerBackground, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border }}>
+        {tabs.map((tab) => {
+          const isActive = categoryTab === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              activeOpacity={0.7}
+              onPress={() => setCategoryTab(tab.key)}
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: theme.spacing.sm,
+                borderBottomWidth: 2,
+                borderBottomColor: isActive ? theme.colors.primary : 'transparent',
+              }}
+            >
+              <MaterialCommunityIcons
+                name={tab.icon}
+                size={16}
+                color={isActive ? theme.colors.primary : theme.colors.textTertiary}
+              />
+              <Text style={[
+                theme.typography.styles.small,
+                {
+                  color: isActive ? theme.colors.primary : theme.colors.textTertiary,
+                  fontWeight: isActive ? theme.typography.weights.bold : theme.typography.weights.regular,
+                  marginLeft: 4,
+                },
+              ]}>
+                {tab.label}
+              </Text>
+              {tab.count > 0 && (
+                <View style={{
+                  backgroundColor: isActive ? theme.colors.primary : theme.colors.textTertiary + '40',
+                  borderRadius: theme.borderRadius.round,
+                  paddingHorizontal: 5,
+                  paddingVertical: 1,
+                  marginLeft: 4,
+                  minWidth: 18,
+                  alignItems: 'center',
+                }}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: theme.typography.weights.bold }}>
+                    {tab.count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     );
   };
 
@@ -541,6 +642,9 @@ export default function RepairsListScreen({ navigation }) {
       <View style={s.header}>
         <Text style={s.headerTitle}>{t('repairs.title')}</Text>
       </View>
+
+      {/* Category tabs: Reparatur / Neu / Leasing */}
+      {!initialLoad && renderCategoryTabs()}
 
       {/* Content */}
       {initialLoad ? (

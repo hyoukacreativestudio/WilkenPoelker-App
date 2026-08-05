@@ -55,6 +55,30 @@ const TaifunOrder = sequelize.define('TaifunOrder', {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
+  // Taifun status GUID (AhStandGUID). Resolved to an app status at import time
+  // via services/taifunStatusMap.js (source: Bruno's AU-Stand3.xml).
+  ahStandGuid: {
+    type: DataTypes.STRING,
+  },
+  // --- Derived app status (computed from ahStandGuid on every import) ---
+  // Stable code the frontend switches on, e.g. 'REP_IN_ARBEIT'. Null when the
+  // order has no Taifun status yet or the status is hidden (5xx etc.).
+  appStatus: {
+    type: DataTypes.STRING,
+  },
+  // Human-readable German label, e.g. 'Reparatur in Arbeit'.
+  appStatusLabel: {
+    type: DataTypes.STRING,
+  },
+  // Grouping for the app views: 'reparatur' | 'leasing' | 'neu' | null.
+  appCategory: {
+    type: DataTypes.STRING,
+  },
+  // True = do not show in the app (hidden/unknown Taifun stand).
+  appHidden: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
   // Link to the customer (by Taifun's GUID, not our internal UUID,
   // so the order survives even if we re-import the customer)
   kdGuid: {
@@ -82,6 +106,8 @@ const TaifunOrder = sequelize.define('TaifunOrder', {
     { fields: ['kd_nr'] },
     { fields: ['date'] },
     { fields: ['offen'] },
+    { fields: ['app_category'] },
+    { fields: ['app_hidden'] },
   ],
 });
 

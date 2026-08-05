@@ -22,12 +22,16 @@ import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import { useToast } from '../../components/ui/Toast';
 
 const STATUS_COLORS = {
+  ordered: '#DD6B20',
   in_repair: '#DD6B20',
   quote_created: '#805AD5',
   parts_ordered: '#D69E2E',
   repair_done: '#38A169',
   ready: '#38A169',
   completed: '#2D8659',
+  leasing_in_progress: '#DD6B20',
+  sale_in_progress: '#DD6B20',
+  sale_test_drive: '#D69E2E',
 };
 
 export default function RepairDetailScreen({ route, navigation }) {
@@ -63,14 +67,21 @@ export default function RepairDetailScreen({ route, navigation }) {
   const repair = repairApi.data?.data?.repair || repairApi.data?.repair || repairApi.data;
   const statusData = statusApi.data?.data || statusApi.data;
 
-  const getStatusLabel = useCallback((status) => {
+  const getStatusLabel = useCallback((status, category) => {
+    if (status === 'ready' && category === 'leasing') {
+      return t('repairs.statusLeasingDone', 'Leasing abgeschlossen');
+    }
     const labels = {
+      ordered: t('repairs.statusOrdered', 'Bestellt'),
       in_repair: t('repairs.statusInRepair'),
       quote_created: t('repairs.statusQuoteCreated'),
       parts_ordered: t('repairs.statusPartsOrdered'),
       repair_done: t('repairs.statusRepairDone'),
       ready: t('repairs.statusReady'),
       completed: t('repairs.statusCompleted', 'Abgeschlossen'),
+      leasing_in_progress: t('repairs.statusLeasingInProgress', 'Leasing in Bearbeitung'),
+      sale_in_progress: t('repairs.statusInProgress', 'In Bearbeitung'),
+      sale_test_drive: t('repairs.statusTestDrive', 'Zur Probefahrt'),
     };
     return labels[status] || status;
   }, [t]);
@@ -222,7 +233,7 @@ export default function RepairDetailScreen({ route, navigation }) {
               { color: '#FFFFFF', fontWeight: theme.typography.weights.semiBold },
             ]}
           >
-            {getStatusLabel(repair.status)}
+            {getStatusLabel(repair.status, repair.category)}
           </Text>
         </View>
       </View>
@@ -263,6 +274,7 @@ export default function RepairDetailScreen({ route, navigation }) {
       <Card style={{ marginBottom: theme.spacing.lg }}>
         <Text style={styles.sectionTitle}>{t('common.status')}</Text>
         <StatusTimeline
+          category={repair.category}
           statusHistory={statusData?.history || repair.statusHistory || []}
           currentStatus={repair.status}
           style={{ marginTop: theme.spacing.sm }}

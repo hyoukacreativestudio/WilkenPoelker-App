@@ -145,6 +145,19 @@ const approveRequest = asyncHandler(async (req, res) => {
   // Update user's customer number
   await User.update({ customerNumber }, { where: { id: request.userId } });
 
+  // Backfill any existing Taifun orders for this customer as Repairs. Non-blocking.
+  try {
+    const repairSync = require('../services/taifunRepairSync');
+    const r = await repairSync.syncRepairsForUser({ id: request.userId, customerNumber });
+    if (r.created) {
+      const logger = require('../utils/logger');
+      logger.info('Backfilled Taifun repairs after number approval', { userId: request.userId, ...r });
+    }
+  } catch (err) {
+    const logger = require('../utils/logger');
+    logger.warn('Repair backfill after approval failed', { userId: request.userId, error: err.message });
+  }
+
   // Notify the customer
   await Notification.create({
     userId: request.userId,
