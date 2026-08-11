@@ -587,6 +587,8 @@
     "contactsNoneReached": "No reached contacts yet",
     "contactsSearch": "Search: name, phone, city, no.",
     "ordersShort": "orders",
+    "notReadyYet": "Not ready yet",
+    "markedReached": "marked as reached",
     "noPhone": "No number",
     "unknownCustomer": "Unknown customer",
     "readyForPickup": "Your device is ready for pickup!",

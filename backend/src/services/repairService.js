@@ -1,7 +1,13 @@
-const { Op } = require('sequelize');
+const { Op, literal } = require('sequelize');
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const { generateRepairNumber } = require('../utils/crypto');
 const logger = require('../utils/logger');
+
+// Ready-for-pickup repairs first, then by repair number ascending.
+const READY_FIRST_ORDER = [
+  [literal("CASE WHEN status = 'ready' THEN 0 ELSE 1 END"), 'ASC'],
+  ['repairNumber', 'ASC'],
+];
 
 // ──────────────────────────────────────────────
 // REPAIRS
@@ -20,7 +26,7 @@ async function getUserRepairs(userId, query, models) {
     include: [
       { model: User, as: 'technician', attributes: ['id', 'username', 'firstName', 'lastName'] },
     ],
-    order: [['createdAt', 'DESC']],
+    order: READY_FIRST_ORDER,
     limit: parseInt(limit),
     offset,
   });
@@ -50,7 +56,7 @@ async function getAllRepairs(query, models) {
       { model: User, as: 'customer', attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'phone', 'customerNumber'] },
       { model: User, as: 'technician', attributes: ['id', 'username', 'firstName', 'lastName'] },
     ],
-    order: [['createdAt', 'DESC']],
+    order: READY_FIRST_ORDER,
     limit: parseInt(limit),
     offset,
   });

@@ -6,37 +6,50 @@ const { hashPassword, comparePassword, generateToken, hashToken } = require('../
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
 
-// Try to find a matching Taifun customer by last name + street + zip.
-// Returns kdNr string on a UNIQUE match, null on none/multiple (safe: never
-// assigns a wrong customer number silently).
+// Normalize a street for fuzzy comparison: lowercase, unify "straße/strasse/str."
+// to "str", drop everything non-alphanumeric. So "Dresdener Str." == "Dresdener Straße".
+function normStreet(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/ß/g, 'ss')
+    .replace(/stra(ss|s)?e|str\.?/g, 'str')
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/\d+$/, ''); // drop a trailing house number if it slipped into the street
+}
+
+// Try to find a matching Taifun customer by last name + zip (+ street when it
+// helps). Returns kdNr on a UNIQUE match, null otherwise (never assigns a wrong
+// number silently). Zip is compared exactly (numeric, dialect-agnostic).
 async function findTaifunCustomerNumber({ firstName, lastName, address }) {
   const { TaifunCustomer } = require('../models');
-  if (!TaifunCustomer || !lastName || !address?.street || !address?.zip) return null;
+  if (!TaifunCustomer || !lastName || !address?.zip) return null;
 
-  const normalize = (s) => String(s || '').trim().toLowerCase();
-  const last = normalize(lastName);
-  const street = normalize(address.street);
-  const zip = normalize(address.zip);
+  const last = String(lastName).trim().toLowerCase();
+  const zip = String(address.zip).trim();
+  const street = normStreet(address.street);
 
   const candidates = await TaifunCustomer.findAll({
-    where: {
-      zip: { [Op.iLike]: zip },
-    },
+    where: { zip },
     attributes: ['kdNr', 'name1', 'name2', 'street', 'zip'],
   });
 
-  const matches = candidates.filter((c) => {
-    const streetMatch = normalize(c.street).replace(/\s+/g, '') === street.replace(/\s+/g, '');
-    if (!streetMatch) return false;
-    // last name might live in name1 (Firma), name2 (person), or KdName3 (extras)
-    const bag = `${normalize(c.name1)} ${normalize(c.name2)}`;
-    return bag.includes(last);
+  // Last name may live in name1 (Firma) or name2 (person)
+  const byName = candidates.filter((c) =>
+    `${(c.name1 || '')} ${(c.name2 || '')}`.toLowerCase().includes(last)
+  );
+  const byStreet = street ? byName.filter((c) => normStreet(c.street) === street) : [];
+
+  // Prefer a street-confirmed unique match; otherwise a unique name+zip match.
+  let match = null;
+  if (byStreet.length === 1) match = byStreet[0];
+  else if (byName.length === 1) match = byName[0];
+
+  logger.info('Taifun auto-match customer number', {
+    zip, lastName: last, candidatesAtZip: candidates.length,
+    byName: byName.length, byStreet: byStreet.length, matched: match?.kdNr || null,
   });
 
-  if (matches.length === 1 && matches[0].kdNr) {
-    return matches[0].kdNr;
-  }
-  return null;
+  return match && match.kdNr ? match.kdNr : null;
 }
 
 function generateAccessToken(user) {
@@ -373,6 +386,7 @@ async function deleteAccount(userId, password, models) {
 }
 
 module.exports = {
+  findTaifunCustomerNumber,
   generateAccessToken,
   generateRefreshToken,
   registerUser,

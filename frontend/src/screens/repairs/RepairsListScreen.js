@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -47,6 +47,9 @@ const ACTIVE_STATUSES = [
 // App tabs for the customer's own repairs (matches Repair.category)
 const CATEGORY_TABS = ['reparatur', 'neu', 'leasing'];
 
+// A customer can only be marked "reached" once their order is ready for pickup.
+const READY_STATES = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'LEASING_ABGESCHLOSSEN'];
+
 // Rollen die alle Reparaturen sehen dürfen
 const STAFF_ROLES = ['admin', 'super_admin', 'service_manager', 'bike_manager', 'cleaning_manager', 'motor_manager', 'robby_manager'];
 
@@ -74,6 +77,14 @@ export default function RepairsListScreen({ navigation }) {
   const [outreachCategory, setOutreachCategory] = useState('reparatur'); // reparatur | neu | leasing
   const [outreachSearch, setOutreachSearch] = useState('');
   const [outreachExpanded, setOutreachExpanded] = useState({});        // { [groupId]: true }
+  const [snackbar, setSnackbar] = useState(null);                      // { text, onUndo }
+  const snackbarTimer = useRef(null);
+
+  const showSnackbar = useCallback((text, onUndo) => {
+    if (snackbarTimer.current) clearTimeout(snackbarTimer.current);
+    setSnackbar({ text, onUndo });
+    snackbarTimer.current = setTimeout(() => setSnackbar(null), 5000);
+  }, []);
 
   // Admin-Bereich: aufklappbar
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
@@ -217,10 +228,21 @@ export default function RepairsListScreen({ navigation }) {
     }));
     try {
       await repairsApi.markOutreachReached(group.kdNr, next, group.category);
+      if (next) {
+        // Offer an undo for a few seconds
+        showSnackbar(
+          `${group.customerName || group.kdNr} · ${t('repairs.markedReached', 'als erreicht markiert')}`,
+          async () => {
+            try { await repairsApi.markOutreachReached(group.kdNr, false, group.category); } catch (e) {}
+            setSnackbar(null);
+            fetchOutreach();
+          }
+        );
+      }
     } catch (e) {
       fetchOutreach(); // reload truth on failure
     }
-  }, [fetchOutreach]);
+  }, [fetchOutreach, showSnackbar, t]);
 
   const getStatusLabel = useCallback((status, category) => {
     // 'ready' is shared across categories; leasing shows its own label.
@@ -294,16 +316,16 @@ export default function RepairsListScreen({ navigation }) {
               </Text>
             ) : null}
           </View>
-          <View style={{ backgroundColor: statusColor, borderRadius: theme.borderRadius.round, paddingHorizontal: theme.spacing.sm, paddingVertical: 2 }}>
-            <Text style={[theme.typography.styles.small, { color: '#FFFFFF', fontWeight: theme.typography.weights.semiBold }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: statusColor, borderRadius: theme.borderRadius.md, paddingHorizontal: theme.spacing.md, paddingVertical: 6, ...theme.shadows.sm }}>
+            <MaterialCommunityIcons name={item.status === 'ready' ? 'check-circle' : 'progress-wrench'} size={16} color="#FFFFFF" style={{ marginRight: 5 }} />
+            <Text style={[theme.typography.styles.body, { color: '#FFFFFF', fontWeight: theme.typography.weights.bold }]}>
               {getStatusLabel(item.status, item.category)}
             </Text>
           </View>
         </View>
 
-        {/* Device name with status indicator dot */}
+        {/* Device name */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.xs }}>
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: statusColor, marginRight: theme.spacing.xs }} />
           <Text style={[theme.typography.styles.body, { color: theme.colors.text, fontWeight: theme.typography.weights.bold, flex: 1 }]} numberOfLines={1}>
             {item.deviceName || item.device}
           </Text>
@@ -363,8 +385,9 @@ export default function RepairsListScreen({ navigation }) {
               {item.deviceName || item.device}
             </Text>
           </View>
-          <View style={{ backgroundColor: statusColor, borderRadius: theme.borderRadius.round, paddingHorizontal: theme.spacing.sm, paddingVertical: 2 }}>
-            <Text style={[theme.typography.styles.small, { color: '#FFFFFF', fontWeight: theme.typography.weights.semiBold }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: statusColor, borderRadius: theme.borderRadius.md, paddingHorizontal: theme.spacing.sm + 2, paddingVertical: 5, ...theme.shadows.sm }}>
+            <MaterialCommunityIcons name={item.status === 'ready' ? 'check-circle' : 'progress-wrench'} size={15} color="#FFFFFF" style={{ marginRight: 4 }} />
+            <Text style={[theme.typography.styles.caption, { color: '#FFFFFF', fontWeight: theme.typography.weights.bold }]}>
               {getStatusLabel(item.status, item.category)}
             </Text>
           </View>
@@ -643,20 +666,29 @@ export default function RepairsListScreen({ navigation }) {
             <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary }]}>{t('repairs.noPhone', 'Keine Nummer')}</Text>
           )}
 
-          <TouchableOpacity
-            onPress={() => toggleReached(group)}
-            style={{
-              flexDirection: 'row', alignItems: 'center', paddingVertical: 4, paddingHorizontal: theme.spacing.sm,
-              borderRadius: theme.borderRadius.round,
-              backgroundColor: reached ? '#38A169' : 'transparent',
-              borderWidth: reached ? 0 : 1, borderColor: theme.colors.border,
-            }}
-          >
-            <MaterialCommunityIcons name={reached ? 'check-circle' : 'circle-outline'} size={16} color={reached ? '#FFFFFF' : theme.colors.textSecondary} />
-            <Text style={[theme.typography.styles.small, { marginLeft: 4, color: reached ? '#FFFFFF' : theme.colors.textSecondary, fontWeight: theme.typography.weights.semiBold }]}>
-              {reached ? t('repairs.contactReached', 'Erreicht') : t('repairs.contactMarkReached', 'Erreicht?')}
-            </Text>
-          </TouchableOpacity>
+          {reached || group.orders.some((o) => READY_STATES.includes(o.appStatus)) ? (
+            <TouchableOpacity
+              onPress={() => toggleReached(group)}
+              style={{
+                flexDirection: 'row', alignItems: 'center', paddingVertical: 4, paddingHorizontal: theme.spacing.sm,
+                borderRadius: theme.borderRadius.round,
+                backgroundColor: reached ? '#38A169' : 'transparent',
+                borderWidth: reached ? 0 : 1, borderColor: theme.colors.border,
+              }}
+            >
+              <MaterialCommunityIcons name={reached ? 'check-circle' : 'circle-outline'} size={16} color={reached ? '#FFFFFF' : theme.colors.textSecondary} />
+              <Text style={[theme.typography.styles.small, { marginLeft: 4, color: reached ? '#FFFFFF' : theme.colors.textSecondary, fontWeight: theme.typography.weights.semiBold }]}>
+                {reached ? t('repairs.contactReached', 'Erreicht') : t('repairs.contactMarkReached', 'Erreicht?')}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', opacity: 0.6 }}>
+              <MaterialCommunityIcons name="clock-outline" size={14} color={theme.colors.textTertiary} />
+              <Text style={[theme.typography.styles.small, { marginLeft: 4, color: theme.colors.textTertiary }]}>
+                {t('repairs.notReadyYet', 'Noch nicht fertig')}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     );
@@ -926,11 +958,31 @@ export default function RepairsListScreen({ navigation }) {
           }
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={renderListFooter}
+          ListFooterComponent={renderListFooter()}
           ListEmptyComponent={!isStaff ? renderEmpty : null}
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Undo snackbar */}
+      {snackbar ? (
+        <View style={{
+          position: 'absolute', left: theme.spacing.md, right: theme.spacing.md, bottom: theme.spacing.lg,
+          backgroundColor: '#323232', borderRadius: theme.borderRadius.md,
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+          paddingVertical: theme.spacing.sm + 2, paddingHorizontal: theme.spacing.md,
+          ...theme.shadows.lg,
+        }}>
+          <Text style={[theme.typography.styles.caption, { color: '#FFFFFF', flex: 1, marginRight: theme.spacing.sm }]} numberOfLines={2}>
+            {snackbar.text}
+          </Text>
+          <TouchableOpacity onPress={() => { const cb = snackbar.onUndo; if (cb) cb(); }}>
+            <Text style={[theme.typography.styles.body, { color: '#66D9A0', fontWeight: theme.typography.weights.bold }]}>
+              {t('common.undo', 'Rückgängig')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }

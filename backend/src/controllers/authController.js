@@ -1,6 +1,7 @@
 const authService = require('../services/authService');
 const emailService = require('../services/emailService');
 const { asyncHandler } = require('../middlewares/errorHandler');
+const logger = require('../utils/logger');
 const db = require('../models');
 const { taifunDb } = require('../config/database');
 
@@ -79,7 +80,9 @@ const forgotPassword = asyncHandler(async (req, res) => {
   if (result) {
     emailService
       .sendPasswordResetEmail(result.email, result.name, result.resetToken)
-      .catch(() => {});
+      .catch((err) => logger.error('Password reset email failed to send', {
+        to: result.email, error: err.message, code: err.code,
+      }));
   }
 
   // Always return success (don't reveal if email exists)

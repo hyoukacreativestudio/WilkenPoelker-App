@@ -338,14 +338,14 @@ cron.schedule('*/5 * * * *', async () => {
   }
 });
 
-// Hard-delete acknowledged repairs 7 days after the customer confirmed pickup
-// (Bruno's rule: after that window the Taifun order + our repair record go).
+// Hard-delete acknowledged repairs 2 days after the customer confirmed pickup
+// (after that window the Taifun order + our repair record go).
 cron.schedule('30 3 * * *', async () => {
   try {
     const { Op } = require('sequelize');
     const Repair = require('./models/Repair');
     const { TaifunOrder } = require('./models');
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
 
     const doomed = await Repair.findAll({
       where: { acknowledgedAt: { [Op.ne]: null, [Op.lt]: cutoff } },
