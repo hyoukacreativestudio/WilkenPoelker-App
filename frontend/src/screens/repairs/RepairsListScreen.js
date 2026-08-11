@@ -369,12 +369,19 @@ export default function RepairsListScreen({ navigation }) {
           ...theme.shadows.sm,
         }}
       >
-        {/* Kundenname + Kundennummer als Titel */}
+        {/* Kundenname + Kundennummer als Titel — tippen öffnet das Profil */}
         {item.customer && (
-          <Text style={[theme.typography.styles.body, { color: theme.colors.text, fontWeight: theme.typography.weights.bold, marginBottom: theme.spacing.xs }]} numberOfLines={1}>
-            {item.customer.firstName} {item.customer.lastName}
-            {item.customer.customerNumber ? ` (${item.customer.customerNumber})` : ''}
-          </Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Service', { screen: 'CustomerProfile', params: { customerId: item.customer._id || item.customer.id, customerName: `${item.customer.firstName || ''} ${item.customer.lastName || ''}`.trim() } })}
+            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.xs }}
+          >
+            <MaterialCommunityIcons name="account-circle-outline" size={18} color={theme.colors.primary} style={{ marginRight: 4 }} />
+            <Text style={[theme.typography.styles.body, { color: theme.colors.primary, fontWeight: theme.typography.weights.bold, flex: 1 }]} numberOfLines={1}>
+              {item.customer.firstName} {item.customer.lastName}
+              {item.customer.customerNumber ? ` (${item.customer.customerNumber})` : ''}
+            </Text>
+            <MaterialCommunityIcons name="chevron-right" size={18} color={theme.colors.textTertiary} />
+          </TouchableOpacity>
         )}
 
         {/* Device name + Status badge */}

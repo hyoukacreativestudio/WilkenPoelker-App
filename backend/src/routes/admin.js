@@ -78,6 +78,13 @@ router.put(
   adminController.updateUser
 );
 
+// DELETE /api/admin/users/:id - hard-delete a customer (admin/super_admin)
+router.delete(
+  '/users/:id',
+  authorize('admin', 'super_admin'),
+  adminController.deleteUser
+);
+
 // GET /api/admin/yearly-overview - yearly per-employee stats
 router.get(
   '/yearly-overview',

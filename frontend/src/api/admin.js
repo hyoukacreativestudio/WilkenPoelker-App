@@ -10,4 +10,6 @@ export const adminApi = {
   changeUserRole: (userId, role) => apiClient.put(`/users/admin/${userId}/role`, { role }),
   updatePermissions: (userId, permissions) => apiClient.put(`/users/admin/${userId}/permissions`, { permissions }),
   sendDirectMessage: (userId, data) => apiClient.post(`/admin/users/${userId}/message`, data),
+  updateUser: (userId, data) => apiClient.put(`/admin/users/${userId}`, data),
+  deleteUser: (userId) => apiClient.delete(`/admin/users/${userId}`),
 };

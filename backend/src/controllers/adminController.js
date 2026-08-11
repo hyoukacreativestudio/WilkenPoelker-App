@@ -97,6 +97,15 @@ const updateUser = asyncHandler(async (req, res) => {
   });
 });
 
+// DELETE /api/admin/users/:id - hard-delete a customer + all their data
+const deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const authService = require('../services/authService');
+  const models = require('../models');
+  const result = await authService.adminDeleteUser(id, models);
+  res.json({ success: true, data: result });
+});
+
 const getYearlyOverview = asyncHandler(async (req, res) => {
   const year = parseInt(req.query.year, 10) || new Date().getFullYear();
 
@@ -145,6 +154,7 @@ module.exports = {
   sendBroadcast,
   getAnalytics,
   updateUser,
+  deleteUser,
   getYearlyOverview,
   sendDirectMessage,
 };

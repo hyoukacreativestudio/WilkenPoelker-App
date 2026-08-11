@@ -7,12 +7,16 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { serviceApi } from '../../api/service';
+import { adminApi } from '../../api/admin';
 import { getServerUrl } from '../../api/client';
 import { formatRelativeTime } from '../../utils/formatters';
 import EmptyState from '../../components/ui/EmptyState';
@@ -39,6 +43,77 @@ export default function CustomerProfileScreen({ route, navigation }) {
   const [customer, setCustomer] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Admin actions
+  const isStaff = user && ['admin', 'super_admin', 'service_manager'].includes(user.role);
+  const [msgVisible, setMsgVisible] = useState(false);
+  const [msgText, setMsgText] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const sendMessage = async () => {
+    const text = msgText.trim();
+    if (!text) return;
+    setBusy(true);
+    try {
+      await adminApi.sendDirectMessage(customerId, { title: t('customerProfile.messageTitle', 'Nachricht von WilkenPoelker'), message: text });
+      setMsgVisible(false);
+      setMsgText('');
+      showToast({ type: 'success', message: t('customerProfile.messageSent', 'Nachricht gesendet') });
+    } catch (e) {
+      showToast({ type: 'error', message: t('common.error', 'Fehler') });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clearCustomerNumber = () => {
+    Alert.alert(
+      t('customerProfile.clearNumberTitle', 'Kundennummer entfernen?'),
+      t('customerProfile.clearNumberMsg', 'Die Verknüpfung zur Taifun-Kundennummer wird entfernt.'),
+      [
+        { text: t('common.cancel', 'Abbrechen'), style: 'cancel' },
+        {
+          text: t('common.remove', 'Entfernen'),
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            try {
+              await adminApi.updateUser(customerId, { customerNumber: null });
+              await loadCustomerTickets();
+              showToast({ type: 'success', message: t('customerProfile.numberRemoved', 'Kundennummer entfernt') });
+            } catch (e) {
+              showToast({ type: 'error', message: t('common.error', 'Fehler') });
+            } finally { setBusy(false); }
+          },
+        },
+      ]
+    );
+  };
+
+  const deleteCustomer = () => {
+    Alert.alert(
+      t('customerProfile.deleteTitle', 'Kunde löschen?'),
+      t('customerProfile.deleteMsg', 'Der Kunde und ALLE seine Daten werden unwiderruflich gelöscht.'),
+      [
+        { text: t('common.cancel', 'Abbrechen'), style: 'cancel' },
+        {
+          text: t('common.delete', 'Löschen'),
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            try {
+              await adminApi.deleteUser(customerId);
+              showToast({ type: 'success', message: t('customerProfile.deleted', 'Kunde gelöscht') });
+              navigation.goBack();
+            } catch (e) {
+              showToast({ type: 'error', message: e?.response?.data?.error?.message || t('common.error', 'Fehler') });
+              setBusy(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     loadCustomerTickets();
@@ -167,6 +242,27 @@ export default function CustomerProfileScreen({ route, navigation }) {
             <Text style={s.statLabel}>{t('customerProfile.activeTickets')}</Text>
           </View>
         </View>
+
+        {isStaff && (
+          <View style={s.adminActions}>
+            <TouchableOpacity style={[s.actionBtn, { backgroundColor: theme.colors.primary }]} onPress={() => setMsgVisible(true)} disabled={busy}>
+              <MaterialCommunityIcons name="message-text-outline" size={18} color="#FFFFFF" />
+              <Text style={s.actionBtnText}>{t('customerProfile.message', 'Nachricht')}</Text>
+            </TouchableOpacity>
+            {customer.customerNumber ? (
+              <TouchableOpacity style={[s.actionBtn, { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border }]} onPress={clearCustomerNumber} disabled={busy}>
+                <MaterialCommunityIcons name="card-remove-outline" size={18} color={theme.colors.text} />
+                <Text style={[s.actionBtnText, { color: theme.colors.text }]}>{t('customerProfile.removeNumber', 'Kd-Nr.')}</Text>
+              </TouchableOpacity>
+            ) : null}
+            {isAdmin && (
+              <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#E53E3E' }]} onPress={deleteCustomer} disabled={busy}>
+                <MaterialCommunityIcons name="trash-can-outline" size={18} color="#FFFFFF" />
+                <Text style={s.actionBtnText}>{t('common.delete', 'Löschen')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
     );
   };
@@ -255,6 +351,32 @@ export default function CustomerProfileScreen({ route, navigation }) {
         }
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Quick message modal */}
+      <Modal visible={msgVisible} transparent animationType="fade" onRequestClose={() => setMsgVisible(false)}>
+        <View style={s.modalBackdrop}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>{t('customerProfile.message', 'Nachricht')}</Text>
+            <TextInput
+              value={msgText}
+              onChangeText={setMsgText}
+              placeholder={t('customerProfile.messagePlaceholder', 'Nachricht an den Kunden…')}
+              placeholderTextColor={theme.colors.textTertiary}
+              style={s.modalInput}
+              multiline
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: theme.spacing.md }}>
+              <TouchableOpacity onPress={() => { setMsgVisible(false); setMsgText(''); }} style={{ paddingVertical: 8, paddingHorizontal: theme.spacing.md }}>
+                <Text style={{ color: theme.colors.textSecondary }}>{t('common.cancel', 'Abbrechen')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={sendMessage} disabled={busy || !msgText.trim()} style={{ paddingVertical: 8, paddingHorizontal: theme.spacing.md, opacity: (busy || !msgText.trim()) ? 0.5 : 1 }}>
+                <Text style={{ color: theme.colors.primary, fontWeight: theme.typography.weights.bold }}>{t('common.send', 'Senden')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -324,6 +446,51 @@ const styles = (theme) =>
     statDivider: {
       width: StyleSheet.hairlineWidth,
       height: 30,
+    },
+    adminActions: {
+      flexDirection: 'row',
+      alignSelf: 'stretch',
+      marginTop: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    actionBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.md,
+    },
+    actionBtnText: {
+      ...theme.typography.styles.caption,
+      color: '#FFFFFF',
+      fontWeight: theme.typography.weights.bold,
+      marginLeft: 5,
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      padding: theme.spacing.lg,
+    },
+    modalCard: {
+      backgroundColor: theme.colors.card,
+      borderRadius: theme.borderRadius.lg,
+      padding: theme.spacing.lg,
+    },
+    modalTitle: {
+      ...theme.typography.styles.h4,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.sm,
+    },
+    modalInput: {
+      minHeight: 90,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+      borderRadius: theme.borderRadius.md,
+      padding: theme.spacing.sm,
+      color: theme.colors.text,
+      textAlignVertical: 'top',
     },
     sectionTitle: {
       ...theme.typography.styles.body,

@@ -354,22 +354,11 @@ function sanitizeUser(user) {
   return data;
 }
 
-async function deleteAccount(userId, password, models) {
-  const { User, Notification, Repair, Appointment, Post, Comment, Like, Favorite, FCMToken, ServiceRating, AISession, AIUsage, Ticket, ChatMessage, ProductReview, StaffRating, ShareTracking, AuditLog } = models;
-
-  const user = await User.findByPk(userId);
-  if (!user) {
-    throw new NotFoundError('User');
-  }
-
-  // Verify password
-  const isPasswordValid = await comparePassword(password, user.password);
-  if (!isPasswordValid) {
-    throw new AppError('Falsches Passwort', 401, 'WRONG_PASSWORD');
-  }
-
-  // Delete all related data atomically (DSGVO Art. 17 - Right to be Forgotten).
-  // Any failure rolls back so the user isn't left half-deleted with orphan rows.
+// Delete a user + all their related rows atomically (DSGVO Art. 17). Shared by
+// self-service delete (with password) and admin delete (without).
+async function deleteUserCascade(user, models) {
+  const { Notification, Repair, Appointment, Post, Comment, Like, Favorite, FCMToken, ServiceRating, AISession, AIUsage, Ticket, ChatMessage, ProductReview, StaffRating, ShareTracking, AuditLog } = models;
+  const userId = user.id;
   await sequelize.transaction(async (t) => {
     const opts = { where: { userId }, transaction: t };
     await Notification.destroy(opts);
@@ -389,16 +378,45 @@ async function deleteAccount(userId, password, models) {
     await Ticket.destroy(opts);
     await AuditLog.destroy(opts);
     await Post.destroy(opts);
-    await user.destroy({ transaction: t });
+    await user.destroy({ transaction: t, force: true });
   });
+}
 
+async function deleteAccount(userId, password, models) {
+  const { User } = models;
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new NotFoundError('User');
+  }
+
+  const isPasswordValid = await comparePassword(password, user.password);
+  if (!isPasswordValid) {
+    throw new AppError('Falsches Passwort', 401, 'WRONG_PASSWORD');
+  }
+
+  await deleteUserCascade(user, models);
   logger.info('Account deleted (DSGVO Art. 17)', { userId });
+  return { deleted: true };
+}
 
+// Admin hard-delete: no password, but staff/admin accounts are protected.
+async function adminDeleteUser(userId, models) {
+  const { User } = models;
+  const user = await User.findByPk(userId, { paranoid: false });
+  if (!user) {
+    throw new NotFoundError('User');
+  }
+  if (user.role && user.role !== 'customer') {
+    throw new AppError('Mitarbeiter-/Admin-Konten können hier nicht gelöscht werden', 403, 'CANNOT_DELETE_STAFF');
+  }
+  await deleteUserCascade(user, models);
+  logger.info('Customer hard-deleted by admin', { userId });
   return { deleted: true };
 }
 
 module.exports = {
   findTaifunCustomerNumber,
+  adminDeleteUser,
   generateAccessToken,
   generateRefreshToken,
   registerUser,
