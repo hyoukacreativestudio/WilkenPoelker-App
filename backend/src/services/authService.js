@@ -170,10 +170,14 @@ async function registerUser(data, User, taifunDb) {
 async function loginUser(data, User) {
   const { email, password, customerNumber, rememberMe } = data;
 
-  // Find user by email or customer number
-  const whereClause = email.includes('@')
-    ? { email }
-    : { customerNumber: email };
+  // Find user by email (case-insensitive) or customer number
+  let whereClause;
+  if (email.includes('@')) {
+    const { fn, col, where } = require('sequelize');
+    whereClause = where(fn('lower', col('email')), String(email).trim().toLowerCase());
+  } else {
+    whereClause = { customerNumber: email };
+  }
 
   const user = await User.findOne({ where: whereClause });
 
@@ -272,10 +276,18 @@ async function logoutUser(userId, User) {
 }
 
 async function forgotPassword(email, User) {
-  const user = await User.findOne({ where: { email } });
+  // Case-insensitive lookup: on Postgres a plain { email } match is
+  // case-sensitive, so a differently-cased address silently found no user and
+  // no reset mail was sent (verification mail worked because SMTP is fine).
+  const { fn, col, where } = require('sequelize');
+  const needle = String(email || '').trim().toLowerCase();
+  const user = await User.findOne({ where: where(fn('lower', col('email')), needle) });
 
   // Don't reveal if email exists
-  if (!user) return;
+  if (!user) {
+    logger.info('Password reset requested for unknown email', { email: needle });
+    return;
+  }
 
   const resetToken = generateToken();
   user.passwordResetToken = hashToken(resetToken);
