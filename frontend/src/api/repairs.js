@@ -12,5 +12,6 @@ export const repairsApi = {
   acknowledgeRepair: (id) => apiClient.post(`/repairs/${id}/acknowledge`),
   // Staff outreach: Taifun orders whose customer has no app account yet
   getOutreach: (params) => apiClient.get('/repairs/outreach', { params }),
-  markOutreachReached: (nr, reached) => apiClient.patch(`/repairs/outreach/${encodeURIComponent(nr)}/reached`, { reached }),
+  markOutreachReached: (kdNr, reached, category) =>
+    apiClient.patch(`/repairs/outreach/${encodeURIComponent(kdNr)}/reached`, { reached, category }),
 };

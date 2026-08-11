@@ -371,6 +371,39 @@ cron.schedule('30 3 * * *', async () => {
   }
 });
 
+// Delete outreach orders 1 day after they were reached OR finished (erledigt),
+// so the staff contact list stays clean. Removes the Taifun order + linked Repair.
+cron.schedule('7 * * * *', async () => {
+  try {
+    const { Op } = require('sequelize');
+    const Repair = require('./models/Repair');
+    const { TaifunOrder } = require('./models');
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const doomed = await TaifunOrder.findAll({
+      where: {
+        [Op.or]: [
+          { reachedAt: { [Op.ne]: null, [Op.lt]: cutoff } },
+          { erledigt: true, updatedAt: { [Op.lt]: cutoff } },
+        ],
+      },
+      attributes: ['nr'],
+    });
+    if (doomed.length === 0) return;
+    const nrs = doomed.map((o) => o.nr);
+
+    const deletedRepairs = await Repair.destroy({ where: { taifunRepairId: { [Op.in]: nrs } } });
+    const deletedOrders = await TaifunOrder.destroy({ where: { nr: { [Op.in]: nrs } } });
+
+    logger.info('Cron: purged reached/finished Taifun orders after 1d', {
+      taifunOrders: deletedOrders,
+      repairs: deletedRepairs,
+    });
+  } catch (err) {
+    logger.error('Cron: 1-day outreach purge failed', { error: err.message });
+  }
+});
+
 // Archive acknowledged repairs every Sunday at 23:59
 cron.schedule('59 23 * * 0', async () => {
   try {

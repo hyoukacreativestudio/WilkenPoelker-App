@@ -35,9 +35,9 @@ router.get(
   repairController.getOutreach
 );
 
-// PATCH /api/repairs/outreach/:nr/reached - Staff: toggle "reached" for a customer
+// PATCH /api/repairs/outreach/:kdNr/reached - Staff: toggle "reached" for a customer
 router.patch(
-  '/outreach/:nr/reached',
+  '/outreach/:kdNr/reached',
   authenticate,
   authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.SERVICE_MANAGER, ROLES.BIKE_MANAGER, ROLES.CLEANING_MANAGER, ROLES.MOTOR_MANAGER, ROLES.ROBBY_MANAGER),
   repairController.markOutreachReached

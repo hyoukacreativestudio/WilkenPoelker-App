@@ -138,21 +138,26 @@ const reviewRepair = asyncHandler(async (req, res) => {
 });
 
 // GET /outreach - Staff: Taifun orders whose customer has no app account yet,
-// so service can call them and tick off who they've reached.
+// grouped by customer + category, so service can call them and tick off who
+// they've reached. Supports filter (open|reached|all), category, and search.
 const getOutreach = asyncHandler(async (req, res) => {
   const outreach = require('../services/taifunOutreachService');
   const result = await outreach.listOutreach({
-    filter: req.query.filter || 'open',   // open | reached | all
-    scope: req.query.scope || 'no_account', // no_account | all
+    filter: req.query.filter || 'open',       // open | reached | all
+    category: req.query.category || 'all',    // all | reparatur | neu | leasing
+    search: req.query.search || '',
+    scope: req.query.scope || 'no_account',   // no_account | all
   });
   res.json({ success: true, data: result });
 });
 
-// PATCH /outreach/:nr/reached - Staff: mark a customer as reached / not reached
+// PATCH /outreach/:kdNr/reached - Staff: mark a customer (in a category, or all)
+// as reached / not reached. Body: { reached: bool, category?: string }
 const markOutreachReached = asyncHandler(async (req, res) => {
   const outreach = require('../services/taifunOutreachService');
   const reached = req.body.reached !== false; // default true
-  const result = await outreach.markReached(req.params.nr, req.user.id, reached);
+  const category = req.body.category || 'all';
+  const result = await outreach.markReached(req.params.kdNr, category, req.user.id, reached);
   res.json({ success: true, data: result });
 });
 
