@@ -1,6 +1,46 @@
 const { asyncHandler, AppError, NotFoundError } = require('../middlewares/errorHandler');
 const { Order, WarehouseItem, User } = require('../models');
 
+// ── Passwordless department login (desktop tool on trusted company PCs) ──
+// Each department = one dedicated account (conventional email below). Clicking a
+// department logs into that account WITHOUT a password. Only these staff roles
+// are ever allowed — never a real customer account. Optionally hardened with a
+// shared secret via env DESKTOP_LOGIN_SECRET (the desktop sends it).
+const DEPT_ACCOUNTS = {
+  admin:        { email: 'admin@wilkenpoelker.de',        role: 'admin' },
+  fahrrad:      { email: 'fahrrad@wilkenpoelker.de',      role: 'bike_manager' },
+  reinigung:    { email: 'reinigung@wilkenpoelker.de',    role: 'cleaning_manager' },
+  service:      { email: 'service@wilkenpoelker.de',      role: 'service_manager' },
+  rasenmaeher:  { email: 'rasenmaeher@wilkenpoelker.de',  role: 'motor_manager' },
+  robby:        { email: 'robby@wilkenpoelker.de',        role: 'robby_manager' },
+  verkauf:      { email: 'verkauf@wilkenpoelker.de',      role: 'sales_manager' },
+  bestellungen: { email: 'bestellungen@wilkenpoelker.de', role: 'orders_manager' },
+  lager:        { email: 'lager@wilkenpoelker.de',        role: 'warehouse_worker' },
+};
+const DESKTOP_ROLES = new Set([
+  'admin', 'super_admin', 'bike_manager', 'cleaning_manager', 'motor_manager',
+  'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker',
+]);
+
+const desktopLogin = asyncHandler(async (req, res) => {
+  const secret = process.env.DESKTOP_LOGIN_SECRET;
+  if (secret && req.body.secret !== secret) throw new AppError('Nicht erlaubt', 403, 'FORBIDDEN');
+
+  const dept = DEPT_ACCOUNTS[req.body.department];
+  if (!dept) throw new AppError('Unbekannte Abteilung', 400, 'UNKNOWN_DEPARTMENT');
+
+  const { fn, col, where } = require('sequelize');
+  const user = await User.findOne({ where: where(fn('lower', col('email')), dept.email.toLowerCase()) });
+  if (!user) throw new AppError(`Kein Account für "${req.body.department}". Bitte im Admin-Bereich anlegen (${dept.email}).`, 404, 'NO_DEPARTMENT_ACCOUNT');
+  if (!DESKTOP_ROLES.has(user.role)) throw new AppError('Dieser Account ist im PC-Programm nicht erlaubt', 403, 'ROLE_NOT_ALLOWED');
+  if (user.isActive === false) throw new AppError('Account ist deaktiviert', 403, 'INACTIVE');
+
+  const authService = require('../services/authService');
+  const accessToken = authService.generateAccessToken(user);
+  const refreshToken = authService.generateRefreshToken(user);
+  res.json({ success: true, data: { accessToken, refreshToken, user: authService.sanitizeUser(user) } });
+});
+
 // Map a user role to its department key (used to scope orders lists).
 const ROLE_DEPARTMENT = {
   bike_manager: 'fahrrad',
@@ -152,6 +192,7 @@ const deleteWarehouseItem = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  desktopLogin,
   listOrders, createOrder, updateOrder, deleteOrder,
   listWarehouse, createWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
   departmentForRole,

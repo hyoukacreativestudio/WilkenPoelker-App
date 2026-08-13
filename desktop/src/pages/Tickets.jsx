@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api, unwrap } from '../api.js';
+import { useToast } from '../toast.jsx';
 
 // Department tickets. Uses the same /service/tickets/all endpoint as the app's
 // admin ticket views. Everyone sees/handles their department's tickets.
 export default function Tickets() {
+  const toast = useToast();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -22,7 +24,7 @@ export default function Tickets() {
 
   const setTicketStatus = async (t, s) => {
     try { await api.put(`/service/tickets/${t.id || t._id}/status`, { status: s }); load(); }
-    catch (e) { alert(e.message); }
+    catch (e) { toast(e.message, { type: 'error' }); }
   };
 
   const custName = (t) => t.creator ? `${t.creator.firstName || ''} ${t.creator.lastName || ''}`.trim() : (t.customerName || '');
@@ -41,12 +43,12 @@ export default function Tickets() {
         <button className="btn ghost" onClick={load}>Aktualisieren</button>
       </div>
 
-      {loading ? <div className="empty">Lädt…</div> : error ? (
-        <div className="empty">Tickets nicht verfügbar.<div className="muted">{error}</div></div>
+      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : error ? (
+        <div className="empty"><div className="big">💬</div>Tickets nicht verfügbar.<div className="muted">{error}</div></div>
       ) : rows.length === 0 ? (
-        <div className="empty">Keine Tickets.</div>
+        <div className="empty"><div className="big">💬</div>Keine Tickets.</div>
       ) : (
-        <table>
+        <div className="table-wrap"><table>
           <thead>
             <tr><th>Nr.</th><th>Kunde</th><th>Titel</th><th>Kategorie</th><th>Status</th><th></th></tr>
           </thead>
@@ -66,7 +68,7 @@ export default function Tickets() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   );

@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
+import { useToast } from '../toast.jsx';
 
 const CAN_WRITE = ['sales_manager', 'admin', 'super_admin'];
 const emptyForm = { brand: '', color: '', articleNumber: '', description: '', quantity: 1, notes: '' };
 
 export default function Lager({ user }) {
+  const toast = useToast();
   const canWrite = CAN_WRITE.includes(user.role);
   const [status, setStatus] = useState('requested');
   const [rows, setRows] = useState([]);
@@ -41,8 +43,8 @@ export default function Lager({ user }) {
   const submit = async () => {
     if (!form.description.trim()) return;
     setBusy(true);
-    try { await api.post('/desktop/warehouse', form); setShowForm(false); setForm(emptyForm); load(); }
-    catch (e) { alert(e.message); } finally { setBusy(false); }
+    try { await api.post('/desktop/warehouse', form); setShowForm(false); setForm(emptyForm); load(); toast('Eintrag gespeichert'); }
+    catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
   const markBrought = async (r) => { await api.patch(`/desktop/warehouse/${r.id}`, { status: 'brought' }); load(); };
   const reopen = async (r) => { await api.patch(`/desktop/warehouse/${r.id}`, { status: 'requested' }); load(); };
@@ -61,10 +63,10 @@ export default function Lager({ user }) {
         {canWrite && <button className="btn" onClick={() => { setForm(emptyForm); setShowForm(true); }}>+ Neuer Eintrag</button>}
       </div>
 
-      {loading ? <div className="empty">Lädt…</div> : sorted.length === 0 ? (
-        <div className="empty">Keine Einträge.</div>
+      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : sorted.length === 0 ? (
+        <div className="empty"><div className="big">🏬</div>Keine Einträge.</div>
       ) : (
-        <table>
+        <div className="table-wrap"><table>
           <thead>
             <tr>
               <th className="sortable" onClick={() => toggleSort('brand')}>Marke{arrow('brand')}</th>
@@ -92,7 +94,7 @@ export default function Lager({ user }) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
 
       {showForm && (

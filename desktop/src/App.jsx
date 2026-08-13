@@ -2,8 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { api, setToken, getToken, unwrap } from './api.js';
 import Login from './Login.jsx';
 import Shell from './Shell.jsx';
+import { ToastProvider } from './toast.jsx';
 
 export default function App() {
+  return (
+    <ToastProvider>
+      <Root />
+    </ToastProvider>
+  );
+}
+
+function Root() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 

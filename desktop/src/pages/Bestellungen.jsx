@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
-import { ORDER_DEPARTMENTS, departmentForRole, labelForRole } from '../config.js';
+import { ORDER_DEPARTMENTS, departmentForRole } from '../config.js';
+import { useToast } from '../toast.jsx';
 
 const MANAGER = ['admin', 'super_admin', 'orders_manager'];
 const deptLabel = (key) => ORDER_DEPARTMENTS.find((d) => d.key === key)?.label || key;
@@ -8,6 +9,7 @@ const deptLabel = (key) => ORDER_DEPARTMENTS.find((d) => d.key === key)?.label |
 const emptyForm = { source: 'shop', articleNumber: '', description: '', customerName: '', customerNumber: '', quantity: 1, quantityForStock: 0, amazonLink: '', notes: '' };
 
 export default function Bestellungen({ user }) {
+  const toast = useToast();
   const isManager = MANAGER.includes(user.role);
   const myDept = departmentForRole(user.role);
 
@@ -57,7 +59,8 @@ export default function Bestellungen({ user }) {
       if (isManager && dept !== 'all') payload.department = dept;
       await api.post('/desktop/orders', payload);
       setShowForm(false); setForm(emptyForm); load();
-    } catch (e) { alert(e.message); } finally { setBusy(false); }
+      toast('Bestellung gespeichert');
+    } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
 
   const markOrdered = async (row) => { await api.patch(`/desktop/orders/${row.id}`, { status: 'ordered' }); load(); };
@@ -85,10 +88,10 @@ export default function Bestellungen({ user }) {
         <button className="btn" onClick={() => { setForm(emptyForm); setShowForm(true); }}>+ Neue Bestellung</button>
       </div>
 
-      {loading ? <div className="empty">Lädt…</div> : sorted.length === 0 ? (
-        <div className="empty">Keine Bestellungen.</div>
+      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : sorted.length === 0 ? (
+        <div className="empty"><div className="big">📦</div>Keine Bestellungen.<div className="muted">Lege mit „+ Neue Bestellung" die erste an.</div></div>
       ) : (
-        <table>
+        <div className="table-wrap"><table>
           <thead>
             <tr>
               {isManager && <th className="sortable" onClick={() => toggleSort('department')}>Abteilung{arrow('department')}</th>}
@@ -122,7 +125,7 @@ export default function Bestellungen({ user }) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
 
       {showForm && (

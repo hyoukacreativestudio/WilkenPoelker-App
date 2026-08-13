@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api, unwrap } from '../api.js';
+import { useToast } from '../toast.jsx';
 
 const CATS = [
   { key: 'reparatur', label: 'Reparatur' },
@@ -11,6 +12,7 @@ const CATS = [
 // who haven't been reached yet. Reuses the same /repairs/outreach endpoint as
 // the mobile app's "Kontakte" tab.
 export default function Reparaturen() {
+  const toast = useToast();
   const [filter, setFilter] = useState('open'); // open | reached
   const [category, setCategory] = useState('reparatur');
   const [search, setSearch] = useState('');
@@ -32,8 +34,11 @@ export default function Reparaturen() {
   }, [filter, category, search]);
 
   const setReached = async (g, reached) => {
-    try { await api.patch(`/repairs/outreach/${encodeURIComponent(g.kdNr)}/reached`, { reached, category: g.category }); load(); }
-    catch (e) { alert(e.message); }
+    try {
+      await api.patch(`/repairs/outreach/${encodeURIComponent(g.kdNr)}/reached`, { reached, category: g.category });
+      load();
+      if (reached) toast(`${g.customerName || g.kdNr} als erreicht markiert`, { undo: () => setReached(g, false) });
+    } catch (e) { toast(e.message, { type: 'error' }); }
   };
 
   const bc = data.counts?.byCategory || {};
@@ -47,15 +52,15 @@ export default function Reparaturen() {
           </span>
         ))}
         <div className="spacer" />
-        <input className="input" placeholder="Suche: Name, Telefon, Ort, Nr." value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 260 }} />
-        <span className={`pill tab ${filter === 'open' ? 'active' : ''}`} onClick={() => setFilter('open')}>Offen ({data.counts?.open || 0})</span>
-        <span className={`pill tab ${filter === 'reached' ? 'active' : ''}`} onClick={() => setFilter('reached')}>Erreicht ({data.counts?.reached || 0})</span>
+        <span className="search"><input className="input" placeholder="Name, Telefon, Ort, Nr." value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 240 }} /></span>
+        <span className={`pill tab ${filter === 'open' ? 'active' : ''}`} onClick={() => setFilter('open')}>Offen <span className="n">{data.counts?.open || 0}</span></span>
+        <span className={`pill tab ${filter === 'reached' ? 'active' : ''}`} onClick={() => setFilter('reached')}>Erreicht <span className="n">{data.counts?.reached || 0}</span></span>
       </div>
 
-      {loading ? <div className="empty">Lädt…</div> : (data.items || []).length === 0 ? (
-        <div className="empty">{filter === 'open' ? 'Keine offenen Kontakte.' : 'Keine erreichten Kontakte.'}</div>
+      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : (data.items || []).length === 0 ? (
+        <div className="empty"><div className="big">{filter === 'open' ? '📞' : '✅'}</div>{filter === 'open' ? 'Keine offenen Kontakte.' : 'Keine erreichten Kontakte.'}</div>
       ) : (
-        <table>
+        <div className="table-wrap"><table>
           <thead>
             <tr><th>Kunde</th><th>Telefon</th><th>Ort</th><th>Aufträge</th><th></th></tr>
           </thead>
@@ -80,7 +85,7 @@ export default function Reparaturen() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   );

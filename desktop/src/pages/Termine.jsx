@@ -54,12 +54,12 @@ export default function Termine() {
         <button className="btn ghost" onClick={load}>Aktualisieren</button>
       </div>
 
-      {loading ? <div className="empty">Lädt…</div> : error ? (
-        <div className="empty">Termine konnten nicht geladen werden.<div className="muted">{error}</div></div>
+      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : error ? (
+        <div className="empty"><div className="big">📅</div>Termine konnten nicht geladen werden.<div className="muted">{error}</div></div>
       ) : sorted.length === 0 ? (
-        <div className="empty">Keine Termine.</div>
+        <div className="empty"><div className="big">📅</div>Keine Termine.</div>
       ) : (
-        <table>
+        <div className="table-wrap"><table>
           <thead>
             <tr>
               <th className="sortable" onClick={() => toggleSort('date')}>Datum{arrow('date')}</th>
@@ -82,7 +82,7 @@ export default function Termine() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   );
