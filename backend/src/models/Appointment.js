@@ -97,6 +97,29 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.UUID,
     allowNull: true,
   },
+  // ── Desktop/company-tool: appointments staff create by hand ──
+  // For these, userId points at the staff account; the customer is stored as
+  // free text (number/name/phone) since they may not have an app account.
+  createdByStaff: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  customerNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  customerName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  department: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   tableName: 'appointments',
   timestamps: true,

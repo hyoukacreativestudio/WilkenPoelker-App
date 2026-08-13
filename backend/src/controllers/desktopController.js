@@ -1,5 +1,8 @@
 const { asyncHandler, AppError, NotFoundError } = require('../middlewares/errorHandler');
-const { Order, WarehouseItem, User } = require('../models');
+const { Op } = require('sequelize');
+const models = require('../models');
+const { Order, WarehouseItem, User, Appointment, Ticket, ChatMessage } = models;
+const serviceService = require('../services/serviceService');
 
 // ── Passwordless department login (desktop tool on trusted company PCs) ──
 // Each department = one fixed account, linked by its stable username (NOT by a
@@ -202,9 +205,200 @@ const deleteWarehouseItem = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { deleted: true } });
 });
 
+// ── Termine (Appointments) ────────────────────────────────────────────
+// App-created appointments show up automatically (same table). Staff can also
+// create their own by hand with a free-text customer (number/name/phone).
+
+const APPT_TYPES = ['service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing'];
+const APPT_STATUSES = ['pending', 'proposed', 'confirmed', 'cancelled', 'completed', 'rescheduled'];
+
+const listAppointments = asyncHandler(async (req, res) => {
+  const where = {};
+  if (req.query.status && req.query.status !== 'all') where.status = req.query.status;
+  if (req.query.type && req.query.type !== 'all') where.type = req.query.type;
+
+  const items = await Appointment.findAll({
+    where,
+    include: [{ model: User, as: 'customer', attributes: ['id', 'firstName', 'lastName', 'customerNumber', 'phone'] }],
+    order: [['date', 'ASC'], ['startTime', 'ASC']],
+  });
+
+  // Normalise: staff-entered ones carry the customer as free text; app ones
+  // resolve it from the linked account.
+  const appointments = items.map((a) => {
+    const c = a.customer;
+    const fromAccount = c ? `${c.firstName || ''} ${c.lastName || ''}`.trim() : '';
+    return {
+      id: a.id,
+      date: a.date,
+      startTime: a.startTime,
+      endTime: a.endTime,
+      title: a.title,
+      description: a.description,
+      type: a.type,
+      status: a.status,
+      department: a.department,
+      createdByStaff: a.createdByStaff,
+      customerName: a.createdByStaff ? (a.customerName || '') : (fromAccount || a.customerName || ''),
+      customerNumber: a.createdByStaff ? (a.customerNumber || '') : (c?.customerNumber || a.customerNumber || ''),
+      phone: a.createdByStaff ? (a.phone || '') : (c?.phone || a.phone || ''),
+    };
+  });
+  res.json({ success: true, data: { appointments } });
+});
+
+const createAppointment = asyncHandler(async (req, res) => {
+  const { title, type, date, startTime, endTime, description, customerNumber, customerName, phone } = req.body;
+  if (!title || !String(title).trim()) throw new AppError('Titel ist erforderlich', 400, 'TITLE_REQUIRED');
+  if (!type || !APPT_TYPES.includes(type)) throw new AppError('Ungültiger Termintyp', 400, 'INVALID_TYPE');
+
+  const department = req.body.department || departmentForRole(req.user.role) || null;
+  const appointment = await Appointment.create({
+    userId: req.user.id, // staff account owns the hand-entered appointment
+    title: String(title).trim(),
+    type,
+    date: date || null,
+    startTime: startTime || null,
+    endTime: endTime || null,
+    description: description || null,
+    status: 'confirmed',
+    createdByStaff: true,
+    customerNumber: customerNumber || null,
+    customerName: customerName || null,
+    phone: phone || null,
+    department,
+  });
+  res.status(201).json({ success: true, data: { appointment } });
+});
+
+const updateAppointment = asyncHandler(async (req, res) => {
+  const appointment = await Appointment.findByPk(req.params.id);
+  if (!appointment) throw new NotFoundError('Appointment');
+  const updates = {};
+  if (req.body.status && APPT_STATUSES.includes(req.body.status)) updates.status = req.body.status;
+  for (const f of ['title', 'description', 'date', 'startTime', 'endTime', 'customerNumber', 'customerName', 'phone', 'type']) {
+    if (req.body[f] !== undefined) updates[f] = req.body[f];
+  }
+  await appointment.update(updates);
+  res.json({ success: true, data: { appointment } });
+});
+
+const deleteAppointment = asyncHandler(async (req, res) => {
+  const appointment = await Appointment.findByPk(req.params.id);
+  if (!appointment) throw new NotFoundError('Appointment');
+  // Only hand-entered (staff) appointments may be removed from the PC tool;
+  // app appointments are cancelled through the app flow.
+  if (!appointment.createdByStaff && !['admin', 'super_admin'].includes(req.user.role)) {
+    throw new AppError('App-Termine können hier nicht gelöscht werden', 403, 'FORBIDDEN');
+  }
+  await appointment.destroy();
+  res.json({ success: true, data: { deleted: true } });
+});
+
+// ── Tickets (per department) ──────────────────────────────────────────
+// Each department only sees tickets in its category. Detail/chat/status reuse
+// the app's service layer so notifications + access control stay consistent.
+const ALL_TICKET_CATEGORIES = ['service', 'bike', 'cleaning', 'motor'];
+const DEPT_TICKET_CATEGORIES = {
+  bike_manager: ['bike'],
+  cleaning_manager: ['cleaning'],
+  motor_manager: ['motor'],
+  service_manager: ['service', 'bike', 'cleaning', 'motor'],
+};
+function ticketCategoriesForRole(role) {
+  if (['admin', 'super_admin', 'orders_manager'].includes(role)) return ALL_TICKET_CATEGORIES;
+  return DEPT_TICKET_CATEGORIES[role] || [];
+}
+
+const listTickets = asyncHandler(async (req, res) => {
+  const cats = ticketCategoriesForRole(req.user.role);
+  if (cats.length === 0) return res.json({ success: true, data: { tickets: [] } });
+
+  const where = { category: { [Op.in]: cats } };
+  if (req.query.status && req.query.status !== 'all') where.status = req.query.status;
+
+  const tickets = await Ticket.findAll({
+    where,
+    include: [
+      { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName', 'customerNumber', 'phone'] },
+      { model: User, as: 'assignee', attributes: ['id', 'firstName', 'lastName'] },
+    ],
+    order: [['createdAt', 'DESC']],
+  });
+  res.json({ success: true, data: { tickets } });
+});
+
+function assertTicketCategory(role, category) {
+  const cats = ticketCategoriesForRole(role);
+  if (cats.length && !cats.includes(category)) {
+    throw new AppError('Kein Zugriff auf dieses Ticket', 403, 'FORBIDDEN');
+  }
+}
+
+const getTicket = asyncHandler(async (req, res) => {
+  const ticket = await serviceService.getTicketById(req.params.id, req.user.id, models);
+  assertTicketCategory(req.user.role, ticket.category);
+  // Load the chat directly: getChatMessages only allows the owner/assignee/admin,
+  // but any department manager should be able to read their category's ticket.
+  const messages = await ChatMessage.findAll({
+    where: { ticketId: req.params.id },
+    include: [{ model: User, as: 'sender', attributes: ['id', 'firstName', 'lastName', 'role'] }],
+    order: [['createdAt', 'ASC']],
+  });
+  res.json({ success: true, data: { ticket, messages } });
+});
+
+const addTicketMessage = asyncHandler(async (req, res) => {
+  const ticket = await Ticket.findByPk(req.params.id);
+  if (!ticket) throw new NotFoundError('Ticket');
+  assertTicketCategory(req.user.role, ticket.category);
+  if (['cancelled', 'completed', 'closed'].includes(ticket.status)) {
+    throw new AppError('Geschlossenes Ticket – zum Antworten erst wieder öffnen', 400, 'TICKET_CLOSED');
+  }
+  const message = (req.body.message || '').trim();
+  if (!message) throw new AppError('Nachricht ist erforderlich', 400, 'MESSAGE_REQUIRED');
+
+  // Any manager of this category may reply from the shared department account —
+  // no per-person assignment gate (unlike the app's stricter sendChatMessage).
+  const { Notification } = models;
+  if (!ticket.assignedTo || ticket.status === 'open') {
+    await ticket.update({ assignedTo: ticket.assignedTo || req.user.id, status: ticket.status === 'open' ? 'in_progress' : ticket.status });
+  }
+  const created = await ChatMessage.create({ ticketId: ticket.id, userId: req.user.id, message });
+
+  // Notify the customer of the reply.
+  if (ticket.userId) {
+    try {
+      await Notification.create({
+        userId: ticket.userId,
+        title: 'Neue Chat-Nachricht',
+        message: `Neue Nachricht in Ticket ${ticket.ticketNumber}: ${message.substring(0, 60)}`,
+        type: 'chat_message',
+        category: 'chat',
+        relatedId: ticket.id,
+        relatedType: 'ticket',
+        deepLink: `/service/tickets/${ticket.id}/chat`,
+      });
+    } catch (e) { /* notification failure must not block the reply */ }
+  }
+  res.status(201).json({ success: true, data: { message: created } });
+});
+
+const updateTicket = asyncHandler(async (req, res) => {
+  const ticket = await Ticket.findByPk(req.params.id, { attributes: ['id', 'category'] });
+  if (!ticket) throw new NotFoundError('Ticket');
+  assertTicketCategory(req.user.role, ticket.category);
+  const valid = ['open', 'in_progress', 'confirmed', 'completed', 'cancelled', 'closed'];
+  if (!valid.includes(req.body.status)) throw new AppError('Ungültiger Status', 400, 'INVALID_STATUS');
+  const updated = await serviceService.updateTicketStatus(req.params.id, req.body.status, req.user.id, models);
+  res.json({ success: true, data: { ticket: updated } });
+});
+
 module.exports = {
   desktopLogin,
   listOrders, createOrder, updateOrder, deleteOrder,
   listWarehouse, createWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
+  listAppointments, createAppointment, updateAppointment, deleteAppointment,
+  listTickets, getTicket, addTicketMessage, updateTicket,
   departmentForRole,
 };

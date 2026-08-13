@@ -12,6 +12,7 @@ router.post('/login', desktop.desktopLogin);
 const STAFF = [
   'admin', 'super_admin', 'bike_manager', 'cleaning_manager', 'motor_manager',
   'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker',
+  'delivery_manager', 'motor_equipment_manager', 'ev_manager',
 ];
 
 // ── Bestellungen ──
@@ -25,5 +26,17 @@ router.get('/warehouse', authenticate, authorize(...STAFF), desktop.listWarehous
 router.post('/warehouse', authenticate, authorize('sales_manager', 'admin', 'super_admin'), desktop.createWarehouseItem);
 router.patch('/warehouse/:id', authenticate, authorize(...STAFF), desktop.updateWarehouseItem);
 router.delete('/warehouse/:id', authenticate, authorize(...STAFF), desktop.deleteWarehouseItem);
+
+// ── Termine ──
+router.get('/appointments', authenticate, authorize(...STAFF), desktop.listAppointments);
+router.post('/appointments', authenticate, authorize(...STAFF), desktop.createAppointment);
+router.patch('/appointments/:id', authenticate, authorize(...STAFF), desktop.updateAppointment);
+router.delete('/appointments/:id', authenticate, authorize(...STAFF), desktop.deleteAppointment);
+
+// ── Tickets (per department) ──
+router.get('/tickets', authenticate, authorize(...STAFF), desktop.listTickets);
+router.get('/tickets/:id', authenticate, authorize(...STAFF), desktop.getTicket);
+router.post('/tickets/:id/message', authenticate, authorize(...STAFF), desktop.addTicketMessage);
+router.patch('/tickets/:id', authenticate, authorize(...STAFF), desktop.updateTicket);
 
 module.exports = router;

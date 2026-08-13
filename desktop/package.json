@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:pc": "vite build --base=/pc/",
     "preview": "vite preview --port 5180",
     "build:electron": "vite build --mode electron --base ./ --outDir dist-electron",
     "electron": "electron .",

@@ -1,28 +1,44 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
+import { useToast } from '../toast.jsx';
 
 // Appointments created in the app show up here automatically (same backend).
-// Sortable by date, customer, repair/appointment number, type.
+// Staff can also create their own by hand with a free-text customer.
+// Sortable by date, customer, type. Past (>24h) appointments are hidden.
+const TYPES = [
+  { key: 'repair', label: 'Reparatur' },
+  { key: 'pickup', label: 'Abholung' },
+  { key: 'delivery', label: 'Lieferung' },
+  { key: 'inspection', label: 'Inspektion' },
+  { key: 'consultation', label: 'Beratung' },
+  { key: 'service', label: 'Service' },
+  { key: 'other', label: 'Sonstiges' },
+];
+const typeLabel = (k) => TYPES.find((t) => t.key === k)?.label || k || '—';
+const emptyForm = { title: '', type: 'repair', date: '', startTime: '', endTime: '', customerName: '', customerNumber: '', phone: '', description: '' };
+
 export default function Termine() {
+  const toast = useToast();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sort, setSort] = useState({ key: 'date', dir: 'asc' });
   const [status, setStatus] = useState('all');
   const [type, setType] = useState('all');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [busy, setBusy] = useState(false);
 
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const res = unwrap(await api.get('/appointments'));
-      const list = res.appointments || res.items || (Array.isArray(res) ? res : []);
-      setRows(list);
+      const res = unwrap(await api.get('/desktop/appointments'));
+      setRows(res.appointments || []);
     } catch (e) { setError(e.message); setRows([]); }
     finally { setLoading(false); }
   };
   useEffect(() => { load(); }, []);
 
-  const custName = (a) => a.customer ? `${a.customer.firstName || ''} ${a.customer.lastName || ''}`.trim() : (a.customerName || '');
   // Hide appointments more than 24h in the past
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const filtered = useMemo(
@@ -36,9 +52,8 @@ export default function Termine() {
     const arr = [...filtered];
     const { key, dir } = sort;
     arr.sort((a, b) => {
-      let av, bv;
-      if (key === 'customer') { av = custName(a).toLowerCase(); bv = custName(b).toLowerCase(); }
-      else { av = String(a[key] ?? '').toLowerCase(); bv = String(b[key] ?? '').toLowerCase(); }
+      const av = String(a[key] ?? '').toLowerCase();
+      const bv = String(b[key] ?? '').toLowerCase();
       if (av < bv) return dir === 'asc' ? -1 : 1;
       if (av > bv) return dir === 'asc' ? 1 : -1;
       return 0;
@@ -48,20 +63,24 @@ export default function Termine() {
   const toggleSort = (key) => setSort((s) => ({ key, dir: s.key === key && s.dir === 'asc' ? 'desc' : 'asc' }));
   const arrow = (key) => sort.key === key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
 
+  const submit = async () => {
+    if (!form.title.trim()) return;
+    setBusy(true);
+    try {
+      await api.post('/desktop/appointments', form);
+      setShowForm(false); setForm(emptyForm); load(); toast('Termin angelegt');
+    } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
+  const del = async (a) => { if (confirm('Termin löschen?')) { try { await api.del(`/desktop/appointments/${a.id}`); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
+
   return (
     <div>
       <div className="toolbar no-print">
-        <span className="muted">Termine aus der App – automatisch eingetragen</span>
+        <span className="muted">Termine aus der App & selbst angelegt</span>
         <div className="spacer" />
         <select className="select" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="all">Alle Arten</option>
-          <option value="repair">Reparatur</option>
-          <option value="pickup">Abholung</option>
-          <option value="delivery">Lieferung</option>
-          <option value="inspection">Inspektion</option>
-          <option value="consultation">Beratung</option>
-          <option value="service">Service</option>
-          <option value="other">Sonstiges</option>
+          {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
         </select>
         <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="all">Alle Status</option>
@@ -72,6 +91,7 @@ export default function Termine() {
         </select>
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
         <button className="btn ghost" onClick={load}>Aktualisieren</button>
+        <button className="btn" onClick={() => { setForm(emptyForm); setShowForm(true); }}>+ Neuer Termin</button>
       </div>
 
       {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : error ? (
@@ -84,25 +104,76 @@ export default function Termine() {
             <tr>
               <th className="sortable" onClick={() => toggleSort('date')}>Datum{arrow('date')}</th>
               <th className="sortable" onClick={() => toggleSort('startTime')}>Uhrzeit{arrow('startTime')}</th>
-              <th className="sortable" onClick={() => toggleSort('customer')}>Kunde{arrow('customer')}</th>
+              <th className="sortable" onClick={() => toggleSort('customerName')}>Kunde{arrow('customerName')}</th>
               <th className="sortable" onClick={() => toggleSort('title')}>Titel{arrow('title')}</th>
               <th className="sortable" onClick={() => toggleSort('type')}>Art{arrow('type')}</th>
               <th className="sortable" onClick={() => toggleSort('status')}>Status{arrow('status')}</th>
+              <th className="no-print"></th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((a) => (
-              <tr key={a.id || a._id}>
+              <tr key={a.id}>
                 <td>{a.date || '—'}</td>
-                <td>{a.startTime || ''}</td>
-                <td>{custName(a) || '—'}{a.customer?.customerNumber ? <div className="muted">Kd {a.customer.customerNumber}</div> : null}</td>
-                <td>{a.title || '—'}</td>
-                <td>{a.type || '—'}</td>
+                <td>{a.startTime ? String(a.startTime).slice(0, 5) : ''}</td>
+                <td>
+                  {a.customerName || '—'}
+                  {a.customerNumber ? <div className="muted">Kd {a.customerNumber}</div> : null}
+                  {a.phone ? <div className="sub2">☎ {a.phone}</div> : null}
+                </td>
+                <td>{a.title || '—'}{a.createdByStaff ? <span className="badge open" style={{ marginLeft: 6 }}>manuell</span> : null}</td>
+                <td>{typeLabel(a.type)}</td>
                 <td>{a.status || '—'}</td>
+                <td className="right no-print">
+                  {a.createdByStaff ? <button className="btn sm ghost" onClick={() => del(a)}>✕</button> : null}
+                </td>
               </tr>
             ))}
           </tbody>
         </table></div>
+      )}
+
+      {showForm && (
+        <div className="backdrop" onClick={() => setShowForm(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Neuer Termin</h2>
+            <div className="form-grid">
+              <label className="field full">Titel *
+                <input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="z. B. Reparatur E-Bike" autoFocus />
+              </label>
+              <label className="field">Art
+                <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                  {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                </select>
+              </label>
+              <label className="field">Datum
+                <input className="input" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              </label>
+              <label className="field">Von
+                <input className="input" type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} />
+              </label>
+              <label className="field">Bis
+                <input className="input" type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
+              </label>
+              <label className="field">Kundenname
+                <input className="input" value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} />
+              </label>
+              <label className="field">Kundennummer
+                <input className="input" value={form.customerNumber} onChange={(e) => setForm({ ...form, customerNumber: e.target.value })} />
+              </label>
+              <label className="field">Telefon
+                <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              </label>
+              <label className="field full">Notiz
+                <textarea className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button className="btn ghost" onClick={() => setShowForm(false)}>Abbrechen</button>
+              <button className="btn" onClick={submit} disabled={busy || !form.title.trim()}>Speichern</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
