@@ -7,9 +7,27 @@ const createRequest = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   // Check if user already has a customer number
-  const user = await User.findByPk(userId, { attributes: ['id', 'customerNumber'] });
+  const user = await User.findByPk(userId);
   if (user && user.customerNumber) {
     throw new AppError('Sie haben bereits eine Kundennummer.', 400, 'ALREADY_HAS_CUSTOMER_NUMBER');
+  }
+
+  // First, try to auto-match against Taifun right away — if the customer is
+  // already in the system, link the number immediately, no admin step needed.
+  if (address) {
+    user.address = {
+      street: address.street, zip: address.zip, city: address.city,
+      country: address.country || 'Deutschland',
+    };
+  }
+  if (phone && !user.phone) user.phone = phone;
+  const authService = require('../services/authService');
+  const autoAssigned = await authService.tryAutoAssignCustomerNumber(user);
+  if (autoAssigned) {
+    return res.status(201).json({
+      success: true,
+      data: { autoAssigned: true, customerNumber: autoAssigned, user: authService.sanitizeUser(user) },
+    });
   }
 
   // Check if user already has a pending request
@@ -175,6 +193,26 @@ const approveRequest = asyncHandler(async (req, res) => {
   });
 });
 
+// POST /customer-number/self-check - re-run the Taifun match for the current
+// user if they have no number yet. Called on repairs open / "Kundennummer
+// anfragen" tap. Returns the (possibly newly assigned) number + fresh user.
+const selfCheck = asyncHandler(async (req, res) => {
+  const authService = require('../services/authService');
+  const user = await User.findByPk(req.user.id);
+  let assigned = null;
+  if (user && !user.customerNumber) {
+    assigned = await authService.tryAutoAssignCustomerNumber(user);
+  }
+  res.json({
+    success: true,
+    data: {
+      customerNumber: user ? user.customerNumber : null,
+      assigned: !!assigned,
+      user: user ? authService.sanitizeUser(user) : null,
+    },
+  });
+});
+
 // PUT /customer-number/requests/:id/reject - Admin rejects a request
 const rejectRequest = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -216,6 +254,7 @@ const rejectRequest = asyncHandler(async (req, res) => {
 module.exports = {
   createRequest,
   getMyRequest,
+  selfCheck,
   getAllRequests,
   approveRequest,
   rejectRequest,

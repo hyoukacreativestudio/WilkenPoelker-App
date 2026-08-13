@@ -31,6 +31,7 @@ export function modulesForRole(role) {
     { key: 'termine',      label: 'Termine',      icon: '📅', show: true },
     { key: 'reparaturen',  label: 'Aufträge',     icon: '🔧', show: all || role === 'service_manager' || role === 'sales_manager' },
     { key: 'tickets',      label: 'Tickets',      icon: '💬', show: true },
+    { key: 'kundennummern', label: 'Kundennummern', icon: '🔢', show: all || role === 'service_manager' || role === 'sales_manager' },
     { key: 'bestellungen', label: 'Bestellungen', icon: '📦', show: true },
     { key: 'lager',        label: 'Lager',        icon: '🏬', show: all || role === 'sales_manager' || role === 'warehouse_worker' || role === 'orders_manager' },
   ].filter((m) => m.show);

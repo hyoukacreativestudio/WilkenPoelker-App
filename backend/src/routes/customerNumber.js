@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/auth');
-const { isAdmin } = require('../middlewares/roles');
+const { isAdmin, authorize } = require('../middlewares/roles');
 const { validate, body, param } = require('../middlewares/validate');
 const customerNumberController = require('../controllers/customerNumberController');
+
+// Admin, Service and Verkauf may handle customer-number requests (app + PC tool)
+const canHandleRequests = authorize('admin', 'super_admin', 'service_manager', 'sales_manager');
 
 // Customer routes
 router.post(
@@ -21,13 +24,16 @@ router.post(
 
 router.get('/request/my', authenticate, customerNumberController.getMyRequest);
 
-// Admin routes
-router.get('/requests', authenticate, isAdmin, customerNumberController.getAllRequests);
+// Re-check Taifun for the current user (on repairs open / request tap)
+router.post('/self-check', authenticate, customerNumberController.selfCheck);
+
+// Staff routes (Admin, Service, Verkauf) — used by the app admin UI and the PC tool
+router.get('/requests', authenticate, canHandleRequests, customerNumberController.getAllRequests);
 
 router.put(
   '/requests/:id/approve',
   authenticate,
-  isAdmin,
+  canHandleRequests,
   validate([
     param('id').isUUID().withMessage('Invalid request ID'),
     body('customerNumber').notEmpty().withMessage('Customer number is required'),
@@ -38,7 +44,7 @@ router.put(
 router.put(
   '/requests/:id/reject',
   authenticate,
-  isAdmin,
+  canHandleRequests,
   validate([
     param('id').isUUID().withMessage('Invalid request ID'),
   ]),

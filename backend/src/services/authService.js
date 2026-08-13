@@ -52,6 +52,44 @@ async function findTaifunCustomerNumber({ firstName, lastName, address }) {
   return match && match.kdNr ? match.kdNr : null;
 }
 
+// Re-check a user WITHOUT a customer number against Taifun and assign it if a
+// unique match is found. Runs on every login and on demand (customer taps
+// "Kundennummer anfragen"). Once a number is set, this is a no-op forever.
+// Returns the assigned number, or null.
+async function tryAutoAssignCustomerNumber(user) {
+  if (!user || user.customerNumber) return null;
+  const { User } = require('../models');
+  let kdNr = null;
+  try {
+    kdNr = await findTaifunCustomerNumber({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      address: user.address || {},
+    });
+  } catch (err) {
+    logger.warn('Auto customer-number match failed', { userId: user.id, error: err.message });
+    return null;
+  }
+  if (!kdNr) return null;
+
+  // Never steal a number already linked to someone else.
+  const taken = await User.findOne({ where: { customerNumber: kdNr } });
+  if (taken) return null;
+
+  user.customerNumber = kdNr;
+  await user.save();
+  logger.info('Auto-assigned customer number on check', { userId: user.id, customerNumber: kdNr });
+
+  // Pull in any existing Taifun orders as repairs (non-blocking).
+  try {
+    const repairSync = require('./taifunRepairSync');
+    await repairSync.syncRepairsForUser({ id: user.id, customerNumber: kdNr });
+  } catch (err) {
+    logger.warn('Repair backfill after auto-assign failed', { userId: user.id, error: err.message });
+  }
+  return kdNr;
+}
+
 function generateAccessToken(user) {
   return jwt.sign(
     {
@@ -203,6 +241,11 @@ async function loginUser(data, User) {
   // Check email verification
   if (!user.emailVerified) {
     throw new AppError('Bitte verifiziere zuerst deine E-Mail-Adresse.', 403, 'EMAIL_NOT_VERIFIED');
+  }
+
+  // Re-check the Taifun customer number on every login until one is linked.
+  if (!user.customerNumber) {
+    try { await tryAutoAssignCustomerNumber(user); } catch (e) { /* never block login */ }
   }
 
   // Generate tokens (rememberMe extends refresh token to 30 days)
@@ -416,6 +459,7 @@ async function adminDeleteUser(userId, models) {
 
 module.exports = {
   findTaifunCustomerNumber,
+  tryAutoAssignCustomerNumber,
   adminDeleteUser,
   generateAccessToken,
   generateRefreshToken,

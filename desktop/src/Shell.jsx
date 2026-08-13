@@ -6,14 +6,16 @@ import Reparaturen from './pages/Reparaturen.jsx';
 import Tickets from './pages/Tickets.jsx';
 import Bestellungen from './pages/Bestellungen.jsx';
 import Lager from './pages/Lager.jsx';
+import Kundennummern from './pages/Kundennummern.jsx';
 
-const PAGES = { termine: Termine, reparaturen: Reparaturen, tickets: Tickets, bestellungen: Bestellungen, lager: Lager };
+const PAGES = { termine: Termine, reparaturen: Reparaturen, tickets: Tickets, kundennummern: Kundennummern, bestellungen: Bestellungen, lager: Lager };
 
 const SUBTITLES = {
   uebersicht: 'Überblick für deine Abteilung',
   termine: 'Termine aus der App – automatisch eingetragen',
   reparaturen: 'Noch nicht erreichte Kunden anrufen',
   tickets: 'Tickets deiner Abteilung bearbeiten',
+  kundennummern: 'Kundennummer-Anfragen bearbeiten',
   bestellungen: 'Bestellungen sammeln und aufgeben',
   lager: 'Was aus dem Lager nach vorne soll',
 };
