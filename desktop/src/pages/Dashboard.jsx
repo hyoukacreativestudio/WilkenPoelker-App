@@ -36,15 +36,8 @@ export default function Dashboard({ user, go, modules }) {
     has('lager')        && { key: 'lager',        icon: '🏬', label: 'Lager offen',          n: c.lager,   hint: 'Nach vorne bringen', bg: '#eef1f4', fg: '#475569' },
   ].filter(Boolean);
 
-  const hi = (user.firstName || user.username || '').trim();
-
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 22, fontWeight: 750 }}>Hallo{hi ? `, ${hi}` : ''} 👋</div>
-        <div className="muted">Hier ist ein Überblick für deine Abteilung.</div>
-      </div>
-
       {loading ? (
         <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div>
       ) : cards.length === 0 ? (

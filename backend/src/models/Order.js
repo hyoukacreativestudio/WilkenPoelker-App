@@ -17,10 +17,19 @@ const Order = sequelize.define('Order', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  // 'shop' (normal supplier) or 'amazon' (carries amazonLink)
+  // Legacy fixed source (kept for old rows); free-text source is sourceText.
   source: {
     type: DataTypes.ENUM('shop', 'amazon'),
     defaultValue: 'shop',
+  },
+  // Free-text source ("Shop", "Amazon", "Bosch", …) — what the user types
+  sourceText: {
+    type: DataTypes.STRING,
+    defaultValue: 'Shop',
+  },
+  // Optional link for ANY order (not just Amazon)
+  link: {
+    type: DataTypes.STRING,
   },
   articleNumber: {
     type: DataTypes.STRING,

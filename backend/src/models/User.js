@@ -35,9 +35,12 @@ const User = sequelize.define('User', {
       'service_manager',
       'robby_manager',
       // Desktop/company-tool departments (additive; app roles unchanged)
-      'sales_manager',      // Verkauf
-      'orders_manager',     // Bestellungen
-      'warehouse_worker',   // Lager
+      'sales_manager',            // Verkauf
+      'orders_manager',           // Bestellungen
+      'warehouse_worker',         // Lager
+      'delivery_manager',         // Lieferungen
+      'motor_equipment_manager',  // Motorgeräte
+      'ev_manager',               // Elektrofahrzeuge
       'customer'
     ),
     defaultValue: 'customer',

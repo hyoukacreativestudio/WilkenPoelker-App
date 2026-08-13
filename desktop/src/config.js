@@ -8,7 +8,10 @@ export const DEPARTMENTS = [
   { key: 'service',      label: 'Service',          role: 'service_manager',  color: '#DD6B20', icon: '🛠️', email: 'service@wilkenpoelker.de' },
   { key: 'rasenmaeher',  label: 'Rasenmäher',       role: 'motor_manager',    color: '#48752b', icon: '🌱', email: 'rasenmaeher@wilkenpoelker.de' },
   { key: 'robby',        label: 'Robby',            role: 'robby_manager',    color: '#805AD5', icon: '🤖', email: 'robby@wilkenpoelker.de' },
+  { key: 'motorgeraete', label: 'Motorgeräte',      role: 'motor_equipment_manager', color: '#b45309', icon: '⚙️', email: 'motorgeraete@wilkenpoelker.de' },
+  { key: 'elektro',      label: 'Elektrofahrzeuge', role: 'ev_manager',       color: '#0284c7', icon: '⚡', email: 'elektro@wilkenpoelker.de' },
   { key: 'verkauf',      label: 'Verkauf',          role: 'sales_manager',    color: '#D69E2E', icon: '🛒', email: 'verkauf@wilkenpoelker.de' },
+  { key: 'lieferungen',  label: 'Lieferungen',      role: 'delivery_manager', color: '#be185d', icon: '🚚', email: 'lieferungen@wilkenpoelker.de' },
   { key: 'bestellungen', label: 'Bestellungen',     role: 'orders_manager',   color: '#E53E3E', icon: '📦', email: 'bestellungen@wilkenpoelker.de' },
   { key: 'lager',        label: 'Lager',            role: 'warehouse_worker', color: '#5a6b7b', icon: '🏬', email: 'lager@wilkenpoelker.de' },
 ];
@@ -26,11 +29,17 @@ export function modulesForRole(role) {
   return [
     { key: 'uebersicht',   label: 'Übersicht',    icon: '🏠', show: true },
     { key: 'termine',      label: 'Termine',      icon: '📅', show: true },
-    { key: 'reparaturen',  label: 'Reparaturen',  icon: '🔧', show: all || role === 'service_manager' },
+    { key: 'reparaturen',  label: 'Aufträge',     icon: '🔧', show: all || role === 'service_manager' || role === 'sales_manager' },
     { key: 'tickets',      label: 'Tickets',      icon: '💬', show: true },
     { key: 'bestellungen', label: 'Bestellungen', icon: '📦', show: true },
     { key: 'lager',        label: 'Lager',        icon: '🏬', show: all || role === 'sales_manager' || role === 'warehouse_worker' || role === 'orders_manager' },
   ].filter((m) => m.show);
+}
+
+// Which repair/"Aufträge" categories a role may see. Sales only Neu + Leasing.
+export function auftragCategoriesForRole(role) {
+  if (role === 'sales_manager') return ['neu', 'leasing'];
+  return ['reparatur', 'neu', 'leasing'];
 }
 
 // Department options for order folders (managers can switch; others fixed)

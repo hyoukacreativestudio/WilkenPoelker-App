@@ -17,7 +17,10 @@ const ACCOUNTS = [
   { username: 'service',      name: 'Service Management',      role: 'service_manager' },
   { username: 'rasenmaeher',  name: 'Rasenmäher Management',   role: 'motor_manager' },
   { username: 'robby',        name: 'Robby Management',        role: 'robby_manager' },
+  { username: 'motorgeraete', name: 'Motorgeräte Management',  role: 'motor_equipment_manager' },
+  { username: 'elektro',      name: 'Elektrofahrzeuge Management', role: 'ev_manager' },
   { username: 'verkauf',      name: 'Verkauf Management',      role: 'sales_manager' },
+  { username: 'lieferungen',  name: 'Lieferungen Management',  role: 'delivery_manager' },
   { username: 'bestellungen', name: 'Bestellungen Management', role: 'orders_manager' },
   { username: 'lager',        name: 'Lager Management',        role: 'warehouse_worker' },
 ];

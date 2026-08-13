@@ -52,14 +52,12 @@ export default function Lager({ user }) {
 
   return (
     <div>
-      <div className="toolbar">
+      <div className="toolbar no-print">
         <span className="muted">Was aus dem Lager nach vorne gebracht werden soll</span>
         <div className="spacer" />
-        <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="requested">Offen</option>
-          <option value="brought">Gebracht</option>
-          <option value="all">Alle</option>
-        </select>
+        <span className={`pill tab ${status === 'requested' ? 'active' : ''}`} onClick={() => setStatus('requested')}>Offen</span>
+        <span className={`pill tab ${status === 'brought' ? 'active' : ''}`} onClick={() => setStatus('brought')}>Erledigt</span>
+        <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
         {canWrite && <button className="btn" onClick={() => { setForm(emptyForm); setShowForm(true); }}>+ Neuer Eintrag</button>}
       </div>
 
@@ -75,7 +73,7 @@ export default function Lager({ user }) {
               <th className="sortable" onClick={() => toggleSort('description')}>Was{arrow('description')}</th>
               <th className="right">Anzahl</th>
               <th className="sortable" onClick={() => toggleSort('status')}>Status{arrow('status')}</th>
-              <th></th>
+              <th className="no-print"></th>
             </tr>
           </thead>
           <tbody>
@@ -87,7 +85,7 @@ export default function Lager({ user }) {
                 <td>{r.description}<div className="muted" style={{ fontSize: 12 }}>von {r.createdByName}</div></td>
                 <td className="right">{r.quantity}</td>
                 <td><span className={`badge ${r.status === 'brought' ? 'brought' : 'open'}`}>{r.status === 'brought' ? 'Gebracht' : 'Offen'}</span></td>
-                <td className="right" style={{ whiteSpace: 'nowrap' }}>
+                <td className="right nowrap no-print">
                   {r.status !== 'brought' ? <button className="btn sm" onClick={() => markBrought(r)}>Gebracht ✓</button> : <button className="btn sm ghost" onClick={() => reopen(r)}>Zurück</button>}
                   {' '}<button className="btn sm ghost" onClick={() => del(r)}>✕</button>
                 </td>

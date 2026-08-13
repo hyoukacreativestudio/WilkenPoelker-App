@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api, setToken, unwrap } from './api.js';
 import { DEPARTMENTS } from './config.js';
 
@@ -7,6 +7,10 @@ import { DEPARTMENTS } from './config.js';
 export default function Login({ onLogin }) {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState('');
+
+  // The login card is always light — force the light theme so text stays readable
+  // even if a dark-mode session left data-theme="dark" on the root.
+  useEffect(() => { document.documentElement.setAttribute('data-theme', 'light'); }, []);
 
   const pick = async (d) => {
     if (busy) return;

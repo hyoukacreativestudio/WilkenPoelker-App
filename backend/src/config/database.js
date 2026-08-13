@@ -175,6 +175,9 @@ async function connectDatabase() {
         { name: 'enum_users_role', value: 'sales_manager' },
         { name: 'enum_users_role', value: 'orders_manager' },
         { name: 'enum_users_role', value: 'warehouse_worker' },
+        { name: 'enum_users_role', value: 'delivery_manager' },
+        { name: 'enum_users_role', value: 'motor_equipment_manager' },
+        { name: 'enum_users_role', value: 'ev_manager' },
       ];
       for (const { name, value } of enumUpdates) {
         try {

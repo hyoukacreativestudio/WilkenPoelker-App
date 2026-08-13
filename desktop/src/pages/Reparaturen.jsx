@@ -1,20 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { auftragCategoriesForRole } from '../config.js';
 
-const CATS = [
-  { key: 'reparatur', label: 'Reparatur' },
-  { key: 'neu', label: 'Neu' },
-  { key: 'leasing', label: 'Leasing' },
-];
+const CAT_LABEL = { reparatur: 'Reparatur', neu: 'Neu', leasing: 'Leasing' };
+const READY = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'LEASING_ABGESCHLOSSEN'];
 
-// Service view of the Taifun outreach list: customers whose repair is ready but
-// who haven't been reached yet. Reuses the same /repairs/outreach endpoint as
-// the mobile app's "Kontakte" tab.
-export default function Reparaturen() {
+// Aufträge (Taifun outreach): customers to contact, split by category and by
+// status (Abholbereit / In Arbeit). Sales only sees Neu + Leasing.
+export default function Reparaturen({ user }) {
   const toast = useToast();
-  const [filter, setFilter] = useState('open'); // open | reached
-  const [category, setCategory] = useState('reparatur');
+  const cats = useMemo(() => auftragCategoriesForRole(user.role), [user.role]);
+  const [category, setCategory] = useState(cats[0]);
+  const [statusF, setStatusF] = useState('all');   // all | ready | progress
+  const [filter, setFilter] = useState('open');     // open | reached
   const [search, setSearch] = useState('');
   const [data, setData] = useState({ items: [], counts: { byCategory: {}, open: 0, reached: 0 } });
   const [loading, setLoading] = useState(true);
@@ -27,11 +26,7 @@ export default function Reparaturen() {
     } catch (e) { setData({ items: [], counts: { byCategory: {}, open: 0, reached: 0 } }); }
     finally { setLoading(false); }
   };
-  useEffect(() => {
-    const h = setTimeout(load, 250);
-    return () => clearTimeout(h);
-    /* eslint-disable-next-line */
-  }, [filter, category, search]);
+  useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); /* eslint-disable-next-line */ }, [filter, category, search]);
 
   const setReached = async (g, reached) => {
     try {
@@ -41,46 +36,51 @@ export default function Reparaturen() {
     } catch (e) { toast(e.message, { type: 'error' }); }
   };
 
+  const groupReady = (g) => (g.orders || []).some((o) => READY.includes(o.appStatus));
+  const items = (data.items || []).filter((g) => statusF === 'all' || (statusF === 'ready' ? groupReady(g) : !groupReady(g)));
   const bc = data.counts?.byCategory || {};
 
   return (
     <div>
-      <div className="toolbar">
-        {CATS.map((c) => (
-          <span key={c.key} className={`pill tab ${category === c.key ? 'active' : ''}`} onClick={() => setCategory(c.key)}>
-            {c.label}{bc[c.key] ? ` (${bc[c.key]})` : ''}
+      <div className="toolbar no-print">
+        {cats.map((c) => (
+          <span key={c} className={`pill tab ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>
+            {CAT_LABEL[c]}{bc[c] ? <span className="n">{bc[c]}</span> : null}
           </span>
         ))}
         <div className="spacer" />
-        <span className="search"><input className="input" placeholder="Name, Telefon, Ort, Nr." value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 240 }} /></span>
+        <span className="search"><input className="input" placeholder="Name, Telefon, Ort, Nr." value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 220 }} /></span>
+        <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
+      </div>
+      <div className="toolbar no-print">
         <span className={`pill tab ${filter === 'open' ? 'active' : ''}`} onClick={() => setFilter('open')}>Offen <span className="n">{data.counts?.open || 0}</span></span>
         <span className={`pill tab ${filter === 'reached' ? 'active' : ''}`} onClick={() => setFilter('reached')}>Erreicht <span className="n">{data.counts?.reached || 0}</span></span>
+        <div style={{ width: 12 }} />
+        {[['all', 'Alle'], ['ready', 'Abholbereit'], ['progress', 'In Arbeit']].map(([k, l]) => (
+          <span key={k} className={`pill tab ${statusF === k ? 'active' : ''}`} onClick={() => setStatusF(k)}>{l}</span>
+        ))}
       </div>
 
-      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : (data.items || []).length === 0 ? (
-        <div className="empty"><div className="big">{filter === 'open' ? '📞' : '✅'}</div>{filter === 'open' ? 'Keine offenen Kontakte.' : 'Keine erreichten Kontakte.'}</div>
+      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : items.length === 0 ? (
+        <div className="empty"><div className="big">📞</div>Keine Einträge.</div>
       ) : (
         <div className="table-wrap"><table>
-          <thead>
-            <tr><th>Kunde</th><th>Telefon</th><th>Ort</th><th>Aufträge</th><th></th></tr>
-          </thead>
+          <thead><tr><th>Kunde</th><th>Telefon</th><th>Ort</th><th>Aufträge</th><th className="no-print"></th></tr></thead>
           <tbody>
-            {data.items.map((g) => (
+            {items.map((g) => (
               <tr key={g.id} className={g.reached ? 'done' : ''}>
                 <td><strong>{g.customerName || g.kdNr}</strong><div className="muted">Kd {g.kdNr}</div></td>
                 <td>{g.phone || g.mobile ? <a href={`tel:${g.phone || g.mobile}`}>{g.phone || g.mobile}</a> : '—'}</td>
                 <td>{[g.zip, g.city].filter(Boolean).join(' ') || '—'}</td>
-                <td>
-                  {(g.orders || []).map((o) => (
-                    <div key={o.nr} className="muted" style={{ fontSize: 13 }}>
-                      {o.info || `Auftrag ${o.nr}`}{o.appStatusLabel ? ` · ${o.appStatusLabel}` : ''}
-                    </div>
-                  ))}
-                </td>
-                <td className="right">
-                  {g.reached
-                    ? <button className="btn sm ghost" onClick={() => setReached(g, false)}>Zurück</button>
-                    : <button className="btn sm" onClick={() => setReached(g, true)}>Erreicht ✓</button>}
+                <td>{(g.orders || []).map((o) => (
+                  <div key={o.nr} className="muted" style={{ fontSize: 13 }}>
+                    <span className={`badge ${READY.includes(o.appStatus) ? 'brought' : 'open'}`} style={{ fontSize: 11, marginRight: 6 }}>{READY.includes(o.appStatus) ? 'Abholbereit' : 'In Arbeit'}</span>
+                    {o.info || `Auftrag ${o.nr}`}{o.appStatusLabel ? ` · ${o.appStatusLabel}` : ''}
+                  </div>
+                ))}</td>
+                <td className="right no-print">
+                  {g.reached ? <button className="btn sm ghost" onClick={() => setReached(g, false)}>Zurück</button>
+                             : <button className="btn sm" onClick={() => setReached(g, true)}>Erreicht ✓</button>}
                 </td>
               </tr>
             ))}

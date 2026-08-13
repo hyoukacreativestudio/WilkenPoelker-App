@@ -14,13 +14,17 @@ const DEPT_ACCOUNTS = {
   service:      { username: 'service',       role: 'service_manager' },
   rasenmaeher:  { username: 'rasenmaeher',   role: 'motor_manager' },
   robby:        { username: 'robby',         role: 'robby_manager' },
+  motorgeraete: { username: 'motorgeraete',  role: 'motor_equipment_manager' },
+  elektro:      { username: 'elektro',       role: 'ev_manager' },
   verkauf:      { username: 'verkauf',       role: 'sales_manager' },
+  lieferungen:  { username: 'lieferungen',   role: 'delivery_manager' },
   bestellungen: { username: 'bestellungen',  role: 'orders_manager' },
   lager:        { username: 'lager',         role: 'warehouse_worker' },
 };
 const DESKTOP_ROLES = new Set([
   'admin', 'super_admin', 'bike_manager', 'cleaning_manager', 'motor_manager',
   'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker',
+  'delivery_manager', 'motor_equipment_manager', 'ev_manager',
 ]);
 
 const desktopLogin = asyncHandler(async (req, res) => {
@@ -52,7 +56,10 @@ const ROLE_DEPARTMENT = {
   motor_manager: 'rasenmaeher',
   service_manager: 'service',
   robby_manager: 'robby',
+  motor_equipment_manager: 'motorgeraete',
+  ev_manager: 'elektro',
   sales_manager: 'verkauf',
+  delivery_manager: 'lieferungen',
 };
 const SEE_ALL_ROLES = ['admin', 'super_admin', 'orders_manager'];
 
@@ -82,7 +89,7 @@ const listOrders = asyncHandler(async (req, res) => {
 });
 
 const createOrder = asyncHandler(async (req, res) => {
-  const { source, articleNumber, description, customerName, customerNumber, quantity, quantityForStock, amazonLink, notes } = req.body;
+  const { sourceText, link, articleNumber, description, customerName, customerNumber, quantity, quantityForStock, notes } = req.body;
   if (!description || !String(description).trim()) {
     throw new AppError('Beschreibung ist erforderlich', 400, 'DESCRIPTION_REQUIRED');
   }
@@ -93,14 +100,14 @@ const createOrder = asyncHandler(async (req, res) => {
 
   const order = await Order.create({
     department,
-    source: source === 'amazon' ? 'amazon' : 'shop',
+    sourceText: (sourceText && String(sourceText).trim()) || 'Shop',
+    link: link || null,
     articleNumber: articleNumber || null,
     description: String(description).trim(),
     customerName: customerName || null,
     customerNumber: customerNumber || null,
     quantity: quantity != null ? parseInt(quantity, 10) || 1 : 1,
     quantityForStock: quantityForStock != null ? parseInt(quantityForStock, 10) || 0 : 0,
-    amazonLink: amazonLink || null,
     notes: notes || null,
     status: 'open',
     createdBy: req.user.id,
@@ -119,13 +126,13 @@ const updateOrder = asyncHandler(async (req, res) => {
 
   const { status } = req.body;
   const updates = {};
-  // Only the orders_manager/admin flips the ordered/cancelled status
-  if (status && isManager) {
+  // Anyone (owner or manager) can tick an order off ("erledigt" = ordered) / reopen.
+  if (status) {
     updates.status = status;
     if (status === 'ordered') { updates.orderedBy = req.user.id; updates.orderedAt = new Date(); }
+    else if (status === 'open') { updates.orderedBy = null; updates.orderedAt = null; }
   }
-  // Content edits allowed for owner or manager
-  for (const f of ['articleNumber', 'description', 'customerName', 'customerNumber', 'amazonLink', 'notes', 'source']) {
+  for (const f of ['articleNumber', 'description', 'customerName', 'customerNumber', 'link', 'sourceText', 'notes']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];
   }
   if (req.body.quantity !== undefined) updates.quantity = parseInt(req.body.quantity, 10) || 1;

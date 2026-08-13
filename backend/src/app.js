@@ -410,6 +410,21 @@ cron.schedule('7 * * * *', async () => {
   }
 });
 
+// Desktop tool: delete ticked-off orders + brought warehouse items 24h after
+// they were completed (they live in the "Erledigt" tab until then).
+cron.schedule('17 * * * *', async () => {
+  try {
+    const { Op } = require('sequelize');
+    const { Order, WarehouseItem } = require('./models');
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const o = await Order.destroy({ where: { status: 'ordered', orderedAt: { [Op.lt]: cutoff } } });
+    const w = await WarehouseItem.destroy({ where: { status: 'brought', broughtAt: { [Op.lt]: cutoff } } });
+    if (o || w) logger.info('Cron: purged done desktop orders/warehouse after 24h', { orders: o, warehouse: w });
+  } catch (err) {
+    logger.error('Cron: desktop 24h purge failed', { error: err.message });
+  }
+});
+
 // Archive acknowledged repairs every Sunday at 23:59
 cron.schedule('59 23 * * 0', async () => {
   try {

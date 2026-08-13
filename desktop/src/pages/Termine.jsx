@@ -9,6 +9,7 @@ export default function Termine() {
   const [error, setError] = useState('');
   const [sort, setSort] = useState({ key: 'date', dir: 'asc' });
   const [status, setStatus] = useState('all');
+  const [type, setType] = useState('all');
 
   const load = async () => {
     setLoading(true); setError('');
@@ -22,7 +23,15 @@ export default function Termine() {
   useEffect(() => { load(); }, []);
 
   const custName = (a) => a.customer ? `${a.customer.firstName || ''} ${a.customer.lastName || ''}`.trim() : (a.customerName || '');
-  const filtered = useMemo(() => rows.filter((a) => status === 'all' || a.status === status), [rows, status]);
+  // Hide appointments more than 24h in the past
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const filtered = useMemo(
+    () => rows.filter((a) =>
+      (status === 'all' || a.status === status) &&
+      (type === 'all' || a.type === type) &&
+      (!a.date || String(a.date).slice(0, 10) >= cutoff)),
+    [rows, status, type, cutoff]
+  );
   const sorted = useMemo(() => {
     const arr = [...filtered];
     const { key, dir } = sort;
@@ -41,16 +50,27 @@ export default function Termine() {
 
   return (
     <div>
-      <div className="toolbar">
+      <div className="toolbar no-print">
         <span className="muted">Termine aus der App – automatisch eingetragen</span>
         <div className="spacer" />
+        <select className="select" value={type} onChange={(e) => setType(e.target.value)}>
+          <option value="all">Alle Arten</option>
+          <option value="repair">Reparatur</option>
+          <option value="pickup">Abholung</option>
+          <option value="delivery">Lieferung</option>
+          <option value="inspection">Inspektion</option>
+          <option value="consultation">Beratung</option>
+          <option value="service">Service</option>
+          <option value="other">Sonstiges</option>
+        </select>
         <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="all">Alle</option>
+          <option value="all">Alle Status</option>
           <option value="pending">Offen</option>
           <option value="confirmed">Bestätigt</option>
           <option value="completed">Erledigt</option>
           <option value="cancelled">Storniert</option>
         </select>
+        <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
         <button className="btn ghost" onClick={load}>Aktualisieren</button>
       </div>
 
