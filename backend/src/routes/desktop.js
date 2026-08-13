@@ -32,6 +32,9 @@ router.get('/appointments', authenticate, authorize(...STAFF), desktop.listAppoi
 router.post('/appointments', authenticate, authorize(...STAFF), desktop.createAppointment);
 router.patch('/appointments/:id', authenticate, authorize(...STAFF), desktop.updateAppointment);
 router.delete('/appointments/:id', authenticate, authorize(...STAFF), desktop.deleteAppointment);
+router.post('/appointments/:id/propose', authenticate, authorize(...STAFF), desktop.proposeAppointment);
+router.post('/appointments/:id/confirm', authenticate, authorize(...STAFF), desktop.confirmAppointmentDesktop);
+router.post('/appointments/:id/question', authenticate, authorize(...STAFF), desktop.askAppointmentQuestion);
 
 // ── Tickets (per department) ──
 router.get('/tickets', authenticate, authorize(...STAFF), desktop.listTickets);

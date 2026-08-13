@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const models = require('../models');
 const { Order, WarehouseItem, User, Appointment, Ticket, ChatMessage } = models;
 const serviceService = require('../services/serviceService');
+const appointmentService = require('../services/appointmentService');
 
 // ── Passwordless department login (desktop tool on trusted company PCs) ──
 // Each department = one fixed account, linked by its stable username (NOT by a
@@ -247,6 +248,9 @@ const listAppointments = asyncHandler(async (req, res) => {
       department: a.department,
       createdByStaff: a.createdByStaff,
       handle: a.handle || '',
+      proposedText: a.proposedText || '',
+      staffQuestion: a.staffQuestion || '',
+      customerNote: a.customerNote || '',
       customerName: a.createdByStaff ? (a.customerName || '') : (fromAccount || a.customerName || ''),
       customerNumber: a.createdByStaff ? (a.customerNumber || '') : (c?.customerNumber || a.customerNumber || ''),
       phone: a.createdByStaff ? (a.phone || '') : (c?.phone || a.phone || ''),
@@ -303,6 +307,29 @@ const deleteAppointment = asyncHandler(async (req, res) => {
   }
   await appointment.destroy();
   res.json({ success: true, data: { deleted: true } });
+});
+
+// Same full flow as the app: propose a date (customer must confirm), directly
+// confirm, or ask a follow-up question. Reuses the app's appointment service so
+// the customer gets the same notifications and can respond in the app.
+const proposeAppointment = asyncHandler(async (req, res) => {
+  const { date, proposedText } = req.body;
+  if (!date) throw new AppError('Datum ist erforderlich', 400, 'DATE_REQUIRED');
+  if (!proposedText || !String(proposedText).trim()) throw new AppError('Vorschlag-Text ist erforderlich', 400, 'TEXT_REQUIRED');
+  const appointment = await appointmentService.proposeTime(req.params.id, req.user.id, { date, proposedText: String(proposedText).trim() });
+  res.json({ success: true, data: { appointment } });
+});
+
+const confirmAppointmentDesktop = asyncHandler(async (req, res) => {
+  const appointment = await appointmentService.confirmAppointment(req.params.id, req.user.id);
+  res.json({ success: true, data: { appointment } });
+});
+
+const askAppointmentQuestion = asyncHandler(async (req, res) => {
+  const { question } = req.body;
+  if (!question || !String(question).trim()) throw new AppError('Rückfrage ist erforderlich', 400, 'QUESTION_REQUIRED');
+  const appointment = await appointmentService.askQuestion(req.params.id, req.user.id, String(question).trim());
+  res.json({ success: true, data: { appointment } });
 });
 
 // ── Tickets (per department) ──────────────────────────────────────────
@@ -439,6 +466,7 @@ module.exports = {
   listOrders, createOrder, updateOrder, deleteOrder,
   listWarehouse, createWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
   listAppointments, createAppointment, updateAppointment, deleteAppointment,
+  proposeAppointment, confirmAppointmentDesktop, askAppointmentQuestion,
   listTickets, getTicket, addTicketMessage, updateTicket,
   departmentForRole,
 };

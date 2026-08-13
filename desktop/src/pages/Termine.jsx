@@ -31,6 +31,10 @@ export default function Termine() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [busy, setBusy] = useState(false);
+  const [detail, setDetail] = useState(null);       // appointment shown in the action modal
+  const [propDate, setPropDate] = useState('');
+  const [propText, setPropText] = useState('');
+  const [question, setQuestion] = useState('');
 
   const load = async () => {
     setLoading(true); setError('');
@@ -95,8 +99,23 @@ export default function Termine() {
       setShowForm(false); setEditingId(null); setForm(emptyForm()); load();
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
-  const del = async (a) => { if (confirm('Termin löschen?')) { try { await api.del(`/desktop/appointments/${a.id}`); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
-  const confirmAppt = async (a) => { try { await api.patch(`/desktop/appointments/${a.id}`, { status: 'confirmed' }); load(); toast('Termin bestätigt'); } catch (e) { toast(e.message, { type: 'error' }); } };
+  const del = async (a) => { if (confirm('Termin löschen?')) { try { await api.del(`/desktop/appointments/${a.id}`); setDetail(null); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
+
+  const openDetail = (a) => { setDetail(a); setPropDate(a.date ? String(a.date).slice(0, 10) : ''); setPropText(''); setQuestion(''); };
+  const confirmAppt = async (a) => { setBusy(true); try { await api.post(`/desktop/appointments/${a.id}/confirm`); setDetail(null); load(); toast('Termin bestätigt'); } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); } };
+  const proposeAppt = async () => {
+    if (!propDate) { toast('Bitte Datum wählen', { type: 'error' }); return; }
+    if (!propText.trim()) { toast('Bitte Text für den Vorschlag', { type: 'error' }); return; }
+    setBusy(true);
+    try { await api.post(`/desktop/appointments/${detail.id}/propose`, { date: propDate, proposedText: propText.trim() }); setDetail(null); load(); toast('Vorschlag an Kunde gesendet'); }
+    catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
+  const askQuestion = async () => {
+    if (!question.trim()) { toast('Bitte Rückfrage eingeben', { type: 'error' }); return; }
+    setBusy(true);
+    try { await api.post(`/desktop/appointments/${detail.id}/question`, { question: question.trim() }); setDetail(null); load(); toast('Rückfrage an Kunde gesendet'); }
+    catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
 
   return (
     <div>
@@ -149,7 +168,7 @@ export default function Termine() {
                 <td>{a.handle || '—'}</td>
                 <td>{isRequest(a) ? <span className="badge open">Anfrage</span> : (STATUS_LABEL[a.status] || a.status || '—')}</td>
                 <td className="right no-print nowrap">
-                  {isRequest(a) ? <button className="btn sm" onClick={() => confirmAppt(a)}>Bestätigen ✓</button> : null}
+                  {isRequest(a) ? <button className="btn sm" onClick={() => openDetail(a)}>Bearbeiten</button> : null}
                   {a.createdByStaff ? <>
                     {' '}<button className="btn sm ghost" onClick={() => openEdit(a)}>✏️</button>
                     {' '}<button className="btn sm ghost" onClick={() => del(a)}>✕</button>
@@ -159,6 +178,55 @@ export default function Termine() {
             ))}
           </tbody>
         </table></div>
+      )}
+
+      {/* Request action modal: propose a date (customer confirms), confirm, or ask */}
+      {detail && (
+        <div className="backdrop" onClick={() => setDetail(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Terminanfrage</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '8px 12px', fontSize: 14, marginBottom: 14 }}>
+              <span className="muted">Kunde</span><span>{detail.customerName || '—'}{detail.customerNumber ? ` (Kd ${detail.customerNumber})` : ''}</span>
+              {detail.phone ? <><span className="muted">Telefon</span><span>☎ {detail.phone}</span></> : null}
+              <span className="muted">Wunsch</span><span><strong>{detail.title || '—'}</strong> · {typeLabel(detail.type)}</span>
+              {detail.description ? <><span className="muted">Notiz</span><span>{detail.description}</span></> : null}
+              <span className="muted">Status</span><span>{STATUS_LABEL[detail.status] || detail.status}</span>
+              {detail.proposedText ? <><span className="muted">Vorschlag</span><span>{detail.date} · {detail.proposedText}</span></> : null}
+              {detail.customerNote ? <><span className="muted">Kunde schrieb</span><span>{detail.customerNote}</span></> : null}
+            </div>
+
+            {detail.status === 'proposed' ? (
+              <div className="card" style={{ padding: 12, marginBottom: 14 }}>⏳ Warte auf Bestätigung des Kunden zum {detail.date}.</div>
+            ) : null}
+
+            {/* Propose a date — customer must accept it in the app */}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+              <div className="sub2" style={{ marginBottom: 6, fontWeight: 700 }}>Termin vorschlagen</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <input className="input" type="date" style={{ maxWidth: 170 }} value={propDate} onChange={(e) => setPropDate(e.target.value)} />
+                <input className="input" style={{ flex: 1, minWidth: 160 }} value={propText} placeholder="z. B. 10:00 Uhr, bitte Gerät mitbringen" onChange={(e) => setPropText(e.target.value)} />
+                <button className="btn" onClick={proposeAppt} disabled={busy}>Vorschlagen</button>
+              </div>
+            </div>
+
+            {/* Ask a follow-up question */}
+            <div style={{ marginTop: 12 }}>
+              <div className="sub2" style={{ marginBottom: 6, fontWeight: 700 }}>Rückfrage an Kunde</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input className="input" style={{ flex: 1 }} value={question} placeholder="Frage an den Kunden…" onChange={(e) => setQuestion(e.target.value)} />
+                <button className="btn ghost" onClick={askQuestion} disabled={busy}>Senden</button>
+              </div>
+            </div>
+
+            <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
+              <button className="btn ghost" onClick={() => del(detail)}>Ablehnen / löschen</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn ghost" onClick={() => setDetail(null)}>Schließen</button>
+                <button className="btn" onClick={() => confirmAppt(detail)} disabled={busy}>Direkt bestätigen ✓</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {showForm && (
