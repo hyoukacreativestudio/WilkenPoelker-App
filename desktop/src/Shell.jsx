@@ -21,6 +21,7 @@ const SUBTITLES = {
 export default function Shell({ user, onLogout }) {
   const modules = useMemo(() => modulesForRole(user.role), [user.role]);
   const [active, setActive] = useState('uebersicht');
+  const [dark, setDark] = useState(() => localStorage.getItem('wp_theme') === 'dark');
   const deptLabel = labelForRole(user.role);
   const deptColor = colorForRole(user.role);
   const icon = ROLE_INFO[user.role]?.icon || '🌿';
@@ -29,8 +30,14 @@ export default function Shell({ user, onLogout }) {
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--dept', deptColor);
-    root.style.setProperty('--dept-soft', `${deptColor}18`);
+    root.style.setProperty('--dept-soft', `${deptColor}22`);
   }, [deptColor]);
+
+  // Light / dark mode
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    localStorage.setItem('wp_theme', dark ? 'dark' : 'light');
+  }, [dark]);
 
   const activeMod = modules.find((m) => m.key === active) || modules[0];
   const Page = active === 'uebersicht' ? null : (PAGES[active] || (() => <div className="empty">Modul nicht verfügbar</div>));
@@ -60,6 +67,10 @@ export default function Shell({ user, onLogout }) {
             <h1>{activeMod?.label}</h1>
             <div className="sub">{SUBTITLES[active] || ''}</div>
           </div>
+          <div className="spacer" />
+          <button className="theme-toggle" onClick={() => setDark((d) => !d)} title={dark ? 'Heller Modus' : 'Dunkler Modus'}>
+            {dark ? '☀️' : '🌙'}
+          </button>
         </div>
         <div className="content" key={active}>
           {active === 'uebersicht'

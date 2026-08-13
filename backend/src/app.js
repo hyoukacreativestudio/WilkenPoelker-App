@@ -112,6 +112,10 @@ app.use('/api/customer-number', customerNumberRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/desktop', desktopRoutes);
 
+// Serve the desktop tool (built web app) so every company PC just opens
+// <server>/pc in a browser — no install, no Node, no CORS (same origin as /api).
+app.use('/pc', express.static(path.resolve(__dirname, '../../desktop/dist')));
+
 // Health check (enhanced for production monitoring)
 app.get('/api/health', async (req, res) => {
   const { sequelize } = require('./config/database');

@@ -2,20 +2,21 @@ const { asyncHandler, AppError, NotFoundError } = require('../middlewares/errorH
 const { Order, WarehouseItem, User } = require('../models');
 
 // ── Passwordless department login (desktop tool on trusted company PCs) ──
-// Each department = one dedicated account (conventional email below). Clicking a
-// department logs into that account WITHOUT a password. Only these staff roles
-// are ever allowed — never a real customer account. Optionally hardened with a
-// shared secret via env DESKTOP_LOGIN_SECRET (the desktop sends it).
+// Each department = one fixed account, linked by its stable username (NOT by a
+// person's name or email). Clicking a department logs into that account WITHOUT
+// a password. Only these staff roles are ever allowed — never a customer.
+// Create the accounts with: node scripts/create-desktop-accounts.js
+// Optionally hardened with a shared secret via env DESKTOP_LOGIN_SECRET.
 const DEPT_ACCOUNTS = {
-  admin:        { email: 'admin@wilkenpoelker.de',        role: 'admin' },
-  fahrrad:      { email: 'fahrrad@wilkenpoelker.de',      role: 'bike_manager' },
-  reinigung:    { email: 'reinigung@wilkenpoelker.de',    role: 'cleaning_manager' },
-  service:      { email: 'service@wilkenpoelker.de',      role: 'service_manager' },
-  rasenmaeher:  { email: 'rasenmaeher@wilkenpoelker.de',  role: 'motor_manager' },
-  robby:        { email: 'robby@wilkenpoelker.de',        role: 'robby_manager' },
-  verkauf:      { email: 'verkauf@wilkenpoelker.de',      role: 'sales_manager' },
-  bestellungen: { email: 'bestellungen@wilkenpoelker.de', role: 'orders_manager' },
-  lager:        { email: 'lager@wilkenpoelker.de',        role: 'warehouse_worker' },
+  admin:        { username: 'admin',        role: 'admin' },
+  fahrrad:      { username: 'fahrrad',       role: 'bike_manager' },
+  reinigung:    { username: 'reinigung',     role: 'cleaning_manager' },
+  service:      { username: 'service',       role: 'service_manager' },
+  rasenmaeher:  { username: 'rasenmaeher',   role: 'motor_manager' },
+  robby:        { username: 'robby',         role: 'robby_manager' },
+  verkauf:      { username: 'verkauf',       role: 'sales_manager' },
+  bestellungen: { username: 'bestellungen',  role: 'orders_manager' },
+  lager:        { username: 'lager',         role: 'warehouse_worker' },
 };
 const DESKTOP_ROLES = new Set([
   'admin', 'super_admin', 'bike_manager', 'cleaning_manager', 'motor_manager',
@@ -30,8 +31,11 @@ const desktopLogin = asyncHandler(async (req, res) => {
   if (!dept) throw new AppError('Unbekannte Abteilung', 400, 'UNKNOWN_DEPARTMENT');
 
   const { fn, col, where } = require('sequelize');
-  const user = await User.findOne({ where: where(fn('lower', col('email')), dept.email.toLowerCase()) });
-  if (!user) throw new AppError(`Kein Account für "${req.body.department}". Bitte im Admin-Bereich anlegen (${dept.email}).`, 404, 'NO_DEPARTMENT_ACCOUNT');
+  // Prefer the dedicated department account (by username); else the first
+  // account holding that role.
+  let user = await User.findOne({ where: where(fn('lower', col('username')), dept.username.toLowerCase()) });
+  if (!user) user = await User.findOne({ where: { role: dept.role, isActive: true }, order: [['createdAt', 'ASC']] });
+  if (!user) throw new AppError(`Kein Account für "${req.body.department}". Bitte anlegen: node scripts/create-desktop-accounts.js`, 404, 'NO_DEPARTMENT_ACCOUNT');
   if (!DESKTOP_ROLES.has(user.role)) throw new AppError('Dieser Account ist im PC-Programm nicht erlaubt', 403, 'ROLE_NOT_ALLOWED');
   if (user.isActive === false) throw new AppError('Account ist deaktiviert', 403, 'INACTIVE');
 

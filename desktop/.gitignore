@@ -1,4 +1,6 @@
 node_modules/
-dist/
 *.local
 .env
+# dist/ is committed on purpose: the backend serves it at /pc so every PC just
+# opens a URL (no build step on the server). Rebuild with:
+#   VITE_BASE=/pc/ npm run build
