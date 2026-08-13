@@ -576,6 +576,8 @@
     "categoryReparatur": "Reparatur",
     "categoryNeu": "Neu",
     "categoryLeasing": "Leasing",
+    "filterAll": "Alle",
+    "filterInProgress": "In Arbeit",
     "tabContacts": "Kontakte",
     "contactReached": "Erreicht",
     "contactMarkReached": "Erreicht?",

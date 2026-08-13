@@ -44,6 +44,9 @@ const ACTIVE_STATUSES = [
   'sale_in_progress', 'sale_test_drive',
 ];
 
+// "Abholbereit" = ready for pickup (green). Everything else active = "In Arbeit".
+const READY_STATUS = ['ready'];
+
 // App tabs for the customer's own repairs (matches Repair.category)
 const CATEGORY_TABS = ['reparatur', 'neu', 'leasing'];
 
@@ -67,6 +70,7 @@ export default function RepairsListScreen({ navigation }) {
   const [initialLoad, setInitialLoad] = useState(true);
   const [adminTab, setAdminTab] = useState('open');
   const [categoryTab, setCategoryTab] = useState('reparatur');
+  const [statusFilter, setStatusFilter] = useState('all'); // all | ready | inarbeit
 
   // Staff outreach list (Taifun orders without an app account), grouped by customer
   const emptyCounts = { open: 0, reached: 0, total: 0, byCategory: { reparatur: 0, neu: 0, leasing: 0 } };
@@ -136,9 +140,26 @@ export default function RepairsListScreen({ navigation }) {
   // Active repairs for the currently selected category tab. Repairs without a
   // category (app-created) fall back to 'reparatur'.
   const displayedRepairs = useMemo(() => {
-    return myRepairs.filter(
-      (r) => ACTIVE_STATUSES.includes(r.status) && (r.category || 'reparatur') === categoryTab
-    );
+    return myRepairs.filter((r) => {
+      if (!ACTIVE_STATUSES.includes(r.status)) return false;
+      if ((r.category || 'reparatur') !== categoryTab) return false;
+      if (statusFilter === 'ready') return READY_STATUS.includes(r.status);
+      if (statusFilter === 'inarbeit') return !READY_STATUS.includes(r.status);
+      return true;
+    });
+  }, [myRepairs, categoryTab, statusFilter]);
+
+  // Counts for the Abholbereit / In-Arbeit sub-filter (current category only)
+  const statusCounts = useMemo(() => {
+    let ready = 0;
+    let inarbeit = 0;
+    myRepairs.forEach((r) => {
+      if (!ACTIVE_STATUSES.includes(r.status)) return;
+      if ((r.category || 'reparatur') !== categoryTab) return;
+      if (READY_STATUS.includes(r.status)) ready += 1;
+      else inarbeit += 1;
+    });
+    return { all: ready + inarbeit, ready, inarbeit };
   }, [myRepairs, categoryTab]);
 
   // Per-category counts for the tab badges.
@@ -520,6 +541,42 @@ export default function RepairsListScreen({ navigation }) {
                   </Text>
                 </View>
               )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  // Sub-filter for the customer's own repairs: Alle / Abholbereit / In Arbeit
+  const renderStatusSubTabs = () => {
+    const tabs = [
+      { key: 'all', label: t('repairs.filterAll', 'Alle'), count: statusCounts.all },
+      { key: 'ready', label: t('repairs.statusReady', 'Abholbereit'), count: statusCounts.ready },
+      { key: 'inarbeit', label: t('repairs.filterInProgress', 'In Arbeit'), count: statusCounts.inarbeit },
+    ];
+    return (
+      <View style={{ flexDirection: 'row', paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, backgroundColor: theme.colors.headerBackground }}>
+        {tabs.map((tab) => {
+          const active = statusFilter === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              activeOpacity={0.7}
+              onPress={() => setStatusFilter(tab.key)}
+              style={{
+                paddingVertical: 5,
+                paddingHorizontal: theme.spacing.md,
+                borderRadius: theme.borderRadius.round,
+                backgroundColor: active ? theme.colors.primary : 'transparent',
+                borderWidth: active ? 0 : 1,
+                borderColor: theme.colors.border,
+                marginRight: theme.spacing.sm,
+              }}
+            >
+              <Text style={[theme.typography.styles.small, { color: active ? '#FFFFFF' : theme.colors.textSecondary, fontWeight: theme.typography.weights.semiBold }]}>
+                {tab.label}{tab.count ? ` (${tab.count})` : ''}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -941,6 +998,9 @@ export default function RepairsListScreen({ navigation }) {
 
       {/* Category tabs: Reparatur / Neu / Leasing */}
       {!initialLoad && renderCategoryTabs()}
+
+      {/* Status sub-filter: Alle / Abholbereit / In Arbeit */}
+      {!initialLoad && renderStatusSubTabs()}
 
       {/* Content */}
       {initialLoad ? (
