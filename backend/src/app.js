@@ -92,6 +92,7 @@ const faqRoutes = require('./routes/faq');
 const aboutRoutes = require('./routes/about');
 const customerNumberRoutes = require('./routes/customerNumber');
 const syncRoutes = require('./routes/sync');
+const desktopRoutes = require('./routes/desktop');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -109,6 +110,7 @@ app.use('/api/faq', faqRoutes);
 app.use('/api/about', aboutRoutes);
 app.use('/api/customer-number', customerNumberRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/desktop', desktopRoutes);
 
 // Health check (enhanced for production monitoring)
 app.get('/api/health', async (req, res) => {

@@ -27,6 +27,8 @@ const AboutContent = require('./AboutContent');
 const CustomerNumberRequest = require('./CustomerNumberRequest');
 const TaifunCustomer = require('./TaifunCustomer');
 const TaifunOrder = require('./TaifunOrder');
+const Order = require('./Order');
+const WarehouseItem = require('./WarehouseItem');
 
 // ==========================================
 // ASSOCIATIONS
@@ -171,6 +173,12 @@ CustomerNumberRequest.belongsTo(User, { foreignKey: 'reviewedBy', as: 'reviewer'
 TaifunCustomer.hasMany(TaifunOrder, { foreignKey: 'kdGuid', sourceKey: 'kdGuid', as: 'orders' });
 TaifunOrder.belongsTo(TaifunCustomer, { foreignKey: 'kdGuid', targetKey: 'kdGuid', as: 'customer' });
 
+// Desktop tool: purchase requests + warehouse requests, linked to their creator
+User.hasMany(Order, { foreignKey: 'createdBy', as: 'orders' });
+Order.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+User.hasMany(WarehouseItem, { foreignKey: 'createdBy', as: 'warehouseItems' });
+WarehouseItem.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
 module.exports = {
   sequelize,
   User,
@@ -199,4 +207,6 @@ module.exports = {
   CustomerNumberRequest,
   TaifunCustomer,
   TaifunOrder,
+  Order,
+  WarehouseItem,
 };
