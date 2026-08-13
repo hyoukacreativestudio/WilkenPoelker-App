@@ -40,6 +40,11 @@ const WarehouseItem = sequelize.define('WarehouseItem', {
   createdByName: {
     type: DataTypes.STRING,
   },
+  // Personal initials ("Kürzel") of the staff member — required, since the
+  // department login is shared, this is who actually wrote the request.
+  handle: {
+    type: DataTypes.STRING,
+  },
   broughtBy: {
     type: DataTypes.UUID,
   },

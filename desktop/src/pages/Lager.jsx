@@ -3,7 +3,8 @@ import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 
 const CAN_WRITE = ['sales_manager', 'admin', 'super_admin'];
-const emptyForm = { brand: '', color: '', articleNumber: '', description: '', quantity: 1, notes: '' };
+const savedHandle = () => localStorage.getItem('wp_handle') || '';
+const emptyForm = () => ({ brand: '', color: '', articleNumber: '', description: '', quantity: 1, notes: '', handle: savedHandle() });
 
 export default function Lager({ user }) {
   const toast = useToast();
@@ -13,7 +14,8 @@ export default function Lager({ user }) {
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState({ key: 'createdAt', dir: 'desc' });
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm());
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -40,15 +42,26 @@ export default function Lager({ user }) {
   const toggleSort = (key) => setSort((s) => ({ key, dir: s.key === key && s.dir === 'asc' ? 'desc' : 'asc' }));
   const arrow = (key) => sort.key === key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
 
-  const submit = async () => {
-    if (!form.description.trim()) return;
-    setBusy(true);
-    try { await api.post('/desktop/warehouse', form); setShowForm(false); setForm(emptyForm); load(); toast('Eintrag gespeichert'); }
-    catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  const openNew = () => { setEditingId(null); setForm(emptyForm()); setShowForm(true); };
+  const openEdit = (r) => {
+    setEditingId(r.id);
+    setForm({ brand: r.brand || '', color: r.color || '', articleNumber: r.articleNumber || '', description: r.description || '', quantity: r.quantity ?? 1, notes: r.notes || '', handle: r.handle || savedHandle() });
+    setShowForm(true);
   };
-  const markBrought = async (r) => { await api.patch(`/desktop/warehouse/${r.id}`, { status: 'brought' }); load(); };
-  const reopen = async (r) => { await api.patch(`/desktop/warehouse/${r.id}`, { status: 'requested' }); load(); };
-  const del = async (r) => { if (confirm('Eintrag löschen?')) { await api.del(`/desktop/warehouse/${r.id}`); load(); } };
+
+  const submit = async () => {
+    if (!form.handle.trim()) { toast('Bitte dein Kürzel angeben', { type: 'error' }); return; }
+    setBusy(true);
+    try {
+      localStorage.setItem('wp_handle', form.handle.trim());
+      if (editingId) { await api.patch(`/desktop/warehouse/${editingId}`, form); toast('Gespeichert'); }
+      else { await api.post('/desktop/warehouse', form); toast('Eintrag gespeichert'); }
+      setShowForm(false); setEditingId(null); setForm(emptyForm()); load();
+    } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
+  const markBrought = async (r) => { try { await api.patch(`/desktop/warehouse/${r.id}`, { status: 'brought' }); load(); } catch (e) { toast(e.message, { type: 'error' }); } };
+  const reopen = async (r) => { try { await api.patch(`/desktop/warehouse/${r.id}`, { status: 'requested' }); load(); } catch (e) { toast(e.message, { type: 'error' }); } };
+  const del = async (r) => { if (confirm('Eintrag löschen?')) { try { await api.del(`/desktop/warehouse/${r.id}`); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
 
   return (
     <div>
@@ -58,7 +71,7 @@ export default function Lager({ user }) {
         <span className={`pill tab ${status === 'requested' ? 'active' : ''}`} onClick={() => setStatus('requested')}>Offen</span>
         <span className={`pill tab ${status === 'brought' ? 'active' : ''}`} onClick={() => setStatus('brought')}>Erledigt</span>
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
-        {canWrite && <button className="btn" onClick={() => { setForm(emptyForm); setShowForm(true); }}>+ Neuer Eintrag</button>}
+        {canWrite && <button className="btn" onClick={openNew}>+ Neuer Eintrag</button>}
       </div>
 
       {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : sorted.length === 0 ? (
@@ -72,6 +85,7 @@ export default function Lager({ user }) {
               <th className="sortable" onClick={() => toggleSort('articleNumber')}>Artikel-Nr.{arrow('articleNumber')}</th>
               <th className="sortable" onClick={() => toggleSort('description')}>Was{arrow('description')}</th>
               <th className="right">Anzahl</th>
+              <th className="sortable" onClick={() => toggleSort('handle')}>Kürzel{arrow('handle')}</th>
               <th className="sortable" onClick={() => toggleSort('status')}>Status{arrow('status')}</th>
               <th className="no-print"></th>
             </tr>
@@ -82,11 +96,13 @@ export default function Lager({ user }) {
                 <td><strong>{r.brand || '—'}</strong></td>
                 <td>{r.color || '—'}</td>
                 <td>{r.articleNumber || '—'}</td>
-                <td>{r.description}<div className="muted" style={{ fontSize: 12 }}>von {r.createdByName}</div></td>
+                <td>{r.description}{r.notes ? <div className="muted" style={{ fontSize: 12 }}>{r.notes}</div> : null}</td>
                 <td className="right">{r.quantity}</td>
+                <td>{r.handle || '—'}</td>
                 <td><span className={`badge ${r.status === 'brought' ? 'brought' : 'open'}`}>{r.status === 'brought' ? 'Gebracht' : 'Offen'}</span></td>
                 <td className="right nowrap no-print">
                   {r.status !== 'brought' ? <button className="btn sm" onClick={() => markBrought(r)}>Gebracht ✓</button> : <button className="btn sm ghost" onClick={() => reopen(r)}>Zurück</button>}
+                  {canWrite && <>{' '}<button className="btn sm ghost" onClick={() => openEdit(r)}>✏️</button></>}
                   {' '}<button className="btn sm ghost" onClick={() => del(r)}>✕</button>
                 </td>
               </tr>
@@ -98,10 +114,13 @@ export default function Lager({ user }) {
       {showForm && (
         <div className="backdrop" onClick={() => setShowForm(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Neuer Lager-Eintrag</h2>
+            <h2>{editingId ? 'Lager-Eintrag bearbeiten' : 'Neuer Lager-Eintrag'}</h2>
             <div className="form-grid">
-              <label className="field full">Was ist es? *
+              <label className="field full">Was ist es?
                 <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} autoFocus />
+              </label>
+              <label className="field">Dein Kürzel *
+                <input className="input" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="z. B. MK" />
               </label>
               <label className="field">Marke
                 <input className="input" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
@@ -121,7 +140,7 @@ export default function Lager({ user }) {
             </div>
             <div className="modal-actions">
               <button className="btn ghost" onClick={() => setShowForm(false)}>Abbrechen</button>
-              <button className="btn" onClick={submit} disabled={busy || !form.description.trim()}>Speichern</button>
+              <button className="btn" onClick={submit} disabled={busy || !form.handle.trim()}>Speichern</button>
             </div>
           </div>
         </div>

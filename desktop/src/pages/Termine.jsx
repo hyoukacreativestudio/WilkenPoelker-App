@@ -15,7 +15,8 @@ const TYPES = [
   { key: 'other', label: 'Sonstiges' },
 ];
 const typeLabel = (k) => TYPES.find((t) => t.key === k)?.label || k || '—';
-const emptyForm = { title: '', type: 'repair', date: '', startTime: '', endTime: '', customerName: '', customerNumber: '', phone: '', description: '' };
+const savedHandle = () => localStorage.getItem('wp_handle') || '';
+const emptyForm = () => ({ title: '', type: 'repair', date: '', startTime: '', endTime: '', customerName: '', customerNumber: '', phone: '', description: '', handle: savedHandle() });
 
 export default function Termine() {
   const toast = useToast();
@@ -26,7 +27,8 @@ export default function Termine() {
   const [status, setStatus] = useState('all');
   const [type, setType] = useState('all');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm());
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -63,12 +65,25 @@ export default function Termine() {
   const toggleSort = (key) => setSort((s) => ({ key, dir: s.key === key && s.dir === 'asc' ? 'desc' : 'asc' }));
   const arrow = (key) => sort.key === key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
 
+  const openNew = () => { setEditingId(null); setForm(emptyForm()); setShowForm(true); };
+  const openEdit = (a) => {
+    setEditingId(a.id);
+    setForm({
+      title: a.title || '', type: a.type || 'repair', date: a.date ? String(a.date).slice(0, 10) : '',
+      startTime: a.startTime ? String(a.startTime).slice(0, 5) : '', endTime: a.endTime ? String(a.endTime).slice(0, 5) : '',
+      customerName: a.customerName || '', customerNumber: a.customerNumber || '', phone: a.phone || '', description: a.description || '',
+      handle: a.handle || savedHandle(),
+    });
+    setShowForm(true);
+  };
   const submit = async () => {
-    if (!form.title.trim()) return;
+    if (!form.handle.trim()) { toast('Bitte dein Kürzel angeben', { type: 'error' }); return; }
     setBusy(true);
     try {
-      await api.post('/desktop/appointments', form);
-      setShowForm(false); setForm(emptyForm); load(); toast('Termin angelegt');
+      localStorage.setItem('wp_handle', form.handle.trim());
+      if (editingId) { await api.patch(`/desktop/appointments/${editingId}`, form); toast('Termin gespeichert'); }
+      else { await api.post('/desktop/appointments', form); toast('Termin angelegt'); }
+      setShowForm(false); setEditingId(null); setForm(emptyForm()); load();
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
   const del = async (a) => { if (confirm('Termin löschen?')) { try { await api.del(`/desktop/appointments/${a.id}`); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
@@ -91,7 +106,7 @@ export default function Termine() {
         </select>
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
         <button className="btn ghost" onClick={load}>Aktualisieren</button>
-        <button className="btn" onClick={() => { setForm(emptyForm); setShowForm(true); }}>+ Neuer Termin</button>
+        <button className="btn" onClick={openNew}>+ Neuer Termin</button>
       </div>
 
       {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : error ? (
@@ -107,6 +122,7 @@ export default function Termine() {
               <th className="sortable" onClick={() => toggleSort('customerName')}>Kunde{arrow('customerName')}</th>
               <th className="sortable" onClick={() => toggleSort('title')}>Titel{arrow('title')}</th>
               <th className="sortable" onClick={() => toggleSort('type')}>Art{arrow('type')}</th>
+              <th className="sortable" onClick={() => toggleSort('handle')}>Kürzel{arrow('handle')}</th>
               <th className="sortable" onClick={() => toggleSort('status')}>Status{arrow('status')}</th>
               <th className="no-print"></th>
             </tr>
@@ -123,9 +139,13 @@ export default function Termine() {
                 </td>
                 <td>{a.title || '—'}{a.createdByStaff ? <span className="badge open" style={{ marginLeft: 6 }}>manuell</span> : null}</td>
                 <td>{typeLabel(a.type)}</td>
+                <td>{a.handle || '—'}</td>
                 <td>{a.status || '—'}</td>
-                <td className="right no-print">
-                  {a.createdByStaff ? <button className="btn sm ghost" onClick={() => del(a)}>✕</button> : null}
+                <td className="right no-print nowrap">
+                  {a.createdByStaff ? <>
+                    <button className="btn sm ghost" onClick={() => openEdit(a)}>✏️</button>
+                    {' '}<button className="btn sm ghost" onClick={() => del(a)}>✕</button>
+                  </> : null}
                 </td>
               </tr>
             ))}
@@ -136,10 +156,13 @@ export default function Termine() {
       {showForm && (
         <div className="backdrop" onClick={() => setShowForm(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Neuer Termin</h2>
+            <h2>{editingId ? 'Termin bearbeiten' : 'Neuer Termin'}</h2>
             <div className="form-grid">
-              <label className="field full">Titel *
+              <label className="field full">Titel
                 <input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="z. B. Reparatur E-Bike" autoFocus />
+              </label>
+              <label className="field">Dein Kürzel *
+                <input className="input" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="z. B. MK" />
               </label>
               <label className="field">Art
                 <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
@@ -170,7 +193,7 @@ export default function Termine() {
             </div>
             <div className="modal-actions">
               <button className="btn ghost" onClick={() => setShowForm(false)}>Abbrechen</button>
-              <button className="btn" onClick={submit} disabled={busy || !form.title.trim()}>Speichern</button>
+              <button className="btn" onClick={submit} disabled={busy || !form.handle.trim()}>Speichern</button>
             </div>
           </div>
         </div>

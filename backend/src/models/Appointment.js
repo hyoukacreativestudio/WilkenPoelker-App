@@ -120,6 +120,11 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  // Personal initials ("Kürzel") of the staff member who entered it (shared login)
+  handle: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   tableName: 'appointments',
   timestamps: true,

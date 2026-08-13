@@ -92,9 +92,11 @@ const listOrders = asyncHandler(async (req, res) => {
 });
 
 const createOrder = asyncHandler(async (req, res) => {
-  const { sourceText, link, articleNumber, description, customerName, customerNumber, quantity, quantityForStock, notes } = req.body;
-  if (!description || !String(description).trim()) {
-    throw new AppError('Beschreibung ist erforderlich', 400, 'DESCRIPTION_REQUIRED');
+  const { sourceText, link, articleNumber, description, customerName, customerNumber, quantity, quantityForStock, notes, handle } = req.body;
+  // Only the Kürzel is mandatory (shared login → who wrote it). Everything else
+  // may be left blank; description falls back to a dash.
+  if (!handle || !String(handle).trim()) {
+    throw new AppError('Kürzel ist erforderlich', 400, 'HANDLE_REQUIRED');
   }
   // Department: admins/orders_manager may target any; others post to their own.
   let department = departmentForRole(req.user.role);
@@ -106,7 +108,7 @@ const createOrder = asyncHandler(async (req, res) => {
     sourceText: (sourceText && String(sourceText).trim()) || 'Shop',
     link: link || null,
     articleNumber: articleNumber || null,
-    description: String(description).trim(),
+    description: (description && String(description).trim()) || '—',
     customerName: customerName || null,
     customerNumber: customerNumber || null,
     quantity: quantity != null ? parseInt(quantity, 10) || 1 : 1,
@@ -115,6 +117,7 @@ const createOrder = asyncHandler(async (req, res) => {
     status: 'open',
     createdBy: req.user.id,
     createdByName: creatorName(req.user),
+    handle: String(handle).trim(),
   });
   res.status(201).json({ success: true, data: { order } });
 });
@@ -129,13 +132,15 @@ const updateOrder = asyncHandler(async (req, res) => {
 
   const { status } = req.body;
   const updates = {};
-  // Anyone (owner or manager) can tick an order off ("erledigt" = ordered) / reopen.
+  // Ticking an order off ("erledigt" = ordered) / reopening is reserved for
+  // admins and the Bestellungen account — a department can't mark its own done.
   if (status) {
+    if (!isManager) throw new AppError('Nur Admin oder Bestellungen darf abhaken', 403, 'ORDER_CHECKOFF_FORBIDDEN');
     updates.status = status;
     if (status === 'ordered') { updates.orderedBy = req.user.id; updates.orderedAt = new Date(); }
     else if (status === 'open') { updates.orderedBy = null; updates.orderedAt = null; }
   }
-  for (const f of ['articleNumber', 'description', 'customerName', 'customerNumber', 'link', 'sourceText', 'notes']) {
+  for (const f of ['articleNumber', 'description', 'customerName', 'customerNumber', 'link', 'sourceText', 'notes', 'handle']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];
   }
   if (req.body.quantity !== undefined) updates.quantity = parseInt(req.body.quantity, 10) || 1;
@@ -164,20 +169,22 @@ const listWarehouse = asyncHandler(async (req, res) => {
 });
 
 const createWarehouseItem = asyncHandler(async (req, res) => {
-  const { brand, color, articleNumber, description, quantity, notes } = req.body;
-  if (!description || !String(description).trim()) {
-    throw new AppError('Beschreibung ist erforderlich', 400, 'DESCRIPTION_REQUIRED');
+  const { brand, color, articleNumber, description, quantity, notes, handle } = req.body;
+  // Only the Kürzel is mandatory; everything else optional.
+  if (!handle || !String(handle).trim()) {
+    throw new AppError('Kürzel ist erforderlich', 400, 'HANDLE_REQUIRED');
   }
   const item = await WarehouseItem.create({
     brand: brand || null,
     color: color || null,
     articleNumber: articleNumber || null,
-    description: String(description).trim(),
+    description: (description && String(description).trim()) || '—',
     quantity: quantity != null ? parseInt(quantity, 10) || 1 : 1,
     notes: notes || null,
     status: 'requested',
     createdBy: req.user.id,
     createdByName: creatorName(req.user),
+    handle: String(handle).trim(),
   });
   res.status(201).json({ success: true, data: { item } });
 });
@@ -188,7 +195,7 @@ const updateWarehouseItem = asyncHandler(async (req, res) => {
   const updates = {};
   if (req.body.status === 'brought') { updates.status = 'brought'; updates.broughtBy = req.user.id; updates.broughtAt = new Date(); }
   else if (req.body.status === 'requested') { updates.status = 'requested'; updates.broughtBy = null; updates.broughtAt = null; }
-  for (const f of ['brand', 'color', 'articleNumber', 'description', 'notes']) {
+  for (const f of ['brand', 'color', 'articleNumber', 'description', 'notes', 'handle']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];
   }
   if (req.body.quantity !== undefined) updates.quantity = parseInt(req.body.quantity, 10) || 1;
@@ -239,6 +246,7 @@ const listAppointments = asyncHandler(async (req, res) => {
       status: a.status,
       department: a.department,
       createdByStaff: a.createdByStaff,
+      handle: a.handle || '',
       customerName: a.createdByStaff ? (a.customerName || '') : (fromAccount || a.customerName || ''),
       customerNumber: a.createdByStaff ? (a.customerNumber || '') : (c?.customerNumber || a.customerNumber || ''),
       phone: a.createdByStaff ? (a.phone || '') : (c?.phone || a.phone || ''),
@@ -248,15 +256,16 @@ const listAppointments = asyncHandler(async (req, res) => {
 });
 
 const createAppointment = asyncHandler(async (req, res) => {
-  const { title, type, date, startTime, endTime, description, customerNumber, customerName, phone } = req.body;
-  if (!title || !String(title).trim()) throw new AppError('Titel ist erforderlich', 400, 'TITLE_REQUIRED');
-  if (!type || !APPT_TYPES.includes(type)) throw new AppError('Ungültiger Termintyp', 400, 'INVALID_TYPE');
+  const { title, type, date, startTime, endTime, description, customerNumber, customerName, phone, handle } = req.body;
+  // Only the Kürzel is mandatory — everything else may be left blank.
+  if (!handle || !String(handle).trim()) throw new AppError('Kürzel ist erforderlich', 400, 'HANDLE_REQUIRED');
+  const apptType = type && APPT_TYPES.includes(type) ? type : 'other';
 
   const department = req.body.department || departmentForRole(req.user.role) || null;
   const appointment = await Appointment.create({
     userId: req.user.id, // staff account owns the hand-entered appointment
-    title: String(title).trim(),
-    type,
+    title: (title && String(title).trim()) || 'Termin',
+    type: apptType,
     date: date || null,
     startTime: startTime || null,
     endTime: endTime || null,
@@ -267,6 +276,7 @@ const createAppointment = asyncHandler(async (req, res) => {
     customerName: customerName || null,
     phone: phone || null,
     department,
+    handle: String(handle).trim(),
   });
   res.status(201).json({ success: true, data: { appointment } });
 });
@@ -276,7 +286,7 @@ const updateAppointment = asyncHandler(async (req, res) => {
   if (!appointment) throw new NotFoundError('Appointment');
   const updates = {};
   if (req.body.status && APPT_STATUSES.includes(req.body.status)) updates.status = req.body.status;
-  for (const f of ['title', 'description', 'date', 'startTime', 'endTime', 'customerNumber', 'customerName', 'phone', 'type']) {
+  for (const f of ['title', 'description', 'date', 'startTime', 'endTime', 'customerNumber', 'customerName', 'phone', 'type', 'handle']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];
   }
   await appointment.update(updates);
