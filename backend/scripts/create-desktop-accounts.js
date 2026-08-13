@@ -27,6 +27,19 @@ const ACCOUNTS = [
 
 async function run() {
   await sequelize.authenticate();
+
+  // Make sure the Postgres enum knows every department role BEFORE we try to
+  // create accounts with them (the API adds these on startup, but this script
+  // may run standalone before a restart). No-op on SQLite / if already present.
+  if (sequelize.getDialect() === 'postgres') {
+    const roles = [...new Set(ACCOUNTS.map((a) => a.role))];
+    for (const role of roles) {
+      try {
+        await sequelize.query(`ALTER TYPE "enum_users_role" ADD VALUE IF NOT EXISTS '${role}';`);
+      } catch (e) { /* value may already exist */ }
+    }
+  }
+
   for (const a of ACCOUNTS) {
     const [firstName, ...rest] = a.name.split(' ');
     const lastName = rest.join(' ');

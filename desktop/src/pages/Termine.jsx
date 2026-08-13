@@ -15,6 +15,7 @@ const TYPES = [
   { key: 'other', label: 'Sonstiges' },
 ];
 const typeLabel = (k) => TYPES.find((t) => t.key === k)?.label || k || '—';
+const STATUS_LABEL = { pending: 'Anfrage', proposed: 'Vorgeschlagen', confirmed: 'Bestätigt', completed: 'Erledigt', cancelled: 'Storniert', rescheduled: 'Verschoben' };
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
 const emptyForm = () => ({ title: '', type: 'repair', date: '', startTime: '', endTime: '', customerName: '', customerNumber: '', phone: '', description: '', handle: savedHandle() });
 
@@ -24,7 +25,7 @@ export default function Termine() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sort, setSort] = useState({ key: 'date', dir: 'asc' });
-  const [status, setStatus] = useState('all');
+  const [kind, setKind] = useState('laufend'); // anfragen | laufend | alle
   const [type, setType] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -41,14 +42,22 @@ export default function Termine() {
   };
   useEffect(() => { load(); }, []);
 
+  // Requests (customer asked, not yet scheduled) vs running (confirmed) appointments
+  const REQUEST_STATES = ['pending', 'proposed', 'rescheduled'];
+  const isRequest = (a) => REQUEST_STATES.includes(a.status);
+  const requestCount = useMemo(() => rows.filter(isRequest).length, [rows]);
+
   // Hide appointments more than 24h in the past
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const filtered = useMemo(
-    () => rows.filter((a) =>
-      (status === 'all' || a.status === status) &&
-      (type === 'all' || a.type === type) &&
-      (!a.date || String(a.date).slice(0, 10) >= cutoff)),
-    [rows, status, type, cutoff]
+    () => rows.filter((a) => {
+      if (kind === 'anfragen' && !isRequest(a)) return false;
+      if (kind === 'laufend' && a.status !== 'confirmed') return false;
+      if (type !== 'all' && a.type !== type) return false;
+      if (a.date && String(a.date).slice(0, 10) < cutoff) return false;
+      return true;
+    }),
+    [rows, kind, type, cutoff]
   );
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -87,22 +96,20 @@ export default function Termine() {
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
   const del = async (a) => { if (confirm('Termin löschen?')) { try { await api.del(`/desktop/appointments/${a.id}`); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
+  const confirmAppt = async (a) => { try { await api.patch(`/desktop/appointments/${a.id}`, { status: 'confirmed' }); load(); toast('Termin bestätigt'); } catch (e) { toast(e.message, { type: 'error' }); } };
 
   return (
     <div>
       <div className="toolbar no-print">
-        <span className="muted">Termine aus der App & selbst angelegt</span>
+        <span className={`pill tab ${kind === 'anfragen' ? 'active' : ''}`} onClick={() => setKind('anfragen')}>
+          Anfragen{requestCount ? <span className="n">{requestCount}</span> : null}
+        </span>
+        <span className={`pill tab ${kind === 'laufend' ? 'active' : ''}`} onClick={() => setKind('laufend')}>Laufende Termine</span>
+        <span className={`pill tab ${kind === 'alle' ? 'active' : ''}`} onClick={() => setKind('alle')}>Alle</span>
         <div className="spacer" />
         <select className="select" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="all">Alle Arten</option>
           {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
-        </select>
-        <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="all">Alle Status</option>
-          <option value="pending">Offen</option>
-          <option value="confirmed">Bestätigt</option>
-          <option value="completed">Erledigt</option>
-          <option value="cancelled">Storniert</option>
         </select>
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
         <button className="btn ghost" onClick={load}>Aktualisieren</button>
@@ -140,10 +147,11 @@ export default function Termine() {
                 <td>{a.title || '—'}{a.createdByStaff ? <span className="badge open" style={{ marginLeft: 6 }}>manuell</span> : null}</td>
                 <td>{typeLabel(a.type)}</td>
                 <td>{a.handle || '—'}</td>
-                <td>{a.status || '—'}</td>
+                <td>{isRequest(a) ? <span className="badge open">Anfrage</span> : (STATUS_LABEL[a.status] || a.status || '—')}</td>
                 <td className="right no-print nowrap">
+                  {isRequest(a) ? <button className="btn sm" onClick={() => confirmAppt(a)}>Bestätigen ✓</button> : null}
                   {a.createdByStaff ? <>
-                    <button className="btn sm ghost" onClick={() => openEdit(a)}>✏️</button>
+                    {' '}<button className="btn sm ghost" onClick={() => openEdit(a)}>✏️</button>
                     {' '}<button className="btn sm ghost" onClick={() => del(a)}>✕</button>
                   </> : null}
                 </td>

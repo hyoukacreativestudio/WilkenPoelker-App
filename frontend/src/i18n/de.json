@@ -228,6 +228,8 @@
     "registerNow": "Jetzt registrieren",
     "loginNow": "Jetzt anmelden",
     "emailNotVerified": "Bitte verifiziere zuerst deine E-Mail-Adresse.",
+    "wrongPassword": "E-Mail oder Passwort falsch.",
+    "accountDeactivated": "Dieser Account ist deaktiviert.",
     "dsgvoAccept": "Ich akzeptiere die Datenschutzerklärung",
     "agbAccept": "Ich akzeptiere die AGB",
     "iAccept": "Ich akzeptiere die",

@@ -8,6 +8,12 @@ const ROLES = {
   MOTOR_MANAGER: 'motor_manager',
   SERVICE_MANAGER: 'service_manager',
   ROBBY_MANAGER: 'robby_manager',
+  SALES_MANAGER: 'sales_manager',
+  ORDERS_MANAGER: 'orders_manager',
+  WAREHOUSE_WORKER: 'warehouse_worker',
+  DELIVERY_MANAGER: 'delivery_manager',
+  MOTOR_EQUIPMENT_MANAGER: 'motor_equipment_manager',
+  EV_MANAGER: 'ev_manager',
   CUSTOMER: 'customer',
 };
 
@@ -19,6 +25,12 @@ const ROLE_HIERARCHY = {
   [ROLES.MOTOR_MANAGER]: 3,
   [ROLES.SERVICE_MANAGER]: 3,
   [ROLES.ROBBY_MANAGER]: 3,
+  [ROLES.SALES_MANAGER]: 3,
+  [ROLES.ORDERS_MANAGER]: 3,
+  [ROLES.WAREHOUSE_WORKER]: 3,
+  [ROLES.DELIVERY_MANAGER]: 3,
+  [ROLES.MOTOR_EQUIPMENT_MANAGER]: 3,
+  [ROLES.EV_MANAGER]: 3,
   [ROLES.CUSTOMER]: 1,
 };
 

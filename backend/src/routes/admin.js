@@ -20,7 +20,7 @@ router.get(
     query('search').optional().isString().trim(),
     query('role')
       .optional()
-      .isIn(['super_admin', 'admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'customer'])
+      .isIn(['super_admin', 'admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker', 'delivery_manager', 'motor_equipment_manager', 'ev_manager', 'customer'])
       .withMessage('Ungueltige Rolle'),
     query('status')
       .optional()
@@ -57,7 +57,7 @@ router.post(
       .withMessage('Ungueltiger Benachrichtigungstyp'),
     body('role')
       .optional()
-      .isIn(['super_admin', 'admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'robby_manager', 'customer'])
+      .isIn(['super_admin', 'admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker', 'delivery_manager', 'motor_equipment_manager', 'ev_manager', 'customer'])
       .withMessage('Ungueltige Zielgruppe'),
     body('roles')
       .optional()
@@ -65,7 +65,7 @@ router.post(
       .withMessage('Rollen muss ein Array sein'),
     body('roles.*')
       .optional()
-      .isIn(['super_admin', 'admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'robby_manager', 'customer'])
+      .isIn(['super_admin', 'admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker', 'delivery_manager', 'motor_equipment_manager', 'ev_manager', 'customer'])
       .withMessage('Ungueltige Rolle im Array'),
   ]),
   adminController.sendBroadcast

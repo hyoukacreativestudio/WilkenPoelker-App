@@ -1,23 +1,42 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
+import { customerNumberApi } from '../../api/customerNumber';
 import Button from '../ui/Button';
 
 /**
  * Gate component that blocks access if user has no customer number.
  * Shows a message and button to request one. Pass children to show when customer number exists.
+ * On mount (no number yet) it re-checks Taifun once — if a unique match is
+ * found the number is linked and the gate opens without a re-login.
  */
 export default function NoCustomerNumberGate({ children }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigation = useNavigation();
 
   const hasCustomerNumber = !!user?.customerNumber;
+  const checkedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasCustomerNumber || checkedRef.current) return;
+    checkedRef.current = true;
+    (async () => {
+      try {
+        const res = await customerNumberApi.selfCheck();
+        const assigned = res?.data?.data?.assigned;
+        const number = res?.data?.data?.customerNumber;
+        if (assigned && number) {
+          await updateUser({ customerNumber: number });
+        }
+      } catch (e) { /* silent — customer can still request manually */ }
+    })();
+  }, [hasCustomerNumber, updateUser]);
 
   if (hasCustomerNumber) {
     return children;

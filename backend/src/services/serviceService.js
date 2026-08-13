@@ -7,18 +7,38 @@ const logger = require('../utils/logger');
 // TICKETS
 // ──────────────────────────────────────────────
 
+// Department the customer picks → the ticket category used for routing.
+const DEPARTMENT_CATEGORY = {
+  fahrrad: 'bike',
+  reinigung: 'cleaning',
+  rasenmaeher: 'motor',
+  service: 'service',
+  robby: 'service',
+};
+// Department → which manager roles get notified.
+const DEPARTMENT_ROLES = {
+  fahrrad: ['bike_manager'],
+  reinigung: ['cleaning_manager'],
+  rasenmaeher: ['motor_manager'],
+  service: ['service_manager'],
+  robby: ['robby_manager'],
+};
+
 async function createTicket(data, userId, models) {
   const { Ticket, User, Notification } = models;
-  const { title, type, category, description, urgency, appointmentDate, alternativeDates, attachments } = data;
+  const { title, type, category, description, urgency, appointmentDate, alternativeDates, attachments, department } = data;
 
   const ticketNumber = generateTicketNumber();
+  // Prefer the picked department; keep the category consistent with it.
+  const finalCategory = (department && DEPARTMENT_CATEGORY[department]) || category || 'service';
 
   const ticket = await Ticket.create({
     ticketNumber,
     userId,
     title: title || 'Allgemeine Anfrage',
     type,
-    category: category || 'service',
+    category: finalCategory,
+    department: department || null,
     description,
     urgency: urgency || 'normal',
     appointmentDate: appointmentDate || null,
@@ -27,14 +47,14 @@ async function createTicket(data, userId, models) {
     status: 'open',
   });
 
-  // Determine which managers to notify based on category
+  // Determine which managers to notify — by department if given, else category.
   const categoryRoleMap = {
     bike: ['bike_manager'],
     cleaning: ['cleaning_manager'],
     motor: ['motor_manager'],
     service: ['service_manager'],
   };
-  const categoryRoles = categoryRoleMap[category || 'service'] || ['service_manager'];
+  const categoryRoles = (department && DEPARTMENT_ROLES[department]) || categoryRoleMap[finalCategory] || ['service_manager'];
   const allRoles = ['admin', 'super_admin', ...categoryRoles];
 
   const managers = await User.findAll({

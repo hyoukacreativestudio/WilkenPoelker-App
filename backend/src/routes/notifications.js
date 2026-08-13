@@ -51,24 +51,11 @@ router.delete(
   notificationController.deleteAllNotifications
 );
 
-// PUT /api/notifications/:id/read
-router.put(
-  '/:id/read',
-  authenticate,
-  validate([validators.uuid('id')]),
-  notificationController.markAsRead
-);
-
-// DELETE /api/notifications/:id
-router.delete(
-  '/:id',
-  authenticate,
-  validate([validators.uuid('id')]),
-  notificationController.deleteNotification
-);
-
 // ──────────────────────────────────────────────
 // FCM Token management
+// NOTE: these MUST be declared before the "/:id" routes below, otherwise
+// Express matches "/fcm-token" as ":id" and rejects it as an invalid UUID
+// (which silently broke push-token (de)registration → no notifications).
 // ──────────────────────────────────────────────
 
 // POST /api/notifications/fcm-token
@@ -93,6 +80,22 @@ router.delete(
     body('token').notEmpty().withMessage('FCM token is required'),
   ]),
   notificationController.removeFCMToken
+);
+
+// PUT /api/notifications/:id/read
+router.put(
+  '/:id/read',
+  authenticate,
+  validate([validators.uuid('id')]),
+  notificationController.markAsRead
+);
+
+// DELETE /api/notifications/:id
+router.delete(
+  '/:id',
+  authenticate,
+  validate([validators.uuid('id')]),
+  notificationController.deleteNotification
 );
 
 // ──────────────────────────────────────────────

@@ -125,14 +125,21 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     // Refresh on any 401 (not only tokenExpired flag), as long as we still have a refresh token
-    // and the failing request was not itself the refresh call.
-    const isAuthRefreshCall =
-      typeof originalRequest?.url === 'string' && originalRequest.url.includes('/auth/refresh-token');
+    // and the failing request was not itself an auth call. A wrong-password LOGIN
+    // also returns 401 — we must NOT try to refresh (with a stale token) and mask
+    // it as a refresh error; the real "Invalid credentials" must reach the UI.
+    const url = typeof originalRequest?.url === 'string' ? originalRequest.url : '';
+    const isAuthCall =
+      url.includes('/auth/refresh-token') ||
+      url.includes('/auth/login') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/forgot-password') ||
+      url.includes('/auth/reset-password');
 
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !isAuthRefreshCall
+      !isAuthCall
     ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {

@@ -12,7 +12,7 @@ const models = { Ticket, ChatMessage, User, Notification, Appointment, ServiceRa
 
 // POST /tickets
 const createTicket = asyncHandler(async (req, res) => {
-  const { title, type, category, description, urgency, appointmentDate, alternativeDates } = req.body;
+  const { title, type, category, department, description, urgency, appointmentDate, alternativeDates } = req.body;
 
   // Process file attachments
   const { uploadFile } = require('../services/uploadService');
@@ -27,7 +27,7 @@ const createTicket = asyncHandler(async (req, res) => {
   );
 
   const ticket = await serviceService.createTicket(
-    { title, type, category, description, urgency, appointmentDate, alternativeDates, attachments },
+    { title, type, category, department, description, urgency, appointmentDate, alternativeDates, attachments },
     req.user.id,
     models
   );

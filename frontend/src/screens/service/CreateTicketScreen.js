@@ -51,6 +51,16 @@ const TITLE_OPTIONS = {
   ],
 };
 
+// Main departments the customer can pick — routes the ticket to the right PC account
+const DEPARTMENTS = [
+  { key: 'fahrrad', category: 'bike', label: 'Fahrrad' },
+  { key: 'reinigung', category: 'cleaning', label: 'Reinigungsgeräte' },
+  { key: 'rasenmaeher', category: 'motor', label: 'Rasenmäher' },
+  { key: 'service', category: 'service', label: 'Service' },
+  { key: 'robby', category: 'service', label: 'Robby' },
+];
+const CATEGORY_DEPARTMENT = { bike: 'fahrrad', cleaning: 'reinigung', motor: 'rasenmaeher', service: 'service' };
+
 // Map title keys to ticket types for backend
 const TITLE_TYPE_MAP = {
   repair_request: 'repair',
@@ -73,7 +83,13 @@ export default function CreateTicketScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { showToast } = useToast();
 
-  const category = routeCategory || 'service';
+  const [selectedDepartment, setSelectedDepartment] = useState(
+    CATEGORY_DEPARTMENT[routeCategory] || (DEPARTMENTS.find((d) => d.key === routeCategory)?.key) || 'service'
+  );
+  const category = useMemo(
+    () => DEPARTMENTS.find((d) => d.key === selectedDepartment)?.category || 'service',
+    [selectedDepartment]
+  );
   const titleOptions = useMemo(() => TITLE_OPTIONS[category] || TITLE_OPTIONS.service, [category]);
 
   const [selectedTitleKey, setSelectedTitleKey] = useState('');
@@ -117,6 +133,7 @@ export default function CreateTicketScreen({ route, navigation }) {
           title: resolvedTitle,
           type: TITLE_TYPE_MAP[selectedTitleKey] || 'other',
           category,
+          department: selectedDepartment,
           description: description.trim(),
           urgency: 'normal',
         };
@@ -125,6 +142,7 @@ export default function CreateTicketScreen({ route, navigation }) {
         formData.append('title', resolvedTitle);
         formData.append('type', TITLE_TYPE_MAP[selectedTitleKey] || 'other');
         formData.append('category', category);
+        formData.append('department', selectedDepartment);
         formData.append('description', description.trim());
         formData.append('urgency', 'normal');
         for (let i = 0; i < images.length; i++) {
@@ -208,6 +226,28 @@ export default function CreateTicketScreen({ route, navigation }) {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
+      {/* Department Selection — routes the ticket to the right team/PC account */}
+      <View style={s.fieldContainer}>
+        <Text style={s.label}>{t('createTicket.selectDepartment', 'Abteilung')}</Text>
+        <View style={s.titleChipsContainer}>
+          {DEPARTMENTS.map((dep) => (
+            <TouchableOpacity
+              key={dep.key}
+              style={[s.titleChip, selectedDepartment === dep.key && s.titleChipSelected]}
+              activeOpacity={0.7}
+              onPress={() => {
+                setSelectedDepartment(dep.key);
+                setSelectedTitleKey(''); // title options depend on the department's category
+              }}
+            >
+              <Text style={[s.titleChipText, selectedDepartment === dep.key && s.titleChipTextSelected]}>
+                {dep.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       {/* Title Selection */}
       <View style={s.fieldContainer}>
         <Text style={s.label}>{t('createTicket.selectTitle')}</Text>

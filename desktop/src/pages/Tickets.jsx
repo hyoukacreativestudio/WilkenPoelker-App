@@ -1,6 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { api, unwrap } from '../api.js';
+import { api, unwrap, mediaUrl } from '../api.js';
 import { useToast } from '../toast.jsx';
+
+// Render image/file attachments (ticket or chat message).
+function Attachments({ list }) {
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+      {list.map((a, i) => {
+        const url = mediaUrl(a?.url || a);
+        const isImg = (a?.mimetype || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|heic)$/i.test(url);
+        if (!url) return null;
+        return isImg ? (
+          <a key={i} href={url} target="_blank" rel="noreferrer">
+            <img src={url} alt={a?.originalName || 'Bild'} style={{ maxWidth: 160, maxHeight: 160, borderRadius: 8, objectFit: 'cover', display: 'block' }} />
+          </a>
+        ) : (
+          <a key={i} href={url} target="_blank" rel="noreferrer" className="btn sm ghost">📎 {a?.originalName || 'Datei'}</a>
+        );
+      })}
+    </div>
+  );
+}
 
 // Department tickets. Each department only sees its own category's tickets
 // (backend-scoped). Open a ticket to read the chat, reply, and change status.
@@ -36,6 +57,7 @@ export default function Tickets() {
         <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="open">Offen</option>
           <option value="in_progress">In Bearbeitung</option>
+          <option value="completed">Fertig</option>
           <option value="closed">Geschlossen</option>
           <option value="all">Alle</option>
         </select>
@@ -115,7 +137,12 @@ function TicketDetail({ id, onClose, onChanged, toast }) {
               {ticket.creator?.phone ? ` · ☎ ${ticket.creator.phone}` : ''}
             </div>
 
-            {ticket.description ? <div className="card" style={{ padding: 12, marginBottom: 14 }}>{ticket.description}</div> : null}
+            {(ticket.description || (ticket.attachments || []).length) ? (
+              <div className="card" style={{ padding: 12, marginBottom: 14 }}>
+                {ticket.description}
+                <Attachments list={ticket.attachments} />
+              </div>
+            ) : null}
 
             <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
               {messages.length === 0 ? <div className="muted" style={{ textAlign: 'center', padding: 12 }}>Noch keine Nachrichten.</div> : messages.map((m) => (
@@ -126,27 +153,33 @@ function TicketDetail({ id, onClose, onChanged, toast }) {
                     <div className="sub2" style={{ marginBottom: 2, textAlign: isStaff(m) ? 'right' : 'left' }}>
                       {m.sender ? `${m.sender.firstName || ''} ${m.sender.lastName || ''}`.trim() || (isStaff(m) ? 'Mitarbeiter' : 'Kunde') : ''}
                     </div>
-                    <div style={{ padding: '8px 12px', borderRadius: 12, background: isStaff(m) ? 'var(--dept)' : 'var(--bg-2, #eef1ee)', color: isStaff(m) ? '#fff' : 'var(--text)' }}>{m.message}</div>
+                    <div style={{ padding: '8px 12px', borderRadius: 12, background: isStaff(m) ? 'var(--dept)' : 'var(--bg-2, #eef1ee)', color: isStaff(m) ? '#fff' : 'var(--text)' }}>
+                      {m.message}
+                      <Attachments list={m.attachments} />
+                    </div>
                   </div>
                 )
               ))}
             </div>
 
-            {!['closed', 'completed', 'cancelled'].includes(ticket.status) ? (
-              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                <input className="input" style={{ flex: 1 }} value={reply} placeholder="Antwort schreiben…" onChange={(e) => setReply(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send(); }} />
-                <button className="btn" onClick={send} disabled={busy || !reply.trim()}>Senden</button>
-              </div>
-            ) : <div className="muted" style={{ marginBottom: 14 }}>Ticket ist geschlossen – zum Antworten erst wieder öffnen.</div>}
+            {/* The chat is never locked — you can always add something, even on a
+                "Fertig" or closed ticket (emergency note). */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <input className="input" style={{ flex: 1 }} value={reply} placeholder="Antwort schreiben…" onChange={(e) => setReply(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send(); }} />
+              <button className="btn" onClick={send} disabled={busy || !reply.trim()}>Senden</button>
+            </div>
 
-            <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {ticket.status !== 'in_progress' && !['closed', 'completed', 'cancelled'].includes(ticket.status) && <button className="btn ghost" onClick={() => setStatus('in_progress')}>In Bearbeitung</button>}
-                {['closed', 'completed', 'cancelled'].includes(ticket.status)
-                  ? <button className="btn ghost" onClick={() => setStatus('open')}>Wieder öffnen</button>
-                  : <button className="btn" onClick={() => setStatus('closed')}>Schließen ✓</button>}
+            <div className="modal-actions" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {ticket.status !== 'in_progress' && ticket.status !== 'closed' && <button className="btn ghost" onClick={() => setStatus('in_progress')}>In Bearbeitung</button>}
+                {/* "Fertig" marks it done but keeps it in the list + chat open */}
+                {ticket.status !== 'completed' && ticket.status !== 'closed' && <button className="btn ghost" onClick={() => setStatus('completed')}>Fertig ✓</button>}
+                {/* "Schließen" archives it (moves out of the active list) */}
+                {ticket.status !== 'closed'
+                  ? <button className="btn" onClick={() => setStatus('closed')}>Ticket schließen</button>
+                  : <button className="btn ghost" onClick={() => setStatus('open')}>Wieder öffnen</button>}
               </div>
-              <button className="btn ghost" onClick={onClose}>Fertig</button>
+              <button className="btn ghost" onClick={onClose}>Schließen</button>
             </div>
           </>
         )}

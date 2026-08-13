@@ -29,6 +29,10 @@ router.post(
       .optional()
       .isIn(['service', 'bike', 'cleaning', 'motor'])
       .withMessage('Invalid category'),
+    body('department')
+      .optional()
+      .isIn(['fahrrad', 'reinigung', 'rasenmaeher', 'service', 'robby'])
+      .withMessage('Invalid department'),
     body('description')
       .notEmpty()
       .withMessage('Description is required')

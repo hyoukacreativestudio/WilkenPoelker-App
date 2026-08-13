@@ -314,18 +314,50 @@ const DEPT_TICKET_CATEGORIES = {
   cleaning_manager: ['cleaning'],
   motor_manager: ['motor'],
   service_manager: ['service', 'bike', 'cleaning', 'motor'],
+  robby_manager: ['service'],
+};
+// The department key each role owns (matches the ticket's `department` field).
+const ROLE_TICKET_DEPARTMENT = {
+  bike_manager: 'fahrrad',
+  cleaning_manager: 'reinigung',
+  motor_manager: 'rasenmaeher',
+  robby_manager: 'robby',
 };
 function ticketCategoriesForRole(role) {
   if (['admin', 'super_admin', 'orders_manager'].includes(role)) return ALL_TICKET_CATEGORIES;
   return DEPT_TICKET_CATEGORIES[role] || [];
 }
+function seesAllTickets(role) {
+  return ['admin', 'super_admin', 'orders_manager', 'service_manager'].includes(role);
+}
+// A staff member may access a ticket if they see all, or the ticket's department
+// matches their department, or (for old tickets without a department) its
+// category is in their category set.
+function canAccessTicket(role, ticket) {
+  if (seesAllTickets(role)) return true;
+  const dept = ROLE_TICKET_DEPARTMENT[role];
+  if (dept && ticket.department === dept) return true;
+  if (!ticket.department && ticketCategoriesForRole(role).includes(ticket.category)) return true;
+  return false;
+}
 
 const listTickets = asyncHandler(async (req, res) => {
-  const cats = ticketCategoriesForRole(req.user.role);
-  if (cats.length === 0) return res.json({ success: true, data: { tickets: [] } });
+  const role = req.user.role;
+  const cats = ticketCategoriesForRole(role);
+  const dept = ROLE_TICKET_DEPARTMENT[role];
+  if (cats.length === 0 && !dept && !seesAllTickets(role)) {
+    return res.json({ success: true, data: { tickets: [] } });
+  }
 
-  const where = { category: { [Op.in]: cats } };
+  const where = {};
   if (req.query.status && req.query.status !== 'all') where.status = req.query.status;
+  if (!seesAllTickets(role)) {
+    // Match by department (new tickets) OR by category when no department (old).
+    const or = [];
+    if (dept) or.push({ department: dept });
+    if (cats.length) or.push({ department: null, category: { [Op.in]: cats } });
+    where[Op.or] = or;
+  }
 
   const tickets = await Ticket.findAll({
     where,
@@ -338,16 +370,15 @@ const listTickets = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { tickets } });
 });
 
-function assertTicketCategory(role, category) {
-  const cats = ticketCategoriesForRole(role);
-  if (cats.length && !cats.includes(category)) {
+function assertTicketAccess(role, ticket) {
+  if (!canAccessTicket(role, ticket)) {
     throw new AppError('Kein Zugriff auf dieses Ticket', 403, 'FORBIDDEN');
   }
 }
 
 const getTicket = asyncHandler(async (req, res) => {
   const ticket = await serviceService.getTicketById(req.params.id, req.user.id, models);
-  assertTicketCategory(req.user.role, ticket.category);
+  assertTicketAccess(req.user.role, ticket);
   // Load the chat directly: getChatMessages only allows the owner/assignee/admin,
   // but any department manager should be able to read their category's ticket.
   const messages = await ChatMessage.findAll({
@@ -361,10 +392,9 @@ const getTicket = asyncHandler(async (req, res) => {
 const addTicketMessage = asyncHandler(async (req, res) => {
   const ticket = await Ticket.findByPk(req.params.id);
   if (!ticket) throw new NotFoundError('Ticket');
-  assertTicketCategory(req.user.role, ticket.category);
-  if (['cancelled', 'completed', 'closed'].includes(ticket.status)) {
-    throw new AppError('Geschlossenes Ticket – zum Antworten erst wieder öffnen', 400, 'TICKET_CLOSED');
-  }
+  assertTicketAccess(req.user.role, ticket);
+  // Staff can always add to a chat (even a "Fertig"/closed ticket) so they can
+  // append something in an emergency — the chat is never locked on the PC side.
   const message = (req.body.message || '').trim();
   if (!message) throw new AppError('Nachricht ist erforderlich', 400, 'MESSAGE_REQUIRED');
 
@@ -395,9 +425,9 @@ const addTicketMessage = asyncHandler(async (req, res) => {
 });
 
 const updateTicket = asyncHandler(async (req, res) => {
-  const ticket = await Ticket.findByPk(req.params.id, { attributes: ['id', 'category'] });
+  const ticket = await Ticket.findByPk(req.params.id, { attributes: ['id', 'category', 'department'] });
   if (!ticket) throw new NotFoundError('Ticket');
-  assertTicketCategory(req.user.role, ticket.category);
+  assertTicketAccess(req.user.role, ticket);
   const valid = ['open', 'in_progress', 'confirmed', 'completed', 'cancelled', 'closed'];
   if (!valid.includes(req.body.status)) throw new AppError('Ungültiger Status', 400, 'INVALID_STATUS');
   const updated = await serviceService.updateTicketStatus(req.params.id, req.body.status, req.user.id, models);

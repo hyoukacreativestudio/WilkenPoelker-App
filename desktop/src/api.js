@@ -1,6 +1,9 @@
 // Thin API client for the desktop tool. Talks to the SAME backend as the app.
 // In dev, Vite proxies /api -> localhost:5002. In prod, set VITE_API_URL.
 const BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+// Origin for media (relative /uploads/... paths); Cloudinary URLs are absolute.
+export const apiOrigin = BASE.replace(/\/api$/, '');
+export const mediaUrl = (u) => (!u ? '' : (/^https?:\/\//.test(u) ? u : `${apiOrigin}${u}`));
 
 let accessToken = localStorage.getItem('wp_desktop_token') || null;
 

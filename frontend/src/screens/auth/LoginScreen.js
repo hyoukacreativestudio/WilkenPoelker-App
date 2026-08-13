@@ -49,7 +49,18 @@ export default function LoginScreen({ navigation }) {
         navigation.navigate('EmailVerification', { email: emailOrCustomerNumber.trim() });
         return;
       }
-      const msg = err.message || err.response?.data?.message || t('errors.invalidCredentials');
+      // Wrong email/password (or a stale-token refresh that failed on login) →
+      // always show a clear "password wrong" message, never a token error.
+      let msg;
+      if (err.isNetworkError) {
+        msg = t('errors.networkError', 'Keine Verbindung zum Server.');
+      } else if (err.code === 'ACCOUNT_DEACTIVATED') {
+        msg = t('auth.accountDeactivated', 'Dieser Account ist deaktiviert.');
+      } else if (err.code === 'INVALID_CREDENTIALS' || /refresh|token/i.test(err.message || '') || /no refresh token/i.test(err.message || '')) {
+        msg = t('auth.wrongPassword', 'E-Mail oder Passwort falsch.');
+      } else {
+        msg = err.message || t('errors.invalidCredentials');
+      }
       showToast({ type: 'error', message: msg });
     } finally {
       setLoading(false);

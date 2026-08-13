@@ -228,6 +228,8 @@
     "registerNow": "Register now",
     "loginNow": "Log in now",
     "emailNotVerified": "Please verify your email address first.",
+    "wrongPassword": "Email or password incorrect.",
+    "accountDeactivated": "This account is deactivated.",
     "dsgvoAccept": "I accept the privacy policy",
     "agbAccept": "I accept the terms and conditions",
     "iAccept": "I accept the",

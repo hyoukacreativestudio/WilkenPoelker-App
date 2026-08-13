@@ -38,6 +38,13 @@ const Ticket = sequelize.define('Ticket', {
     type: DataTypes.ENUM('service', 'bike', 'cleaning', 'motor'),
     defaultValue: 'service',
   },
+  // Which department the customer picked when creating the ticket, so the PC
+  // program shows it under the right account (fahrrad, reinigung, rasenmaeher,
+  // service, robby, …). Falls back to the category mapping for old tickets.
+  department: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   description: {
     type: DataTypes.TEXT,
     allowNull: false,

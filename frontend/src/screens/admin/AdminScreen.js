@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { adminApi } from '../../api/admin';
 import Card from '../../components/ui/Card';
@@ -34,6 +35,12 @@ const ALL_ROLES = [
   'motor_manager',
   'service_manager',
   'robby_manager',
+  'sales_manager',
+  'orders_manager',
+  'warehouse_worker',
+  'delivery_manager',
+  'motor_equipment_manager',
+  'ev_manager',
   'admin',
   'super_admin',
 ];
@@ -45,6 +52,12 @@ const ROLE_COLORS = {
   motor_manager: '#FF9800',
   service_manager: '#9C27B0',
   robby_manager: '#E91E63',
+  sales_manager: '#D69E2E',
+  orders_manager: '#E53E3E',
+  warehouse_worker: '#5a6b7b',
+  delivery_manager: '#be185d',
+  motor_equipment_manager: '#b45309',
+  ev_manager: '#0284c7',
   admin: '#F44336',
   super_admin: '#B71C1C',
 };
@@ -56,6 +69,12 @@ const ROLE_ICONS = {
   motor_manager: 'engine',
   service_manager: 'wrench',
   robby_manager: 'robot',
+  sales_manager: 'cart',
+  orders_manager: 'package-variant',
+  warehouse_worker: 'warehouse',
+  delivery_manager: 'truck',
+  motor_equipment_manager: 'cog',
+  ev_manager: 'lightning-bolt',
   admin: 'shield-account',
   super_admin: 'shield-crown',
 };
@@ -64,6 +83,17 @@ export default function AdminScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const navigation = useNavigation();
+
+  const openProfile = (user) => {
+    navigation.navigate('Service', {
+      screen: 'CustomerProfile',
+      params: {
+        customerId: user.id || user._id,
+        customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || user.email,
+      },
+    });
+  };
 
   // Dashboard state
   const [dashboard, setDashboard] = useState(null);
@@ -243,14 +273,14 @@ export default function AdminScreen() {
       : user.name || user.email;
 
     const options = [
+      { text: t('admin.openProfile', 'Profil öffnen'), onPress: () => openProfile(user) },
       { text: t('admin.changeRole'), onPress: () => openRoleModal(user) },
       { text: t('admin.sendMessage'), onPress: () => openMessageModal(user) },
       { text: t('common.cancel'), style: 'cancel' },
     ];
 
     if (Platform.OS === 'web') {
-      // On web, just open role modal by default (message via broadcast section)
-      openRoleModal(user);
+      openProfile(user);
     } else {
       Alert.alert(userName, t('admin.userActionPrompt'), options);
     }
