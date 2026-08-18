@@ -1,0 +1,6 @@
+
+# EAS local credentials (contain keystore passwords — never commit)
+credentials.json
+credentials/
+*.jks
+*.keystore

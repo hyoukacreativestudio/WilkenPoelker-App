@@ -100,16 +100,8 @@ const updateRepairStatus = asyncHandler(async (req, res) => {
   }
 
   const repair = await repairService.updateRepairStatus(req.params.id, req.body, req.user.id, models);
-
-  // Send push notification to customer (non-blocking)
-  const pushPayload = {
-    title: status === 'ready' ? 'Reparatur abholbereit!' : 'Reparatur-Status aktualisiert',
-    body: status === 'ready'
-      ? `${repair.deviceName} ist fertig und kann abgeholt werden.`
-      : `Reparatur ${repair.repairNumber}: ${status}`,
-    data: { type: 'repair_status', repairId: repair.id },
-  };
-  pushService.sendToUser(repair.userId, pushPayload).catch(() => {});
+  // The customer push is sent automatically by the Notification afterCreate hook
+  // (repairService.updateRepairStatus creates the status notification).
 
   res.json({
     success: true,

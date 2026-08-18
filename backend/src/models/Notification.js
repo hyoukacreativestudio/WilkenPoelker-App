@@ -55,4 +55,32 @@ const Notification = sequelize.define('Notification', {
   underscored: true,
 });
 
+// Central push: EVERY notification also goes out as a push with sound. This
+// guarantees "push + Ton" everywhere a notification is created, without having
+// to remember it at each call site. pushService is required lazily to avoid a
+// circular dependency, and failures never block the create.
+function pushForNotification(n) {
+  if (!n || !n.userId) return;
+  try {
+    const pushService = require('../services/pushService');
+    pushService.sendToUser(n.userId, {
+      title: n.title,
+      body: n.message,
+      data: {
+        notificationId: n.id,
+        type: n.type,
+        category: n.category,
+        deepLink: n.deepLink || '',
+        relatedId: n.relatedId || '',
+        relatedType: n.relatedType || '',
+      },
+    }).catch(() => {});
+  } catch (e) { /* best-effort */ }
+}
+
+Notification.addHook('afterCreate', (n) => pushForNotification(n));
+Notification.addHook('afterBulkCreate', (rows) => {
+  (rows || []).forEach((n) => pushForNotification(n));
+});
+
 module.exports = Notification;

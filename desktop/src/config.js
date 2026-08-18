@@ -4,7 +4,7 @@
 export const DEPARTMENTS = [
   { key: 'admin',        label: 'Admin',            role: 'admin',            color: '#2E7D32', icon: '🛡️', email: 'admin@wilkenpoelker.de' },
   { key: 'fahrrad',      label: 'Fahrrad',          role: 'bike_manager',     color: '#3182CE', icon: '🚲', email: 'fahrrad@wilkenpoelker.de' },
-  { key: 'reinigung',    label: 'Reinigungsgeräte', role: 'cleaning_manager', color: '#0891b2', icon: '🧽', email: 'reinigung@wilkenpoelker.de' },
+  { key: 'reinigung',    label: 'Kärcher',          role: 'cleaning_manager', color: '#0891b2', icon: '🧽', email: 'reinigung@wilkenpoelker.de' },
   { key: 'service',      label: 'Service',          role: 'service_manager',  color: '#DD6B20', icon: '🛠️', email: 'service@wilkenpoelker.de' },
   { key: 'rasenmaeher',  label: 'Rasenmäher',       role: 'motor_manager',    color: '#48752b', icon: '🌱', email: 'rasenmaeher@wilkenpoelker.de' },
   { key: 'robby',        label: 'Robby',            role: 'robby_manager',    color: '#805AD5', icon: '🤖', email: 'robby@wilkenpoelker.de' },

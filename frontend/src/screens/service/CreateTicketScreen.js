@@ -56,7 +56,7 @@ const TITLE_OPTIONS = {
 // for the title suggestions + legacy filtering.
 const DEPARTMENTS = [
   { key: 'fahrrad', category: 'bike', label: 'Fahrrad' },
-  { key: 'reinigung', category: 'cleaning', label: 'Reinigungsgeräte' },
+  { key: 'reinigung', category: 'cleaning', label: 'Kärcher' },
   { key: 'rasenmaeher', category: 'motor', label: 'Rasenmäher' },
   { key: 'motorgeraete', category: 'motor', label: 'Motorgeräte' },
   { key: 'elektro', category: 'bike', label: 'Elektrofahrzeuge' },

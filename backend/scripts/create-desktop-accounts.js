@@ -13,7 +13,7 @@ const { hashPassword } = require('../src/utils/crypto');
 const ACCOUNTS = [
   { username: 'admin',        name: 'Admin Management',        role: 'admin' },
   { username: 'fahrrad',      name: 'Fahrrad Management',      role: 'bike_manager' },
-  { username: 'reinigung',    name: 'Reinigung Management',    role: 'cleaning_manager' },
+  { username: 'reinigung',    name: 'Kärcher Management',       role: 'cleaning_manager' },
   { username: 'service',      name: 'Service Management',      role: 'service_manager' },
   { username: 'rasenmaeher',  name: 'Rasenmäher Management',   role: 'motor_manager' },
   { username: 'robby',        name: 'Robby Management',        role: 'robby_manager' },

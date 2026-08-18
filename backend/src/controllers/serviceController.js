@@ -1,6 +1,5 @@
 const serviceService = require('../services/serviceService');
 const emailService = require('../services/emailService');
-const pushService = require('../services/pushService');
 const { asyncHandler, AppError, NotFoundError } = require('../middlewares/errorHandler');
 const { Ticket, ChatMessage, User, Product, ProductReview, Favorite, Repair, Notification, ShareTracking, Appointment, ServiceRating } = require('../models');
 
@@ -40,32 +39,8 @@ const createTicket = asyncHandler(async (req, res) => {
       .catch(() => {});
   }
 
-  // Send push notification to category-relevant managers (non-blocking)
-  const categoryRoleMap = {
-    bike: ['bike_manager'],
-    cleaning: ['cleaning_manager'],
-    motor: ['motor_manager'],
-    service: ['service_manager'],
-  };
-  const categoryRoles = categoryRoleMap[category || 'service'] || ['service_manager'];
-  const allRoles = ['admin', 'super_admin', ...categoryRoles];
-
-  const managerIds = await User.findAll({
-    where: { role: allRoles, isActive: true },
-    attributes: ['id'],
-  });
-  if (managerIds.length > 0) {
-    pushService
-      .sendToMultiple(
-        managerIds.map((m) => m.id),
-        {
-          title: 'Neues Service-Ticket',
-          body: `Ticket ${ticket.ticketNumber} – ${title || type}`,
-          data: { type: 'new_ticket', ticketId: ticket.id },
-        }
-      )
-      .catch(() => {});
-  }
+  // Manager push is sent automatically by the Notification hook (serviceService
+  // creates the manager notifications, routed by department).
 
   res.status(201).json({
     success: true,
@@ -132,15 +107,7 @@ const updateTicketStatus = asyncHandler(async (req, res) => {
   }
 
   const ticket = await serviceService.updateTicketStatus(req.params.id, status, req.user.id, models);
-
-  // Send push notification to ticket owner (non-blocking)
-  pushService
-    .sendToUser(ticket.userId, {
-      title: 'Ticket-Status aktualisiert',
-      body: `Ticket ${ticket.ticketNumber}: ${status}`,
-      data: { type: 'ticket_status', ticketId: ticket.id },
-    })
-    .catch(() => {});
+  // Push handled by the Notification hook (serviceService creates the notification).
 
   res.json({
     success: true,
@@ -157,15 +124,7 @@ const assignTicket = asyncHandler(async (req, res) => {
   }
 
   const ticket = await serviceService.assignTicket(req.params.id, staffId, models);
-
-  // Send push notification to assigned staff (non-blocking)
-  pushService
-    .sendToUser(staffId, {
-      title: 'Ticket zugewiesen',
-      body: `Ticket ${ticket.ticketNumber} wurde Ihnen zugewiesen.`,
-      data: { type: 'ticket_assigned', ticketId: ticket.id },
-    })
-    .catch(() => {});
+  // Push handled by the Notification hook.
 
   res.json({
     success: true,
@@ -186,14 +145,7 @@ const closeTicket = asyncHandler(async (req, res) => {
     });
   }
 
-  // Notify customer that the ticket was closed
-  pushService
-    .sendToUser(ticket.userId, {
-      title: 'Chat geschlossen',
-      body: `Ihr Ticket ${ticket.ticketNumber} wurde geschlossen. Bitte bewerten Sie den Service.`,
-      data: { type: 'ticket_closed', ticketId: ticket.id },
-    })
-    .catch(() => {});
+  // Customer close-notification push is handled by the Notification hook.
 
   res.json({
     success: true,
@@ -221,14 +173,7 @@ const forwardTicket = asyncHandler(async (req, res) => {
     });
   }
 
-  // Notify new assignee
-  pushService
-    .sendToUser(targetStaffId, {
-      title: 'Ticket weitergeleitet',
-      body: `Ticket ${ticket.ticketNumber} wurde an Sie weitergeleitet.`,
-      data: { type: 'ticket_forwarded', ticketId: ticket.id },
-    })
-    .catch(() => {});
+  // New-assignee push is handled by the Notification hook.
 
   res.json({
     success: true,
@@ -316,21 +261,8 @@ const sendChatMessage = asyncHandler(async (req, res) => {
   if (io) {
     io.to(`ticket:${ticketId}`).emit('newMessage', chatMessage);
   }
-
-  // Send push notification to the other party (non-blocking)
-  const ticket = await Ticket.findByPk(ticketId);
-  if (ticket) {
-    const recipientId = req.user.id === ticket.userId ? ticket.assignedTo : ticket.userId;
-    if (recipientId) {
-      pushService
-        .sendToUser(recipientId, {
-          title: 'Neue Chat-Nachricht',
-          body: message ? message.substring(0, 100) : 'Bild gesendet',
-          data: { type: 'chat_message', ticketId },
-        })
-        .catch(() => {});
-    }
-  }
+  // Push to the other party is handled by the Notification hook (serviceService
+  // .sendChatMessage creates the chat notification).
 
   res.status(201).json({
     success: true,

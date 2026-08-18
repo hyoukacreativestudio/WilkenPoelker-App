@@ -48,7 +48,7 @@ const CATEGORIES = [
 // Optional: which department the appointment is for (routes it on the PC).
 const APPT_DEPARTMENTS = [
   { key: 'fahrrad', label: 'Fahrrad' },
-  { key: 'reinigung', label: 'Reinigungsgeräte' },
+  { key: 'reinigung', label: 'Kärcher' },
   { key: 'rasenmaeher', label: 'Rasenmäher' },
   { key: 'motorgeraete', label: 'Motorgeräte' },
   { key: 'elektro', label: 'Elektrofahrzeuge' },

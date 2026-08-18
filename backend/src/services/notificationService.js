@@ -1,5 +1,4 @@
 const { Op } = require('sequelize');
-const pushService = require('./pushService');
 const { NotFoundError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
 
@@ -19,22 +18,8 @@ async function createNotification(userId, { title, message, type, category, deep
     read: false,
   });
 
-  // Send push notification (non-blocking)
-  pushService.sendToUser(userId, {
-    title,
-    message,
-    data: {
-      notificationId: notification.id,
-      type,
-      category,
-      deepLink: deepLink || '',
-      relatedId: relatedId || '',
-      relatedType: relatedType || '',
-    },
-  }).catch((err) => {
-    logger.error('Push notification failed', { userId, error: err.message });
-  });
-
+  // Push is sent automatically by the Notification model's afterCreate hook
+  // (so every notification pushes with sound, no matter where it's created).
   return notification;
 }
 
@@ -178,15 +163,7 @@ async function sendBroadcast({ title, message, category, targetRole }, { Notific
   }));
 
   await Notification.bulkCreate(notificationRecords);
-
-  // Send push to all targeted users
-  pushService.sendToMultiple(userIds, {
-    title,
-    message,
-    data: { type: 'system', category: category || 'system' },
-  }).catch((err) => {
-    logger.error('Broadcast push failed', { error: err.message });
-  });
+  // Push goes out automatically via the Notification afterBulkCreate hook.
 
   logger.info('Broadcast notification sent', { recipientCount: userIds.length, targetRole });
 

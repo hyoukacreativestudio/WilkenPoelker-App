@@ -480,6 +480,7 @@ async function proposeTime(appointmentId, adminUserId, { date, proposedText }) {
     relatedId: appointment.id,
     relatedType: 'appointment',
   });
+  // Push (with sound) is sent automatically by the Notification afterCreate hook.
 
   logger.info('Time proposed for appointment', { appointmentId, adminUserId, date, proposedText });
 
@@ -747,6 +748,7 @@ async function confirmAppointment(appointmentId, confirmedBy) {
     relatedId: appointment.id,
     relatedType: 'appointment',
   });
+  // Push (with sound) is sent automatically by the Notification afterCreate hook.
 
   logger.info('Appointment confirmed', { appointmentId, confirmedBy });
 
