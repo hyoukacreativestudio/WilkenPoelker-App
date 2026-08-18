@@ -55,14 +55,14 @@ const getAppointments = asyncHandler(async (req, res) => {
 });
 
 const createAppointment = asyncHandler(async (req, res) => {
-  const { title, description, type, date, startTime, endTime, ticketId } = req.body;
+  const { title, description, type, date, startTime, endTime, ticketId, department } = req.body;
 
   const isAdminUser =
     req.user.role === ROLES.ADMIN || req.user.role === ROLES.SUPER_ADMIN;
 
   const appointment = await appointmentService.createAppointment(
     req.user.id,
-    { title, description, type, date, startTime, endTime, ticketId },
+    { title, description, type, date, startTime, endTime, ticketId, department },
     isAdminUser
   );
 

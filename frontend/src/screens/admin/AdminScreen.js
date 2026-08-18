@@ -352,7 +352,10 @@ export default function AdminScreen() {
     // Determine primary role (highest in hierarchy)
     const ROLE_PRIORITY = {
       super_admin: 8, admin: 7, bike_manager: 5, cleaning_manager: 5,
-      motor_manager: 5, service_manager: 5, robby_manager: 5, customer: 1,
+      motor_manager: 5, service_manager: 5, robby_manager: 5,
+      sales_manager: 5, orders_manager: 5, warehouse_worker: 5,
+      delivery_manager: 5, motor_equipment_manager: 5, ev_manager: 5,
+      customer: 1,
     };
     const sorted = [...selectedRoles].sort((a, b) => (ROLE_PRIORITY[b] || 0) - (ROLE_PRIORITY[a] || 0));
     const primaryRole = sorted[0];

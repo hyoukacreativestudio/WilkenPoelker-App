@@ -146,18 +146,23 @@ async function sendAndCleanup(tokens, notification) {
       const { data } = response.data;
       if (!data) continue;
 
-      // Clean up invalid tokens
+      // Clean up ONLY tokens that are genuinely dead (the app was uninstalled or
+      // the token expired). Do NOT delete on 'InvalidCredentials' — that means the
+      // Expo project is missing its FCM V1 service-account key (a server-side
+      // config problem), and wiping every device token would make it impossible
+      // to recover once the credentials are fixed.
       const invalidTokens = [];
+      let credError = false;
       data.forEach((receipt, idx) => {
         if (receipt.status === 'error') {
-          if (
-            receipt.details?.error === 'DeviceNotRegistered' ||
-            receipt.details?.error === 'InvalidCredentials'
-          ) {
-            invalidTokens.push(batch[idx]);
-          }
+          const err = receipt.details?.error;
+          if (err === 'DeviceNotRegistered') invalidTokens.push(batch[idx]);
+          if (err === 'InvalidCredentials') credError = true;
         }
       });
+      if (credError) {
+        logger.error('Expo push rejected: InvalidCredentials — upload the FCM V1 service account key to the Expo project (expo.dev → Credentials → Android → FCM V1). Push will not work until then.');
+      }
 
       if (invalidTokens.length > 0) {
         await FCMToken.destroy({ where: { token: invalidTokens } });

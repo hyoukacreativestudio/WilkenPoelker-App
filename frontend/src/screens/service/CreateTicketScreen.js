@@ -51,13 +51,19 @@ const TITLE_OPTIONS = {
   ],
 };
 
-// Main departments the customer can pick — routes the ticket to the right PC account
+// Departments the customer can pick (mandatory) — routes the ticket to the
+// right PC account. Every department is selectable; the category is only used
+// for the title suggestions + legacy filtering.
 const DEPARTMENTS = [
   { key: 'fahrrad', category: 'bike', label: 'Fahrrad' },
   { key: 'reinigung', category: 'cleaning', label: 'Reinigungsgeräte' },
   { key: 'rasenmaeher', category: 'motor', label: 'Rasenmäher' },
-  { key: 'service', category: 'service', label: 'Service' },
+  { key: 'motorgeraete', category: 'motor', label: 'Motorgeräte' },
+  { key: 'elektro', category: 'bike', label: 'Elektrofahrzeuge' },
   { key: 'robby', category: 'service', label: 'Robby' },
+  { key: 'verkauf', category: 'service', label: 'Verkauf' },
+  { key: 'service', category: 'service', label: 'Service' },
+  { key: 'lieferungen', category: 'service', label: 'Lieferungen' },
 ];
 const CATEGORY_DEPARTMENT = { bike: 'fahrrad', cleaning: 'reinigung', motor: 'rasenmaeher', service: 'service' };
 

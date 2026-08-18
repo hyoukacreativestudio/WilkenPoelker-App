@@ -8,12 +8,17 @@ const logger = require('../utils/logger');
 // ──────────────────────────────────────────────
 
 // Department the customer picks → the ticket category used for routing.
+// Every department is selectable; ones without a native category map to 'service'.
 const DEPARTMENT_CATEGORY = {
   fahrrad: 'bike',
   reinigung: 'cleaning',
   rasenmaeher: 'motor',
   service: 'service',
   robby: 'service',
+  motorgeraete: 'motor',
+  elektro: 'bike',
+  verkauf: 'service',
+  lieferungen: 'service',
 };
 // Department → which manager roles get notified.
 const DEPARTMENT_ROLES = {
@@ -22,6 +27,10 @@ const DEPARTMENT_ROLES = {
   rasenmaeher: ['motor_manager'],
   service: ['service_manager'],
   robby: ['robby_manager'],
+  motorgeraete: ['motor_equipment_manager'],
+  elektro: ['ev_manager'],
+  verkauf: ['sales_manager'],
+  lieferungen: ['delivery_manager'],
 };
 
 async function createTicket(data, userId, models) {
@@ -177,7 +186,10 @@ async function getAdminTickets(user, query, models) {
     super_admin: ['service', 'bike', 'cleaning', 'motor'],
   };
 
-  const allowedCategories = roleCategories[user.role] || [];
+  // Combine the primary role's categories with any extra roles (multi-role)
+  // stored in `permissions`, so a staff member with several roles sees them all.
+  const extraCategories = (user.permissions || []).flatMap((p) => roleCategories[p] || []);
+  const allowedCategories = [...new Set([...(roleCategories[user.role] || []), ...extraCategories])];
   if (allowedCategories.length > 0 && user.role !== 'admin' && user.role !== 'super_admin') {
     where.category = { [Op.in]: allowedCategories };
   }

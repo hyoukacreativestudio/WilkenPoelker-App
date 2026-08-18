@@ -31,7 +31,7 @@ router.post(
       .withMessage('Invalid category'),
     body('department')
       .optional()
-      .isIn(['fahrrad', 'reinigung', 'rasenmaeher', 'service', 'robby'])
+      .isIn(['fahrrad', 'reinigung', 'rasenmaeher', 'service', 'robby', 'motorgeraete', 'elektro', 'verkauf', 'lieferungen'])
       .withMessage('Invalid department'),
     body('description')
       .notEmpty()

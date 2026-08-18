@@ -96,7 +96,10 @@ function hasPermission(...requiredPermissions) {
     };
 
     const rolePerms = rolePermissionMap[req.user.role] || [];
-    const userPerms = [...rolePerms, ...(req.user.permissions || [])];
+    // Extra roles (multi-role) live in `permissions` as role names — translate
+    // each to its category so a multi-role staff member gets combined access.
+    const extraPerms = (req.user.permissions || []).flatMap((p) => rolePermissionMap[p] || [p]);
+    const userPerms = [...rolePerms, ...extraPerms];
 
     const hasRequired = requiredPermissions.some((perm) => userPerms.includes(perm));
 

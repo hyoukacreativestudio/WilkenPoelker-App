@@ -34,6 +34,7 @@ router.post(
     body('startTime').optional().matches(/^\d{2}:\d{2}$/).withMessage('Startzeit im Format HH:MM erforderlich'),
     body('endTime').optional().matches(/^\d{2}:\d{2}$/).withMessage('Endzeit im Format HH:MM erforderlich'),
     body('ticketId').optional().isUUID().withMessage('Ungueltige Ticket-ID'),
+    body('department').optional({ nullable: true }).isIn(['fahrrad', 'reinigung', 'rasenmaeher', 'service', 'robby', 'motorgeraete', 'elektro', 'verkauf', 'lieferungen']).withMessage('Ungueltige Abteilung'),
   ]),
   appointmentController.createAppointment
 );

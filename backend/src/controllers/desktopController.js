@@ -220,10 +220,20 @@ const deleteWarehouseItem = asyncHandler(async (req, res) => {
 const APPT_TYPES = ['service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing'];
 const APPT_STATUSES = ['pending', 'proposed', 'confirmed', 'cancelled', 'completed', 'rescheduled'];
 
+// Who sees every appointment (the general schedulers). Everyone else only sees
+// appointments routed to their own department; unrouted ones stay with these.
+function seesAllAppointments(role) {
+  return ['admin', 'super_admin', 'service_manager', 'orders_manager'].includes(role);
+}
+
 const listAppointments = asyncHandler(async (req, res) => {
   const where = {};
   if (req.query.status && req.query.status !== 'all') where.status = req.query.status;
   if (req.query.type && req.query.type !== 'all') where.type = req.query.type;
+  // Auto-sort by department: a department account only sees its own appointments.
+  if (!seesAllAppointments(req.user.role)) {
+    where.department = ROLE_TICKET_DEPARTMENT[req.user.role] || departmentForRole(req.user.role) || '__none__';
+  }
 
   const items = await Appointment.findAll({
     where,
@@ -336,12 +346,14 @@ const askAppointmentQuestion = asyncHandler(async (req, res) => {
 // Each department only sees tickets in its category. Detail/chat/status reuse
 // the app's service layer so notifications + access control stay consistent.
 const ALL_TICKET_CATEGORIES = ['service', 'bike', 'cleaning', 'motor'];
+// Legacy category fallback (for old tickets that have no department set).
+// Only the original four categories exist, so only these roles get a fallback;
+// the newer departments see ONLY tickets explicitly routed to them.
 const DEPT_TICKET_CATEGORIES = {
   bike_manager: ['bike'],
   cleaning_manager: ['cleaning'],
   motor_manager: ['motor'],
   service_manager: ['service', 'bike', 'cleaning', 'motor'],
-  robby_manager: ['service'],
 };
 // The department key each role owns (matches the ticket's `department` field).
 const ROLE_TICKET_DEPARTMENT = {
@@ -349,6 +361,10 @@ const ROLE_TICKET_DEPARTMENT = {
   cleaning_manager: 'reinigung',
   motor_manager: 'rasenmaeher',
   robby_manager: 'robby',
+  motor_equipment_manager: 'motorgeraete',
+  ev_manager: 'elektro',
+  sales_manager: 'verkauf',
+  delivery_manager: 'lieferungen',
 };
 function ticketCategoriesForRole(role) {
   if (['admin', 'super_admin', 'orders_manager'].includes(role)) return ALL_TICKET_CATEGORIES;

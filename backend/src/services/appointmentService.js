@@ -338,7 +338,7 @@ async function answerQuestion(appointmentId, userId, answer) {
  * Admin-created appointments may include date/time.
  */
 async function createAppointment(userId, data, isAdminUser = false) {
-  const { title, description, type, date, startTime, endTime, ticketId } = data;
+  const { title, description, type, date, startTime, endTime, ticketId, department } = data;
 
   // Only validate date/time if provided (admin-created with specific time)
   if (date && startTime) {
@@ -381,6 +381,7 @@ async function createAppointment(userId, data, isAdminUser = false) {
     startTime: startTime || null,
     endTime: endTime || null,
     ticketId: ticketId || null,
+    department: department || null, // optional: routes it to a department on the PC
     status: 'pending',
   });
 

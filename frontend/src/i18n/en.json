@@ -908,6 +908,12 @@
       "motor_manager": "Motor Manager",
       "service_manager": "Service Manager",
       "robby_manager": "Robby Manager",
+      "sales_manager": "Sales",
+      "orders_manager": "Orders",
+      "warehouse_worker": "Warehouse",
+      "delivery_manager": "Deliveries",
+      "motor_equipment_manager": "Motor Equipment",
+      "ev_manager": "E-Vehicles",
       "customer": "Customer"
     },
     "faqManagement": "Manage FAQ",

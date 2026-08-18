@@ -45,11 +45,25 @@ const CATEGORIES = [
   { key: 'other', icon: 'dots-horizontal-circle-outline', color: '#718096' },
 ];
 
+// Optional: which department the appointment is for (routes it on the PC).
+const APPT_DEPARTMENTS = [
+  { key: 'fahrrad', label: 'Fahrrad' },
+  { key: 'reinigung', label: 'Reinigungsgeräte' },
+  { key: 'rasenmaeher', label: 'Rasenmäher' },
+  { key: 'motorgeraete', label: 'Motorgeräte' },
+  { key: 'elektro', label: 'Elektrofahrzeuge' },
+  { key: 'robby', label: 'Robby' },
+  { key: 'verkauf', label: 'Verkauf' },
+  { key: 'service', label: 'Service' },
+  { key: 'lieferungen', label: 'Lieferungen' },
+];
+
 export default function NewAppointmentScreen({ navigation }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
 
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [department, setDepartment] = useState(null); // optional
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
@@ -85,6 +99,7 @@ export default function NewAppointmentScreen({ navigation }) {
         title: title.trim(),
         description: description.trim() || undefined,
         type: selectedCategory,
+        ...(department ? { department } : {}),
       };
 
       try {
@@ -105,7 +120,7 @@ export default function NewAppointmentScreen({ navigation }) {
         { text: t('common.yes'), style: 'destructive', onPress: doSubmit },
       ]
     );
-  }, [selectedCategory, title, description, createApi, navigation, t, showToast]);
+  }, [selectedCategory, department, title, description, createApi, navigation, t, showToast]);
 
   const s = styles(theme);
 
@@ -179,6 +194,34 @@ export default function NewAppointmentScreen({ navigation }) {
             );
           })}
         </View>
+
+        {/* Optional department — routes the appointment to a team on the PC */}
+        {selectedCategory && (
+          <View style={s.formSection}>
+            <Text style={s.sectionLabel}>{t('appointments.department', 'Abteilung (optional)')}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {APPT_DEPARTMENTS.map((d) => {
+                const active = department === d.key;
+                return (
+                  <TouchableOpacity
+                    key={d.key}
+                    activeOpacity={0.7}
+                    onPress={() => setDepartment(active ? null : d.key)}
+                    style={{
+                      paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999,
+                      backgroundColor: active ? theme.colors.primary : theme.colors.card,
+                      borderWidth: 1, borderColor: active ? theme.colors.primary : theme.colors.border,
+                    }}
+                  >
+                    <Text style={{ color: active ? '#FFFFFF' : theme.colors.text, fontWeight: '600', fontSize: 13 }}>
+                      {d.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Title + Description + Submit (only after category selection) */}
         {selectedCategory && (
