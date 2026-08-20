@@ -35,6 +35,7 @@ export function modulesForRole(role) {
     { key: 'robbykunden',  label: 'Robby-Kunden', icon: '🤖', show: all || role === 'robby_manager' },
     { key: 'kundennummern', label: 'Kundennummern', icon: '🔢', show: all || role === 'service_manager' || role === 'sales_manager' },
     { key: 'bestellungen', label: 'Bestellungen', icon: '📦', show: true },
+    { key: 'quellen',      label: 'Quellenbearbeitung', icon: '🏷️', show: all || role === 'orders_manager' || role === 'service_manager' },
     { key: 'lager',        label: 'Lager',        icon: '🏬', show: all || role === 'sales_manager' || role === 'warehouse_worker' || role === 'orders_manager' },
   ].filter((m) => m.show);
 }

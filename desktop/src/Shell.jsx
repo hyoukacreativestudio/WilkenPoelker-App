@@ -24,8 +24,9 @@ import Lager from './pages/Lager.jsx';
 import Kundennummern from './pages/Kundennummern.jsx';
 import RobbyKunden from './pages/RobbyKunden.jsx';
 import Kalender from './pages/Kalender.jsx';
+import Quellen from './pages/Quellen.jsx';
 
-const PAGES = { termine: Termine, kalender: Kalender, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, lager: Lager };
+const PAGES = { termine: Termine, kalender: Kalender, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, quellen: Quellen, lager: Lager };
 
 const SUBTITLES = {
   uebersicht: 'Überblick für deine Abteilung',
@@ -36,6 +37,7 @@ const SUBTITLES = {
   robbykunden: 'Alle Kunden mit einem Robby',
   kundennummern: 'Kundennummer-Anfragen bearbeiten',
   bestellungen: 'Bestellungen sammeln und aufgeben',
+  quellen: 'Doppelte Quellen zusammenführen',
   lager: 'Was aus dem Lager nach vorne soll',
 };
 

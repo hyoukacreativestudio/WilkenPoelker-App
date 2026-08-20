@@ -219,6 +219,37 @@ const purgeDoneOrders = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { deleted } });
 });
 
+// Distinct order sources with counts (across all departments) for the
+// "Quellenbearbeitung" tool.
+const listOrderSources = asyncHandler(async (req, res) => {
+  const orders = await Order.findAll({ attributes: ['sourceText'] });
+  const map = new Map(); // lowercased -> { name, count }
+  orders.forEach((o) => {
+    const name = (o.sourceText || 'Shop');
+    const k = name.toLowerCase();
+    const e = map.get(k) || { name, count: 0 };
+    e.count += 1;
+    map.set(k, e);
+  });
+  const sources = [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  res.json({ success: true, data: { sources } });
+});
+
+// Merge several source names into one canonical name (removes duplicates).
+const mergeOrderSources = asyncHandler(async (req, res) => {
+  const from = Array.isArray(req.body.from) ? req.body.from.filter(Boolean) : [];
+  const to = (req.body.to || '').trim();
+  if (!to) throw new AppError('Ziel-Quelle ist erforderlich', 400, 'TARGET_REQUIRED');
+  if (from.length === 0) throw new AppError('Keine Quellen ausgewählt', 400, 'NONE_SELECTED');
+  const { fn, col, where: whereFn } = require('sequelize');
+  const lowered = from.map((s) => String(s).toLowerCase());
+  const [updated] = await Order.update(
+    { sourceText: to },
+    { where: whereFn(fn('lower', col('source_text')), { [Op.in]: lowered }) }
+  );
+  res.json({ success: true, data: { updated } });
+});
+
 // ── Lager (Warehouse) ─────────────────────────────────────────────────
 
 const listWarehouse = asyncHandler(async (req, res) => {
@@ -600,6 +631,7 @@ module.exports = {
   desktopLogin,
   listRobbyCustomers, createRobbyCustomer, updateRobbyCustomer, deleteRobbyCustomer,
   listOrders, createOrder, updateOrder, deleteOrder, setOrderProblem, purgeDoneOrders,
+  listOrderSources, mergeOrderSources,
   listWarehouse, createWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
   listAppointments, createAppointment, updateAppointment, deleteAppointment,
   proposeAppointment, confirmAppointmentDesktop, askAppointmentQuestion,

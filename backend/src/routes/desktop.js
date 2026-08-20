@@ -18,6 +18,8 @@ const STAFF = [
 // ── Bestellungen ──
 router.get('/orders', authenticate, authorize(...STAFF), desktop.listOrders);
 router.post('/orders', authenticate, authorize(...STAFF), desktop.createOrder);
+router.get('/orders/sources', authenticate, authorize('admin', 'super_admin', 'orders_manager', 'service_manager'), desktop.listOrderSources);
+router.post('/orders/sources/merge', authenticate, authorize('admin', 'super_admin', 'orders_manager', 'service_manager'), desktop.mergeOrderSources);
 router.patch('/orders/:id', authenticate, authorize(...STAFF), desktop.updateOrder);
 router.patch('/orders/:id/problem', authenticate, authorize(...STAFF), desktop.setOrderProblem);
 router.delete('/orders/done', authenticate, authorize('admin', 'super_admin', 'orders_manager', 'service_manager'), desktop.purgeDoneOrders);

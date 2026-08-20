@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
+import { useToast } from '../toast.jsx';
 
 // Month calendar of appointments. Service sees the Fahrrad calendar (max 6/day,
 // so free days are obvious); Robby sees the Robby calendar (no limit). Admin can
@@ -22,12 +23,15 @@ const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function Kalender({ user }) {
+  const toast = useToast();
   const cfg = CONFIG[user.role] || { dept: 'fahrrad', limit: null, pick: true };
   const [dept, setDept] = useState(cfg.dept);
   const limit = cfg.limit;
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cursor, setCursor] = useState(() => { const n = new Date(); return { y: n.getFullYear(), m: n.getMonth() }; });
+  const [openDay, setOpenDay] = useState(null); // iso date string of the enlarged day
+  const [times, setTimes] = useState({});        // { apptId: 'HH:MM' } local edits
 
   const load = async () => {
     setLoading(true);
@@ -35,6 +39,12 @@ export default function Kalender({ user }) {
     catch (e) { setRows([]); } finally { setLoading(false); }
   };
   useEffect(() => { load(); }, []);
+
+  const saveTime = async (a) => {
+    const t = times[a.id] !== undefined ? times[a.id] : (a.startTime ? String(a.startTime).slice(0, 5) : '');
+    try { await api.patch(`/desktop/appointments/${a.id}`, { startTime: t || null }); toast('Uhrzeit gespeichert'); await load(); }
+    catch (e) { toast(e.message, { type: 'error' }); }
+  };
 
   // Appointments for this department, grouped by day (YYYY-MM-DD).
   const byDay = useMemo(() => {
@@ -91,7 +101,7 @@ export default function Kalender({ user }) {
                 const full = limit && list.length >= limit;
                 const free = limit && list.length < limit;
                 return (
-                  <div key={k} className="cal-cell" style={{ opacity: inMonth ? 1 : 0.4, borderColor: k === todayIso ? 'var(--dept)' : undefined }}>
+                  <div key={k} className="cal-cell" style={{ opacity: inMonth ? 1 : 0.4, borderColor: k === todayIso ? 'var(--dept)' : undefined, cursor: 'pointer' }} onClick={() => setOpenDay(k)}>
                     <div className="cal-daynum">
                       <span>{day.getDate()}</span>
                       {limit ? <span className="badge" style={{ background: full ? '#f8d7da' : '#d3f2df', color: full ? '#a52834' : '#1f7a45', fontSize: 11 }}>{list.length}/{limit}{full ? ' voll' : ''}</span>
@@ -110,6 +120,38 @@ export default function Kalender({ user }) {
               })}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Enlarged day: list appointments, add/change times */}
+      {openDay && (
+        <div className="backdrop" onClick={() => setOpenDay(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 640 }}>
+            <h2>{openDay.split('-').reverse().join('.')}{limit ? ` · ${(byDay[openDay] || []).length}/${limit}` : ''}</h2>
+            {(byDay[openDay] || []).length === 0 ? (
+              <div className="muted" style={{ padding: 12 }}>Keine Termine an diesem Tag.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 420, overflowY: 'auto' }}>
+                {(byDay[openDay] || []).slice().sort((a, b) => String(a.startTime || '').localeCompare(String(b.startTime || ''))).map((a) => (
+                  <div key={a.id} className="card" style={{ padding: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <input className="input" type="time" style={{ width: 110 }}
+                      value={times[a.id] !== undefined ? times[a.id] : (a.startTime ? String(a.startTime).slice(0, 5) : '')}
+                      onChange={(e) => setTimes((t) => ({ ...t, [a.id]: e.target.value }))} />
+                    <button className="btn sm" onClick={() => saveTime(a)}>Uhrzeit speichern</button>
+                    <div style={{ flex: 1, minWidth: 160 }}>
+                      <strong>{a.customerName || a.title || 'Termin'}</strong>
+                      {a.customerNumber ? <span className="muted"> · Kd {a.customerNumber}</span> : null}
+                      <div className="muted" style={{ fontSize: 12 }}>{a.title || ''}{a.phone ? ` · ☎ ${a.phone}` : ''}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="modal-actions">
+              <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
+              <button className="btn" onClick={() => setOpenDay(null)}>Schließen</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
