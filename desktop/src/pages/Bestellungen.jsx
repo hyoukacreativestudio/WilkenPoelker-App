@@ -47,6 +47,8 @@ export default function Bestellungen({ user }) {
   const [busy, setBusy] = useState(false);
   const [sourceFilter, setSourceFilter] = useState('all');
   const [delMonth, setDelMonth] = useState(monthOptions()[3] || '');
+  const [problemFor, setProblemFor] = useState(null); // order being flagged
+  const [problemText, setProblemText] = useState('');
 
   // All known sources = remembered (localStorage) + those on the loaded orders,
   // deduped case-insensitively.
@@ -122,11 +124,11 @@ export default function Bestellungen({ user }) {
     catch (e) { toast(e.message, { type: 'error' }); }
   };
   const del = async (r) => { if (confirm('Bestellung löschen?')) { try { await api.del(`/desktop/orders/${r.id}`); setDetail(null); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
-  const setProblem = async (r) => {
-    const note = window.prompt('Problem mit der Bestellung (z. B. „nicht lieferbar"). Leer lassen zum Entfernen:', r.problemNote || '');
-    if (note === null) return; // cancelled
-    try { await api.patch(`/desktop/orders/${r.id}/problem`, { note: note.trim(), handle: savedHandle() }); setDetail(null); load(); toast(note.trim() ? 'Problem gemeldet' : 'Problem entfernt'); }
-    catch (e) { toast(e.message, { type: 'error' }); }
+  const openProblem = (r) => { setDetail(null); setProblemText(r.problemNote || ''); setProblemFor(r); };
+  const submitProblem = async () => {
+    setBusy(true);
+    try { await api.patch(`/desktop/orders/${problemFor.id}/problem`, { note: problemText.trim(), handle: savedHandle() }); setProblemFor(null); load(); toast(problemText.trim() ? 'Problem gemeldet' : 'Problem entfernt'); }
+    catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
   const purgeMonth = async () => {
     if (!delMonth) return;
@@ -203,7 +205,7 @@ export default function Bestellungen({ user }) {
                   {isManager && (r.status !== 'ordered'
                     ? <button className="btn sm" onClick={() => check(r, true)}>Erledigt ✓</button>
                     : <button className="btn sm ghost" onClick={() => check(r, false)}>Zurück</button>)}
-                  {' '}<button className="btn sm ghost" onClick={() => setProblem(r)} title="Problem melden">⚠</button>
+                  {' '}<button className="btn sm ghost" onClick={() => openProblem(r)} title="Problem melden">⚠</button>
                   {' '}<button className="btn sm ghost" onClick={() => openEdit(r)}>✏️</button>
                 </td>
               </tr>
@@ -238,13 +240,31 @@ export default function Bestellungen({ user }) {
                 {isManager && (detail.status !== 'ordered'
                   ? <button className="btn" onClick={() => check(detail, true)}>Erledigt ✓</button>
                   : <button className="btn ghost" onClick={() => check(detail, false)}>Zurück auf offen</button>)}
-                <button className="btn ghost" onClick={() => setProblem(detail)}>⚠ Problem</button>
+                <button className="btn ghost" onClick={() => openProblem(detail)}>⚠ Problem</button>
                 <button className="btn ghost" onClick={() => del(detail)}>Löschen</button>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn ghost" onClick={() => openEdit(detail)}>Bearbeiten</button>
                 <button className="btn ghost" onClick={() => setDetail(null)}>Schließen</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Problem note modal (free text) */}
+      {problemFor && (
+        <div className="backdrop" onClick={() => setProblemFor(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 480 }}>
+            <h2>Problem melden</h2>
+            <div className="muted" style={{ marginBottom: 10 }}>{problemFor.description}{problemFor.customerName ? ` · ${problemFor.customerName}` : ''}</div>
+            <label className="field full">Was ist das Problem? (z. B. „nicht lieferbar")
+              <textarea className="input" rows={4} value={problemText} onChange={(e) => setProblemText(e.target.value)} autoFocus />
+            </label>
+            <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>Leer lassen + Speichern entfernt das Problem. Der Ersteller wird benachrichtigt.</div>
+            <div className="modal-actions">
+              <button className="btn ghost" onClick={() => setProblemFor(null)}>Abbrechen</button>
+              <button className="btn" onClick={submitProblem} disabled={busy}>Speichern</button>
             </div>
           </div>
         </div>
@@ -262,11 +282,14 @@ export default function Bestellungen({ user }) {
               <label className="field">Dein Kürzel *
                 <input className="input" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="z. B. MK" />
               </label>
-              <label className="field">Quelle (auswählen ▼ oder neu tippen)
-                <input className="input" list="wp-order-sources" value={form.sourceText} onChange={(e) => setForm({ ...form, sourceText: e.target.value })} placeholder="z. B. Shop, Amazon, Bosch…" />
-                <datalist id="wp-order-sources">
-                  {knownSources.map((s) => <option key={s} value={s} />)}
-                </datalist>
+              <label className="field">Quelle
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <select className="input" style={{ maxWidth: 150 }} value={knownSources.includes(form.sourceText) ? form.sourceText : ''} onChange={(e) => { if (e.target.value) setForm({ ...form, sourceText: e.target.value }); }}>
+                    <option value="">Auswählen ▼</option>
+                    {knownSources.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <input className="input" style={{ flex: 1 }} value={form.sourceText} onChange={(e) => setForm({ ...form, sourceText: e.target.value })} placeholder="oder neu tippen…" />
+                </div>
               </label>
               <label className="field">Artikelnummer
                 <input className="input" value={form.articleNumber} onChange={(e) => setForm({ ...form, articleNumber: e.target.value })} />
