@@ -86,12 +86,10 @@ export default function AdminScreen() {
   const navigation = useNavigation();
 
   const openProfile = (user) => {
-    navigation.navigate('Service', {
-      screen: 'CustomerProfile',
-      params: {
-        customerId: user.id || user._id,
-        customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || user.email,
-      },
+    // Root-level screen → pushes above the tabs, back returns here (not the Service tab).
+    navigation.navigate('CustomerProfile', {
+      customerId: user.id || user._id,
+      customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || user.email,
     });
   };
 
@@ -154,7 +152,8 @@ export default function AdminScreen() {
   const fetchUsers = async () => {
     try {
       setUsersLoading(true);
-      const response = await adminApi.getUsers();
+      // Load every account (backend defaults to 20) so admins see all users.
+      const response = await adminApi.getUsers({ limit: 1000 });
       const userData = response.data?.data || response.data;
       setUsers(Array.isArray(userData) ? userData : []);
     } catch {
@@ -591,8 +590,8 @@ export default function AdminScreen() {
               </Text>
               {[...yearlyData.employees]
                 .sort((a, b) => {
-                  const scoreA = a.tickets.completed + a.appointments.completed;
-                  const scoreB = b.tickets.completed + b.appointments.completed;
+                  const scoreA = a.tickets.completed + a.appointments.completed + (a.repairs?.completed || 0);
+                  const scoreB = b.tickets.completed + b.appointments.completed + (b.repairs?.completed || 0);
                   return scoreB - scoreA;
                 })
                 .map((emp, index) => {
@@ -677,7 +676,7 @@ export default function AdminScreen() {
                   {t('admin.noUsersFound')}
                 </Text>
               ) : (
-                filteredUsers.slice(0, 20).map((u, index) => (
+                filteredUsers.map((u, index) => (
                   <React.Fragment key={u._id || u.id || index}>
                     <TouchableOpacity
                       onPress={() => handleUserPress(u)}
@@ -727,7 +726,7 @@ export default function AdminScreen() {
                         {t(`admin.roles.${u.role}`, u.role || 'user')}
                       </Text>
                     </TouchableOpacity>
-                    {index < filteredUsers.slice(0, 20).length - 1 ? (
+                    {index < filteredUsers.length - 1 ? (
                       <Divider style={{ marginVertical: 0 }} />
                     ) : null}
                   </React.Fragment>
@@ -895,50 +894,57 @@ export default function AdminScreen() {
               <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginVertical: theme.spacing.xl }} />
             ) : (
               <>
-                {ALL_ROLES.map((role) => {
-                  const isSelected = selectedRoles.includes(role);
-                  const roleColor = ROLE_COLORS[role];
-                  return (
-                    <TouchableOpacity
-                      key={role}
-                      style={[
-                        s.roleOption,
-                        isSelected && { backgroundColor: roleColor + '15', borderColor: roleColor, borderWidth: 1 },
-                        !isSelected && { borderColor: 'transparent', borderWidth: 1 },
-                      ]}
-                      onPress={() => toggleRole(role)}
-                      activeOpacity={0.7}
-                    >
-                      <MaterialCommunityIcons
-                        name={isSelected ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                        size={24}
-                        color={isSelected ? roleColor : theme.colors.textTertiary}
-                      />
-                      <MaterialCommunityIcons
-                        name={ROLE_ICONS[role] || 'account'}
-                        size={20}
-                        color={isSelected ? roleColor : theme.colors.textSecondary}
-                        style={{ marginLeft: theme.spacing.sm }}
-                      />
-                      <Text
+                <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary, marginBottom: theme.spacing.xs }]}>
+                  {t('admin.multiRoleHint', 'Mehrere Rollen möglich – einfach antippen.')}
+                </Text>
+                {/* Scrollable so all 14 roles are reachable and the Save button
+                    stays visible even on small screens. */}
+                <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator keyboardShouldPersistTaps="handled">
+                  {ALL_ROLES.map((role) => {
+                    const isSelected = selectedRoles.includes(role);
+                    const roleColor = ROLE_COLORS[role];
+                    return (
+                      <TouchableOpacity
+                        key={role}
                         style={[
-                          theme.typography.styles.body,
-                          {
-                            flex: 1,
-                            marginLeft: theme.spacing.sm,
-                            color: isSelected ? roleColor : theme.colors.text,
-                            fontWeight: isSelected
-                              ? theme.typography.weights.bold
-                              : theme.typography.weights.regular,
-                          },
+                          s.roleOption,
+                          isSelected && { backgroundColor: roleColor + '15', borderColor: roleColor, borderWidth: 1 },
+                          !isSelected && { borderColor: 'transparent', borderWidth: 1 },
                         ]}
+                        onPress={() => toggleRole(role)}
+                        activeOpacity={0.7}
                       >
-                        {t(`admin.roles.${role}`, role)}
-                      </Text>
-                      <View style={[s.roleBadgeDot, { backgroundColor: roleColor }]} />
-                    </TouchableOpacity>
-                  );
-                })}
+                        <MaterialCommunityIcons
+                          name={isSelected ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                          size={24}
+                          color={isSelected ? roleColor : theme.colors.textTertiary}
+                        />
+                        <MaterialCommunityIcons
+                          name={ROLE_ICONS[role] || 'account'}
+                          size={20}
+                          color={isSelected ? roleColor : theme.colors.textSecondary}
+                          style={{ marginLeft: theme.spacing.sm }}
+                        />
+                        <Text
+                          style={[
+                            theme.typography.styles.body,
+                            {
+                              flex: 1,
+                              marginLeft: theme.spacing.sm,
+                              color: isSelected ? roleColor : theme.colors.text,
+                              fontWeight: isSelected
+                                ? theme.typography.weights.bold
+                                : theme.typography.weights.regular,
+                            },
+                          ]}
+                        >
+                          {t(`admin.roles.${role}`, role)}
+                        </Text>
+                        <View style={[s.roleBadgeDot, { backgroundColor: roleColor }]} />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
                 <View style={{ height: theme.spacing.md }} />
                 <Button
                   title={t('common.save')}

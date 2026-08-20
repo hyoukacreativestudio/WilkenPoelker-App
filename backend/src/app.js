@@ -116,6 +116,24 @@ app.use('/api/desktop', desktopRoutes);
 // <server>/pc in a browser — no install, no Node, no CORS (same origin as /api).
 app.use('/pc', express.static(path.resolve(__dirname, '../../desktop/dist')));
 
+// App version check — the mobile app calls this on launch and shows an update
+// popup when the installed version is older than `latest`. Configure per release
+// via env vars (no code change / redeploy of the app needed):
+//   APP_LATEST_VERSION   newest version available (e.g. "1.1.0")
+//   APP_MIN_VERSION      oldest version still allowed to run (forces update)
+//   APP_UPDATE_URL       where to download the new version
+app.get('/api/app-version', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      latest: process.env.APP_LATEST_VERSION || '1.0.0',
+      minSupported: process.env.APP_MIN_VERSION || '1.0.0',
+      updateUrl: process.env.APP_UPDATE_URL || '',
+      message: process.env.APP_UPDATE_MESSAGE || '',
+    },
+  });
+});
+
 // Health check (enhanced for production monitoring)
 app.get('/api/health', async (req, res) => {
   const { sequelize } = require('./config/database');

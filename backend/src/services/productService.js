@@ -109,6 +109,9 @@ async function getOffers(models) {
       ],
     },
     order: [['category', 'ASC'], ['discountPercentage', 'DESC']],
+    // The UI shows at most 3 offers per category — no need to ship the whole
+    // on-sale catalog on every product-tab load. Bound it generously.
+    limit: 60,
   });
 
   // Group by category

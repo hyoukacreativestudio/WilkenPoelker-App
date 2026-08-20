@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const { generateTicketNumber } = require('../utils/crypto');
 const logger = require('../utils/logger');
@@ -262,7 +262,21 @@ async function getActiveChats(userId, models) {
     order: [['updatedAt', 'DESC']],
   });
 
-  // For each ticket, get last message and unread count
+  const ticketIds = tickets.map((t) => t.id);
+
+  // All unread counts in ONE grouped query instead of one per ticket.
+  const unreadMap = {};
+  if (ticketIds.length) {
+    const unreadRows = await ChatMessage.findAll({
+      where: { ticketId: { [Op.in]: ticketIds }, userId: { [Op.ne]: userId }, readAt: null },
+      attributes: ['ticketId', [fn('COUNT', col('id')), 'cnt']],
+      group: ['ticketId'],
+      raw: true,
+    });
+    unreadRows.forEach((r) => { unreadMap[r.ticketId] = parseInt(r.cnt, 10) || 0; });
+  }
+
+  // The last message is a fast index lookup per ticket (idx_chat_messages_ticket_date).
   const chats = await Promise.all(
     tickets.map(async (ticket) => {
       const lastMessage = await ChatMessage.findOne({
@@ -273,18 +287,10 @@ async function getActiveChats(userId, models) {
         order: [['createdAt', 'DESC']],
       });
 
-      const unreadCount = await ChatMessage.count({
-        where: {
-          ticketId: ticket.id,
-          userId: { [Op.ne]: userId },
-          readAt: null,
-        },
-      });
-
       return {
         ...ticket.toJSON(),
         lastMessage: lastMessage ? lastMessage.toJSON() : null,
-        unreadCount,
+        unreadCount: unreadMap[ticket.id] || 0,
       };
     })
   );
@@ -879,7 +885,7 @@ async function hasActiveTicketFromCustomer(staffUserId, customerId, models) {
 
 // Get all tickets for a specific customer (staff only)
 async function getCustomerTickets(customerId, staffUserId, query, models) {
-  const { Ticket, User, ChatMessage } = models;
+  const { Ticket, User, ChatMessage, Repair } = models;
   const { page = 1, limit = 50 } = query;
 
   const customer = await User.findByPk(customerId, {
@@ -916,19 +922,45 @@ async function getCustomerTickets(customerId, staffUserId, query, models) {
     offset,
   });
 
-  // Enrich with message counts
-  const enrichedTickets = await Promise.all(
-    tickets.map(async (ticket) => {
-      const messageCount = await ChatMessage.count({ where: { ticketId: ticket.id } });
-      const data = ticket.toJSON();
-      data.messageCount = messageCount;
-      return data;
-    })
-  );
+  // Enrich with message counts — one grouped query for the whole page instead
+  // of one COUNT per ticket.
+  const ticketIds = tickets.map((tk) => tk.id);
+  const countMap = {};
+  if (ticketIds.length) {
+    const countRows = await ChatMessage.findAll({
+      where: { ticketId: { [Op.in]: ticketIds } },
+      attributes: ['ticketId', [fn('COUNT', col('id')), 'cnt']],
+      group: ['ticketId'],
+      raw: true,
+    });
+    countRows.forEach((r) => { countMap[r.ticketId] = parseInt(r.cnt, 10) || 0; });
+  }
+  const enrichedTickets = tickets.map((ticket) => {
+    const data = ticket.toJSON();
+    data.messageCount = countMap[ticket.id] || 0;
+    return data;
+  });
+
+  // Full repair history so staff see what was already worked on for this
+  // customer (matched by the user account the repairs are synced to).
+  let repairs = [];
+  try {
+    const repairRows = await Repair.findAll({
+      where: { userId: customerId },
+      attributes: [
+        'id', 'repairNumber', 'deviceName', 'deviceDescription', 'problemDescription',
+        'status', 'category', 'cost', 'costEstimate', 'technicianName',
+        'estimatedCompletion', 'actualCompletion', 'createdAt',
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+    repairs = repairRows.map((r) => r.toJSON());
+  } catch (e) { /* repairs are best-effort — never block the profile */ }
 
   return {
     customer: customer.toJSON(),
     tickets: enrichedTickets,
+    repairs,
     pagination: {
       page: parseInt(page),
       limit: parseInt(limit),

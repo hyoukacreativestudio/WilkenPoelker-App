@@ -693,6 +693,9 @@
     "customerNotePlaceholder": "Optional note about the appointment...",
     "confirmAccept": "Confirm appointment",
     "unregistered": "Unregistered",
+    "calendar": "Calendar",
+    "noAppointmentsThisDay": "No appointments",
+    "noAppointmentsThisDayMsg": "No appointments are scheduled for this day.",
     "staffArea": "Management",
     "markRegistered": "Mark as registered",
     "confirmRegister": "Do you want to mark this appointment as registered?",
@@ -1230,7 +1233,20 @@
     "noTickets": "No tickets found",
     "noTicketsMessage": "This customer has not created any service requests yet.",
     "customerNumber": "Customer no.",
-    "ticketHistory": "Ticket History"
+    "ticketHistory": "Ticket History",
+    "tabTickets": "Tickets",
+    "tabRepairs": "Repairs",
+    "noRepairs": "No repairs",
+    "noRepairsMessage": "No repairs are on file for this customer."
+  },
+  "version": {
+    "updateTitle": "Update available",
+    "updateMessage": "A newer version of the app is available. Please update to get the latest features and fixes.",
+    "installed": "Installed",
+    "latest": "Latest",
+    "updateNow": "Update now",
+    "later": "Later",
+    "required": "This version is no longer supported. An update is required."
   },
   "customerNumber": {
     "title": "Request Customer Number",

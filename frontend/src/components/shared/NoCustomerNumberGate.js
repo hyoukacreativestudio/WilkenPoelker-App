@@ -1,18 +1,20 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { customerNumberApi } from '../../api/customerNumber';
+import { usersApi } from '../../api/users';
 import Button from '../ui/Button';
 
 /**
- * Gate component that blocks access if user has no customer number.
- * Shows a message and button to request one. Pass children to show when customer number exists.
- * On mount (no number yet) it re-checks Taifun once — if a unique match is
- * found the number is linked and the gate opens without a re-login.
+ * Gate that blocks access if the user has no customer number. Each time the
+ * screen gains focus (while there's still no number) it (1) refetches the
+ * profile — so a number a staff member added manually appears without a
+ * re-login — and (2) re-checks Taifun for an auto-match. As soon as a number is
+ * found it's written into the auth context and the gate opens.
  */
 export default function NoCustomerNumberGate({ children }) {
   const { t } = useTranslation();
@@ -21,22 +23,31 @@ export default function NoCustomerNumberGate({ children }) {
   const navigation = useNavigation();
 
   const hasCustomerNumber = !!user?.customerNumber;
-  const checkedRef = useRef(false);
 
-  useEffect(() => {
-    if (hasCustomerNumber || checkedRef.current) return;
-    checkedRef.current = true;
-    (async () => {
-      try {
-        const res = await customerNumberApi.selfCheck();
-        const assigned = res?.data?.data?.assigned;
-        const number = res?.data?.data?.customerNumber;
-        if (assigned && number) {
-          await updateUser({ customerNumber: number });
-        }
-      } catch (e) { /* silent — customer can still request manually */ }
-    })();
-  }, [hasCustomerNumber, updateUser]);
+  const pickNumber = (resp) => {
+    const d = resp?.data?.data ?? resp?.data ?? resp;
+    return d?.user?.customerNumber || d?.customerNumber || null;
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (hasCustomerNumber) return undefined;
+      let active = true;
+      (async () => {
+        try {
+          // 1) refetch profile → reflects a manual admin assignment
+          const prof = await usersApi.getProfile();
+          const pnum = pickNumber(prof);
+          if (pnum) { if (active) await updateUser({ customerNumber: pnum }); return; }
+          // 2) try a Taifun auto-match
+          const res = await customerNumberApi.selfCheck();
+          const num = pickNumber(res);
+          if (num && active) await updateUser({ customerNumber: num });
+        } catch (e) { /* silent — customer can still request manually */ }
+      })();
+      return () => { active = false; };
+    }, [hasCustomerNumber, updateUser])
+  );
 
   if (hasCustomerNumber) {
     return children;

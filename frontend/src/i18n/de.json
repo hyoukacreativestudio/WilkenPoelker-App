@@ -693,6 +693,9 @@
     "customerNotePlaceholder": "Optionale Notiz zum Termin...",
     "confirmAccept": "Termin bestätigen",
     "unregistered": "Uneingetragen",
+    "calendar": "Kalender",
+    "noAppointmentsThisDay": "Keine Termine",
+    "noAppointmentsThisDayMsg": "An diesem Tag sind keine Termine eingetragen.",
     "staffArea": "Verwaltung",
     "markRegistered": "Als eingetragen markieren",
     "confirmRegister": "Möchten Sie diesen Termin als eingetragen markieren?",
@@ -1216,7 +1219,20 @@
     "noTickets": "Keine Tickets vorhanden",
     "noTicketsMessage": "Dieser Kunde hat noch keine Service-Anfragen erstellt.",
     "customerNumber": "Kundennr.",
-    "ticketHistory": "Ticket-Verlauf"
+    "ticketHistory": "Ticket-Verlauf",
+    "tabTickets": "Tickets",
+    "tabRepairs": "Reparaturen",
+    "noRepairs": "Keine Reparaturen",
+    "noRepairsMessage": "Für diesen Kunden sind keine Reparaturen hinterlegt."
+  },
+  "version": {
+    "updateTitle": "Update verfügbar",
+    "updateMessage": "Es ist eine neuere Version der App verfügbar. Bitte aktualisiere, um die neuesten Funktionen und Fehlerbehebungen zu erhalten.",
+    "installed": "Installiert",
+    "latest": "Neu",
+    "updateNow": "Jetzt aktualisieren",
+    "later": "Später",
+    "required": "Diese Version wird nicht mehr unterstützt. Ein Update ist erforderlich."
   },
   "customerNumber": {
     "title": "Kundennummer anfragen",

@@ -26,8 +26,7 @@ import OfflineBanner from '../../components/ui/OfflineBanner';
 import Button from '../../components/ui/Button';
 import AppointmentCard from '../../components/appointment/AppointmentCard';
 import AppointmentRequestsScreen from './AppointmentRequestsScreen';
-import OngoingAppointmentsScreen from './OngoingAppointmentsScreen';
-import UnregisteredAppointmentsScreen from './UnregisteredAppointmentsScreen';
+import CalendarScreen from './CalendarScreen';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import Badge from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
@@ -84,14 +83,15 @@ export default function AppointmentsScreen({ navigation }) {
     { key: 'past', label: t('appointments.past') },
   ], [t]);
 
-  // Staff-only tabs
+  // Staff-only tabs. Appointments are auto-entered by the PC program now, so
+  // the old "eingetragen/uneingetragen" split is gone — staff get the requests
+  // inbox plus a month calendar of everything that's scheduled.
   const staffTabs = useMemo(() => [
     { key: 'requests', label: t('appointments.requests') },
-    { key: 'unregistered', label: t('appointments.unregistered') },
-    { key: 'ongoing', label: t('appointments.ongoing') },
+    { key: 'calendar', label: t('appointments.calendar', 'Kalender') },
   ], [t]);
 
-  const isStaffTab = activeTab === 'requests' || activeTab === 'unregistered' || activeTab === 'ongoing';
+  const isStaffTab = activeTab === 'requests' || activeTab === 'calendar';
 
   const isFirstLoad = useRef(true);
   const refreshRef = useRef(refresh);
@@ -333,13 +333,11 @@ export default function AppointmentsScreen({ navigation }) {
       {/* Offline Banner */}
       <OfflineBanner />
 
-      {/* Content: Switch between own appointments, ongoing, unregistered, and requests */}
+      {/* Content: own appointments (upcoming/past), staff requests inbox, or the month calendar */}
       {activeTab === 'requests' ? (
         <AppointmentRequestsScreen navigation={navigation} />
-      ) : activeTab === 'unregistered' ? (
-        <UnregisteredAppointmentsScreen navigation={navigation} />
-      ) : activeTab === 'ongoing' ? (
-        <OngoingAppointmentsScreen navigation={navigation} />
+      ) : activeTab === 'calendar' ? (
+        <CalendarScreen navigation={navigation} />
       ) : (
         <>
           {initialLoad ? (

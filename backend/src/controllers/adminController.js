@@ -84,12 +84,33 @@ const updateUser = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, error: 'User not found' });
   }
 
+  const prevNumber = user.customerNumber;
   const updates = {};
   if (email !== undefined) updates.email = email;
   if (customerNumber !== undefined) updates.customerNumber = customerNumber;
   if (address !== undefined) updates.address = address;
 
   await user.update(updates);
+
+  // When a customer number is newly assigned, pull in the customer's Taifun
+  // repairs and notify them — so their app immediately shows repairs and stops
+  // asking for a number (same as the request-approval flow).
+  const assignedNow = customerNumber !== undefined && customerNumber && customerNumber !== prevNumber;
+  if (assignedNow) {
+    try {
+      const repairSync = require('../services/taifunRepairSync');
+      await repairSync.syncRepairsForUser({ id: user.id, customerNumber });
+    } catch (e) { /* non-blocking */ }
+    try {
+      const { Notification } = require('../models');
+      await Notification.create({
+        userId: user.id,
+        title: 'Kundennummer zugewiesen',
+        message: `Ihre Kundennummer ${customerNumber} wurde Ihrem Profil hinzugefügt.`,
+        type: 'system', category: 'system', relatedId: user.id, relatedType: 'user',
+      });
+    } catch (e) { /* non-blocking */ }
+  }
 
   res.json({
     success: true,

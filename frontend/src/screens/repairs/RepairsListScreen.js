@@ -393,7 +393,7 @@ export default function RepairsListScreen({ navigation }) {
         {/* Kundenname + Kundennummer als Titel — tippen öffnet das Profil */}
         {item.customer && (
           <TouchableOpacity
-            onPress={() => navigation.navigate('Service', { screen: 'CustomerProfile', params: { customerId: item.customer._id || item.customer.id, customerName: `${item.customer.firstName || ''} ${item.customer.lastName || ''}`.trim() } })}
+            onPress={() => navigation.navigate('CustomerProfile', { customerId: item.customer._id || item.customer.id, customerName: `${item.customer.firstName || ''} ${item.customer.lastName || ''}`.trim() })}
             style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.xs }}
           >
             <MaterialCommunityIcons name="account-circle-outline" size={18} color={theme.colors.primary} style={{ marginRight: 4 }} />

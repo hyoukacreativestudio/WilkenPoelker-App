@@ -351,7 +351,9 @@ async function getYearlyOverview(year) {
     attributes: [
       'assignedTo',
       [fn('COUNT', col('id')), 'total'],
-      [fn('SUM', literal("CASE WHEN status = 'completed' THEN 1 ELSE 0 END")), 'completed'],
+      // A resolved ticket is usually "closed" (not "completed") — count both as
+      // processed so the ranking reflects the work actually done.
+      [fn('SUM', literal("CASE WHEN status IN ('completed', 'closed') THEN 1 ELSE 0 END")), 'completed'],
     ],
     group: ['assignedTo'],
     raw: true,

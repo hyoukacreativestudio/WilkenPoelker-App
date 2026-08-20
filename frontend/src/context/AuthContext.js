@@ -36,8 +36,12 @@ export function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const token = await storage.getItem('accessToken');
-      const userData = await storage.getItem('user');
+      // These two reads are independent — run them together so the splash
+      // screen clears as soon as possible instead of waiting on two round-trips.
+      const [token, userData] = await Promise.all([
+        storage.getItem('accessToken'),
+        storage.getItem('user'),
+      ]);
 
       if (token && userData) {
         const parsed = JSON.parse(userData);

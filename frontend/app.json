@@ -3,7 +3,7 @@
     "name": "WilkenPoelker",
     "slug": "wilkenpoelker",
     "owner": "wilkenpoelker",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -36,7 +36,7 @@
         "backgroundColor": "#2E7D32"
       },
       "package": "com.hyoukacreativestudios.wilkenpoelker",
-      "versionCode": 1,
+      "versionCode": 2,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "CAMERA",

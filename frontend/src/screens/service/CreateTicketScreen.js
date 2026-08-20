@@ -45,6 +45,7 @@ const TITLE_OPTIONS = {
   ],
   service: [
     { key: 'general_question', labelKey: 'createTicket.titles.generalQuestion' },
+    { key: 'spare_part', labelKey: 'createTicket.titles.sparePart' },
     { key: 'complaint', labelKey: 'createTicket.titles.complaint' },
     { key: 'feedback', labelKey: 'createTicket.titles.feedback' },
     { key: 'other', labelKey: 'createTicket.titles.other' },

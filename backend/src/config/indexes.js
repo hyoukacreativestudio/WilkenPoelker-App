@@ -53,6 +53,11 @@ async function createPerformanceIndexes(sequelize) {
 
     // Tickets: user and status
     { table: 'tickets', fields: ['user_id', 'status'], name: 'idx_tickets_user_status' },
+    { table: 'tickets', fields: ['assigned_to', 'status'], name: 'idx_tickets_assigned_status' },
+
+    // Chat messages: last-message + unread-count lookups per ticket (were full
+    // table scans — hit on every Active Chats and Customer Profile load).
+    { table: 'chat_messages', fields: ['ticket_id', 'created_at'], name: 'idx_chat_messages_ticket_date' },
 
     // Users: login lookups
     { table: 'users', fields: ['email'], name: 'idx_users_email', unique: true },

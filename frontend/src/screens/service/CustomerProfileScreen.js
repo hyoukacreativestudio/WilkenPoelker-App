@@ -42,6 +42,8 @@ export default function CustomerProfileScreen({ route, navigation }) {
 
   const [customer, setCustomer] = useState(null);
   const [tickets, setTickets] = useState([]);
+  const [repairs, setRepairs] = useState([]);
+  const [tab, setTab] = useState('tickets'); // 'tickets' | 'repairs'
   const [loading, setLoading] = useState(true);
 
   // Admin actions
@@ -136,6 +138,7 @@ export default function CustomerProfileScreen({ route, navigation }) {
       // can be traced back to what was already tried. Assignee identity is
       // still hidden for non-admins in the list render — see renderTicketItem.
       setTickets(data?.tickets || []);
+      setRepairs(data?.repairs || []);
     } catch (err) {
       showToast({ type: 'error', message: t('customerProfile.loadError') });
     } finally {
@@ -263,6 +266,88 @@ export default function CustomerProfileScreen({ route, navigation }) {
             )}
           </View>
         )}
+
+        {/* Switch between the customer's tickets and their repair history */}
+        <View style={s.segment}>
+          {[
+            { key: 'tickets', label: t('customerProfile.tabTickets', 'Tickets'), count: tickets.length },
+            { key: 'repairs', label: t('customerProfile.tabRepairs', 'Reparaturen'), count: repairs.length },
+          ].map((tabItem) => {
+            const on = tab === tabItem.key;
+            return (
+              <TouchableOpacity
+                key={tabItem.key}
+                style={[s.segmentBtn, on && { backgroundColor: theme.colors.primary }]}
+                onPress={() => setTab(tabItem.key)}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.segmentText, { color: on ? '#FFFFFF' : theme.colors.textSecondary }]}>
+                  {tabItem.label} ({tabItem.count})
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+
+  const REPAIR_STATUS = {
+    requested: { color: 'info', label: t('repairStatus.requested', 'Angefragt') },
+    ordered: { color: 'info', label: t('repairStatus.ordered', 'Bestellt') },
+    in_progress: { color: 'warning', label: t('repairStatus.inProgress', 'In Bearbeitung') },
+    ready: { color: 'success', label: t('repairStatus.ready', 'Abholbereit') },
+    completed: { color: 'success', label: t('repairStatus.completed', 'Abgeschlossen') },
+    picked_up: { color: 'textSecondary', label: t('repairStatus.pickedUp', 'Abgeholt') },
+    cancelled: { color: 'error', label: t('repairStatus.cancelled', 'Storniert') },
+  };
+  const CATEGORY_LABEL = {
+    reparatur: t('repairCategory.reparatur', 'Reparatur'),
+    leasing: t('repairCategory.leasing', 'Leasing'),
+    neu: t('repairCategory.neu', 'Neukauf'),
+  };
+
+  const renderRepairItem = ({ item }) => {
+    const cfg = REPAIR_STATUS[item.status] || { color: 'textSecondary', label: item.status || '' };
+    const color = theme.colors[cfg.color] || theme.colors.textSecondary;
+    const problem = item.problemDescription || item.deviceDescription;
+    const cost = item.cost || item.costEstimate;
+    return (
+      <View style={s.ticketCard}>
+        <View style={s.ticketHeader}>
+          <View style={s.ticketTitleRow}>
+            <Text style={s.ticketNumber}>
+              {item.repairNumber ? `#${item.repairNumber}` : (CATEGORY_LABEL[item.category] || '')}
+            </Text>
+            <View style={[s.statusBadge, { backgroundColor: color + '15' }]}>
+              <Text style={[s.statusText, { color }]}>{cfg.label}</Text>
+            </View>
+          </View>
+          <Text style={s.ticketTitle} numberOfLines={1}>
+            {item.deviceName || CATEGORY_LABEL[item.category] || t('customerProfile.tabRepairs', 'Reparatur')}
+          </Text>
+        </View>
+        {problem ? (
+          <Text style={s.ticketDescription} numberOfLines={3}>{problem}</Text>
+        ) : null}
+        <View style={s.ticketFooter}>
+          <View style={s.ticketMeta}>
+            <MaterialCommunityIcons name="calendar-outline" size={13} color={theme.colors.textTertiary} />
+            <Text style={s.ticketMetaText}>{item.createdAt ? formatRelativeTime(item.createdAt) : ''}</Text>
+          </View>
+          {item.technicianName ? (
+            <View style={s.ticketMeta}>
+              <MaterialCommunityIcons name="account-wrench-outline" size={13} color={theme.colors.textTertiary} />
+              <Text style={s.ticketMetaText}>{item.technicianName}</Text>
+            </View>
+          ) : null}
+          {cost ? (
+            <View style={s.ticketMeta}>
+              <MaterialCommunityIcons name="cash" size={13} color={theme.colors.textTertiary} />
+              <Text style={s.ticketMetaText}>{Number(cost).toFixed(2)} €</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
     );
   };
@@ -278,7 +363,7 @@ export default function CustomerProfileScreen({ route, navigation }) {
     return (
       <TouchableOpacity
         style={s.ticketCard}
-        onPress={() => navigation.navigate('Chat', { ticketId: item.id })}
+        onPress={() => navigation.navigate('Main', { screen: 'Service', params: { screen: 'Chat', params: { ticketId: item.id } } })}
         activeOpacity={0.7}
       >
         <View style={s.ticketHeader}>
@@ -333,20 +418,28 @@ export default function CustomerProfileScreen({ route, navigation }) {
   return (
     <View style={s.container}>
       <FlatList
-        data={tickets}
-        renderItem={renderTicketItem}
+        data={tab === 'tickets' ? tickets : repairs}
+        renderItem={tab === 'tickets' ? renderTicketItem : renderRepairItem}
         keyExtractor={(item) => String(item.id)}
         ListHeaderComponent={renderCustomerHeader}
         ListEmptyComponent={
-          <EmptyState
-            icon="ticket-outline"
-            title={t('customerProfile.noTickets')}
-            message={t('customerProfile.noTicketsMessage')}
-          />
+          tab === 'tickets' ? (
+            <EmptyState
+              icon="ticket-outline"
+              title={t('customerProfile.noTickets')}
+              message={t('customerProfile.noTicketsMessage')}
+            />
+          ) : (
+            <EmptyState
+              icon="wrench-outline"
+              title={t('customerProfile.noRepairs', 'Keine Reparaturen')}
+              message={t('customerProfile.noRepairsMessage', 'Für diesen Kunden sind keine Reparaturen hinterlegt.')}
+            />
+          )
         }
         contentContainerStyle={
-          tickets.length === 0
-            ? { flex: 1 }
+          (tab === 'tickets' ? tickets.length : repairs.length) === 0
+            ? { paddingBottom: theme.spacing.xxl }
             : { paddingBottom: theme.spacing.xxl }
         }
         showsVerticalScrollIndicator={false}
@@ -497,6 +590,26 @@ const styles = (theme) =>
       color: theme.colors.textSecondary,
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
+    },
+    segment: {
+      flexDirection: 'row',
+      alignSelf: 'stretch',
+      marginTop: theme.spacing.md,
+      backgroundColor: theme.colors.background,
+      borderRadius: theme.borderRadius.md,
+      padding: 3,
+      gap: 3,
+    },
+    segmentBtn: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.sm,
+    },
+    segmentText: {
+      ...theme.typography.styles.caption,
+      fontWeight: theme.typography.weights.bold,
     },
     ticketCard: {
       backgroundColor: theme.colors.card,

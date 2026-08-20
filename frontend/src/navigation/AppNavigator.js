@@ -8,7 +8,10 @@ import { useOffline } from '../hooks/useOffline';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import ImageViewerScreen from '../screens/shared/ImageViewerScreen';
+import CustomerProfileScreen from '../screens/service/CustomerProfileScreen';
 import ConnectionErrorScreen from '../components/shared/ConnectionErrorScreen';
+import VersionGate from '../components/shared/VersionGate';
+import { useTranslation } from 'react-i18next';
 import linking from './linking';
 import { navigationRef } from './navigationRef';
 
@@ -27,6 +30,7 @@ export default function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
   const { theme, isDark } = useTheme();
   const { isOnline } = useOffline();
+  const { t } = useTranslation();
 
   if (isLoading) {
     return <SplashScreen />;
@@ -41,6 +45,8 @@ export default function AppNavigator() {
   const baseTheme = isDark ? DarkTheme : DefaultTheme;
 
   return (
+    <>
+    {isAuthenticated ? <VersionGate /> : null}
     <NavigationContainer
       ref={navigationRef}
       linking={linking}
@@ -61,6 +67,24 @@ export default function AppNavigator() {
         {isAuthenticated ? (
           <>
             <RootStack.Screen name="Main" component={MainTabs} />
+            {/* Customer profile lives at the ROOT (above the tabs) so opening it
+                from any tab pushes a fresh screen and "back" returns to where you
+                came from — instead of hijacking the hidden Service tab. Service-
+                internal screens (Chat/TicketDetail) still use the copy inside
+                ServiceStack, which keeps the profile within that tab. */}
+            <RootStack.Screen
+              name="CustomerProfile"
+              component={CustomerProfileScreen}
+              options={{
+                headerShown: true,
+                title: t('customerProfile.title', 'Kundenprofil'),
+                headerStyle: { backgroundColor: theme.colors.card },
+                headerShadowVisible: false,
+                headerTintColor: theme.colors.text,
+                headerTitleStyle: { color: theme.colors.text },
+                animation: 'slide_from_right',
+              }}
+            />
             <RootStack.Screen
               name="ImageViewer"
               component={ImageViewerScreen}
@@ -72,6 +96,7 @@ export default function AppNavigator() {
         )}
       </RootStack.Navigator>
     </NavigationContainer>
+    </>
   );
 }
 
