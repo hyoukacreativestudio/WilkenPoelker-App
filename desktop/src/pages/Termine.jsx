@@ -159,7 +159,10 @@ export default function Termine({ user }) {
             <tr>
               <th className="sortable" onClick={() => toggleSort('date')}>Datum{arrow('date')}</th>
               <th className="sortable" onClick={() => toggleSort('startTime')}>Uhrzeit{arrow('startTime')}</th>
-              <th className="sortable" onClick={() => toggleSort('customerName')}>Kunde{arrow('customerName')}</th>
+              <th>
+                <span className="sortable" onClick={() => toggleSort('customerName')}>Kunde{arrow('customerName')}</span>
+                {' · '}<span className="sortable" style={{ fontSize: 12 }} onClick={() => toggleSort('customerNumber')}>Kd-Nr{arrow('customerNumber')}</span>
+              </th>
               <th className="sortable" onClick={() => toggleSort('title')}>Titel{arrow('title')}</th>
               <th className="sortable" onClick={() => toggleSort('type')}>Art{arrow('type')}</th>
               <th className="sortable" onClick={() => toggleSort('handle')}>Kürzel{arrow('handle')}</th>

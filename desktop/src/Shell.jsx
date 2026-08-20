@@ -7,14 +7,18 @@ import Tickets from './pages/Tickets.jsx';
 import Bestellungen from './pages/Bestellungen.jsx';
 import Lager from './pages/Lager.jsx';
 import Kundennummern from './pages/Kundennummern.jsx';
+import RobbyKunden from './pages/RobbyKunden.jsx';
+import Kalender from './pages/Kalender.jsx';
 
-const PAGES = { termine: Termine, reparaturen: Reparaturen, tickets: Tickets, kundennummern: Kundennummern, bestellungen: Bestellungen, lager: Lager };
+const PAGES = { termine: Termine, kalender: Kalender, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, lager: Lager };
 
 const SUBTITLES = {
   uebersicht: 'Überblick für deine Abteilung',
   termine: 'Termine aus der App – automatisch eingetragen',
+  kalender: 'Terminübersicht im Monatskalender',
   reparaturen: 'Noch nicht erreichte Kunden anrufen',
   tickets: 'Tickets deiner Abteilung bearbeiten',
+  robbykunden: 'Alle Kunden mit einem Robby',
   kundennummern: 'Kundennummer-Anfragen bearbeiten',
   bestellungen: 'Bestellungen sammeln und aufgeben',
   lager: 'Was aus dem Lager nach vorne soll',

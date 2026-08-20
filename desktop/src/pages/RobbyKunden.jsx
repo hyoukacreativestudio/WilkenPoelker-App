@@ -1,0 +1,120 @@
+import React, { useEffect, useState } from 'react';
+import { api, unwrap } from '../api.js';
+import { useToast } from '../toast.jsx';
+
+// All customers who bought a Robby. Search across everything, add/edit/delete.
+const savedHandle = () => localStorage.getItem('wp_handle') || '';
+const emptyForm = () => ({ name: '', customerNumber: '', street: '', zip: '', city: '', phone: '', device: '', purchaseDate: '', notes: '', handle: savedHandle() });
+
+export default function RobbyKunden() {
+  const toast = useToast();
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm());
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const q = search ? `?search=${encodeURIComponent(search)}` : '';
+      setRows(unwrap(await api.get(`/desktop/robby-customers${q}`)).customers || []);
+    } catch (e) { setRows([]); } finally { setLoading(false); }
+  };
+  useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); /* eslint-disable-next-line */ }, [search]);
+
+  const openNew = () => { setEditingId(null); setForm(emptyForm()); setShowForm(true); };
+  const openEdit = (r) => {
+    setEditingId(r.id);
+    setForm({ name: r.name || '', customerNumber: r.customerNumber || '', street: r.street || '', zip: r.zip || '', city: r.city || '', phone: r.phone || '', device: r.device || '', purchaseDate: r.purchaseDate ? String(r.purchaseDate).slice(0, 10) : '', notes: r.notes || '', handle: savedHandle() });
+    setShowForm(true);
+  };
+  const submit = async () => {
+    if (!form.name.trim()) { toast('Name ist erforderlich', { type: 'error' }); return; }
+    setBusy(true);
+    try {
+      if (editingId) { await api.patch(`/desktop/robby-customers/${editingId}`, form); toast('Gespeichert'); }
+      else { await api.post('/desktop/robby-customers', form); toast('Kunde angelegt'); }
+      setShowForm(false); setEditingId(null); setForm(emptyForm()); load();
+    } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
+  const del = async (r) => { if (confirm(`${r.name} löschen?`)) { try { await api.del(`/desktop/robby-customers/${r.id}`); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
+
+  return (
+    <div>
+      <div className="toolbar no-print">
+        <span className="search"><input className="input" placeholder="Suche: Name, Kd-Nr, Ort, Gerät, Datum…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 280 }} /></span>
+        <div className="spacer" />
+        <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
+        <button className="btn" onClick={openNew}>+ Robby-Kunde</button>
+      </div>
+
+      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : rows.length === 0 ? (
+        <div className="empty"><div className="big">🤖</div>Keine Robby-Kunden.</div>
+      ) : (
+        <div className="table-wrap"><table>
+          <thead><tr><th>Name</th><th>Kd-Nr</th><th>Adresse</th><th>Telefon</th><th>Gerät</th><th>Gekauft am</th><th className="no-print"></th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => openEdit(r)}>
+                <td><strong>{r.name}</strong>{r.notes ? <div className="muted" style={{ fontSize: 12 }}>{r.notes}</div> : null}</td>
+                <td>{r.customerNumber || '—'}</td>
+                <td>{[r.street, [r.zip, r.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—'}</td>
+                <td>{r.phone ? <a href={`tel:${r.phone}`} onClick={(e) => e.stopPropagation()}>{r.phone}</a> : '—'}</td>
+                <td>{r.device || '—'}</td>
+                <td>{r.purchaseDate ? String(r.purchaseDate).slice(0, 10) : '—'}</td>
+                <td className="right no-print" onClick={(e) => e.stopPropagation()}>
+                  <button className="btn sm ghost" onClick={() => openEdit(r)}>✏️</button>{' '}
+                  <button className="btn sm ghost" onClick={() => del(r)}>✕</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table></div>
+      )}
+
+      {showForm && (
+        <div className="backdrop" onClick={() => setShowForm(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{editingId ? 'Robby-Kunde bearbeiten' : 'Neuer Robby-Kunde'}</h2>
+            <div className="form-grid">
+              <label className="field full">Name *
+                <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus />
+              </label>
+              <label className="field">Kundennummer
+                <input className="input" value={form.customerNumber} onChange={(e) => setForm({ ...form, customerNumber: e.target.value })} />
+              </label>
+              <label className="field">Gerät (welcher Robby)
+                <input className="input" value={form.device} onChange={(e) => setForm({ ...form, device: e.target.value })} />
+              </label>
+              <label className="field">Straße
+                <input className="input" value={form.street} onChange={(e) => setForm({ ...form, street: e.target.value })} />
+              </label>
+              <label className="field">PLZ
+                <input className="input" value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} />
+              </label>
+              <label className="field">Ort
+                <input className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+              </label>
+              <label className="field">Telefon
+                <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              </label>
+              <label className="field">Gekauft am
+                <input className="input" type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} />
+              </label>
+              <label className="field full">Notiz
+                <textarea className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button className="btn ghost" onClick={() => setShowForm(false)}>Abbrechen</button>
+              <button className="btn" onClick={submit} disabled={busy || !form.name.trim()}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -29,6 +29,7 @@ const TaifunCustomer = require('./TaifunCustomer');
 const TaifunOrder = require('./TaifunOrder');
 const Order = require('./Order');
 const WarehouseItem = require('./WarehouseItem');
+const RobbyCustomer = require('./RobbyCustomer');
 
 // ==========================================
 // ASSOCIATIONS
@@ -209,4 +210,5 @@ module.exports = {
   TaifunOrder,
   Order,
   WarehouseItem,
+  RobbyCustomer,
 };

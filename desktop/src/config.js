@@ -29,8 +29,10 @@ export function modulesForRole(role) {
   return [
     { key: 'uebersicht',   label: 'Übersicht',    icon: '🏠', show: true },
     { key: 'termine',      label: 'Termine',      icon: '📅', show: true },
+    { key: 'kalender',     label: 'Kalender',     icon: '📆', show: all || role === 'service_manager' || role === 'robby_manager' },
     { key: 'reparaturen',  label: 'Aufträge',     icon: '🔧', show: all || role === 'service_manager' || role === 'sales_manager' },
     { key: 'tickets',      label: 'Tickets',      icon: '💬', show: true },
+    { key: 'robbykunden',  label: 'Robby-Kunden', icon: '🤖', show: all || role === 'robby_manager' },
     { key: 'kundennummern', label: 'Kundennummern', icon: '🔢', show: all || role === 'service_manager' || role === 'sales_manager' },
     { key: 'bestellungen', label: 'Bestellungen', icon: '📦', show: true },
     { key: 'lager',        label: 'Lager',        icon: '🏬', show: all || role === 'sales_manager' || role === 'warehouse_worker' || role === 'orders_manager' },

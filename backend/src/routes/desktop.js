@@ -38,6 +38,13 @@ router.post('/appointments/:id/propose', authenticate, authorize(...STAFF), desk
 router.post('/appointments/:id/confirm', authenticate, authorize(...STAFF), desktop.confirmAppointmentDesktop);
 router.post('/appointments/:id/question', authenticate, authorize(...STAFF), desktop.askAppointmentQuestion);
 
+// ── Robby customer list ──
+const ROBBY = ['admin', 'super_admin', 'robby_manager'];
+router.get('/robby-customers', authenticate, authorize(...ROBBY), desktop.listRobbyCustomers);
+router.post('/robby-customers', authenticate, authorize(...ROBBY), desktop.createRobbyCustomer);
+router.patch('/robby-customers/:id', authenticate, authorize(...ROBBY), desktop.updateRobbyCustomer);
+router.delete('/robby-customers/:id', authenticate, authorize(...ROBBY), desktop.deleteRobbyCustomer);
+
 // ── Tickets (per department) ──
 router.get('/tickets', authenticate, authorize(...STAFF), desktop.listTickets);
 router.get('/tickets/:id', authenticate, authorize(...STAFF), desktop.getTicket);

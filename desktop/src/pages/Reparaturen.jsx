@@ -15,6 +15,7 @@ export default function Reparaturen({ user }) {
   const [statusF, setStatusF] = useState('all');   // all | ready | progress
   const [filter, setFilter] = useState('open');     // open | reached
   const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('name');   // name | kdnr | auftrag
   const [data, setData] = useState({ items: [], counts: { byCategory: {}, open: 0, reached: 0 } });
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +38,14 @@ export default function Reparaturen({ user }) {
   };
 
   const groupReady = (g) => (g.orders || []).some((o) => READY.includes(o.appStatus));
-  const items = (data.items || []).filter((g) => statusF === 'all' || (statusF === 'ready' ? groupReady(g) : !groupReady(g)));
+  const firstNr = (g) => (g.orders && g.orders[0] && g.orders[0].nr) || '';
+  const items = (data.items || [])
+    .filter((g) => statusF === 'all' || (statusF === 'ready' ? groupReady(g) : !groupReady(g)))
+    .sort((a, b) => {
+      if (sortKey === 'kdnr') return String(a.kdNr || '').localeCompare(String(b.kdNr || ''), undefined, { numeric: true });
+      if (sortKey === 'auftrag') return String(firstNr(a)).localeCompare(String(firstNr(b)), undefined, { numeric: true });
+      return String(a.customerName || a.kdNr || '').localeCompare(String(b.customerName || b.kdNr || ''));
+    });
   const bc = data.counts?.byCategory || {};
 
   return (
@@ -50,6 +58,11 @@ export default function Reparaturen({ user }) {
         ))}
         <div className="spacer" />
         <span className="search"><input className="input" placeholder="Name, Telefon, Ort, Nr." value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 220 }} /></span>
+        <select className="select" value={sortKey} onChange={(e) => setSortKey(e.target.value)} title="Sortieren">
+          <option value="name">Name A–Z</option>
+          <option value="kdnr">Kundennummer</option>
+          <option value="auftrag">Auftragsnummer</option>
+        </select>
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
       </div>
       <div className="toolbar no-print">

@@ -1,7 +1,7 @@
 const { asyncHandler, AppError, NotFoundError } = require('../middlewares/errorHandler');
 const { Op } = require('sequelize');
 const models = require('../models');
-const { Order, WarehouseItem, User, Appointment, Ticket, ChatMessage } = models;
+const { Order, WarehouseItem, User, Appointment, Ticket, ChatMessage, RobbyCustomer } = models;
 const serviceService = require('../services/serviceService');
 const appointmentService = require('../services/appointmentService');
 
@@ -548,8 +548,57 @@ const updateTicket = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { ticket: updated } });
 });
 
+// ── Robby customers (who bought a Robby) ──────────────────────────────
+const listRobbyCustomers = asyncHandler(async (req, res) => {
+  const q = String(req.query.search || '').trim().toLowerCase();
+  const all = await RobbyCustomer.findAll({ order: [['name', 'ASC']] });
+  const items = !q ? all : all.filter((c) => {
+    const hay = [c.name, c.customerNumber, c.street, c.zip, c.city, c.phone, c.device, c.purchaseDate, c.notes]
+      .filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+  res.json({ success: true, data: { customers: items } });
+});
+
+const createRobbyCustomer = asyncHandler(async (req, res) => {
+  const b = req.body || {};
+  if (!b.name || !String(b.name).trim()) throw new AppError('Name ist erforderlich', 400, 'NAME_REQUIRED');
+  const customer = await RobbyCustomer.create({
+    name: String(b.name).trim(),
+    customerNumber: b.customerNumber || null,
+    street: b.street || null,
+    zip: b.zip || null,
+    city: b.city || null,
+    phone: b.phone || null,
+    device: b.device || null,
+    purchaseDate: b.purchaseDate || null,
+    notes: b.notes || null,
+    createdByHandle: b.handle || null,
+  });
+  res.status(201).json({ success: true, data: { customer } });
+});
+
+const updateRobbyCustomer = asyncHandler(async (req, res) => {
+  const customer = await RobbyCustomer.findByPk(req.params.id);
+  if (!customer) throw new NotFoundError('RobbyCustomer');
+  const updates = {};
+  for (const f of ['name', 'customerNumber', 'street', 'zip', 'city', 'phone', 'device', 'purchaseDate', 'notes']) {
+    if (req.body[f] !== undefined) updates[f] = req.body[f] || null;
+  }
+  await customer.update(updates);
+  res.json({ success: true, data: { customer } });
+});
+
+const deleteRobbyCustomer = asyncHandler(async (req, res) => {
+  const customer = await RobbyCustomer.findByPk(req.params.id);
+  if (!customer) throw new NotFoundError('RobbyCustomer');
+  await customer.destroy();
+  res.json({ success: true, data: { deleted: true } });
+});
+
 module.exports = {
   desktopLogin,
+  listRobbyCustomers, createRobbyCustomer, updateRobbyCustomer, deleteRobbyCustomer,
   listOrders, createOrder, updateOrder, deleteOrder, setOrderProblem, purgeDoneOrders,
   listWarehouse, createWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
   listAppointments, createAppointment, updateAppointment, deleteAppointment,
