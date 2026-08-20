@@ -3,7 +3,10 @@ import { api, unwrap } from '../api.js';
 import { ORDER_DEPARTMENTS, departmentForRole } from '../config.js';
 import { useToast } from '../toast.jsx';
 
-const MANAGER = ['admin', 'super_admin', 'orders_manager'];
+// Service acts exactly like the Bestellungen account for orders (see all, edit,
+// tick off).
+const MANAGER = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
+const CHECKOFF = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
 const deptLabel = (key) => ORDER_DEPARTMENTS.find((d) => d.key === key)?.label || key;
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
 const emptyForm = () => ({ sourceText: 'Shop', link: '', articleNumber: '', description: '', customerName: '', customerNumber: '', quantity: 1, quantityForStock: 0, notes: '', handle: savedHandle() });
@@ -11,6 +14,7 @@ const emptyForm = () => ({ sourceText: 'Shop', link: '', articleNumber: '', desc
 export default function Bestellungen({ user }) {
   const toast = useToast();
   const isManager = MANAGER.includes(user.role);
+  const canCheck = CHECKOFF.includes(user.role);
   const myDept = departmentForRole(user.role);
 
   const [dept, setDept] = useState(isManager ? 'all' : myDept);

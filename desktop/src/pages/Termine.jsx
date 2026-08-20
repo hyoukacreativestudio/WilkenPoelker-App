@@ -7,6 +7,8 @@ import { useToast } from '../toast.jsx';
 // Sortable by date, customer, type. Past (>24h) appointments are hidden.
 const TYPES = [
   { key: 'repair', label: 'Reparatur' },
+  { key: 'onsite_repair', label: 'Reparatur vor Ort' },
+  { key: 'property_viewing', label: 'Besichtigung' },
   { key: 'pickup', label: 'Abholung' },
   { key: 'delivery', label: 'Lieferung' },
   { key: 'inspection', label: 'Inspektion' },
@@ -14,19 +16,24 @@ const TYPES = [
   { key: 'service', label: 'Service' },
   { key: 'other', label: 'Sonstiges' },
 ];
+// Department labels for the admin filter
+const DEPT_LABELS = { fahrrad: 'Fahrrad', reinigung: 'Kärcher', rasenmaeher: 'Rasenmäher', service: 'Service', robby: 'Robby', motorgeraete: 'Motorgeräte', elektro: 'Elektrofahrzeuge', verkauf: 'Verkauf', lieferungen: 'Lieferungen' };
+const SEES_ALL_APPTS = ['admin', 'super_admin', 'service_manager', 'orders_manager'];
 const typeLabel = (k) => TYPES.find((t) => t.key === k)?.label || k || '—';
 const STATUS_LABEL = { pending: 'Anfrage', proposed: 'Vorgeschlagen', confirmed: 'Bestätigt', completed: 'Erledigt', cancelled: 'Storniert', rescheduled: 'Verschoben' };
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
 const emptyForm = () => ({ title: '', type: 'repair', date: '', startTime: '', endTime: '', customerName: '', customerNumber: '', phone: '', description: '', handle: savedHandle() });
 
-export default function Termine() {
+export default function Termine({ user }) {
   const toast = useToast();
+  const isAdmin = user && SEES_ALL_APPTS.includes(user.role);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sort, setSort] = useState({ key: 'date', dir: 'asc' });
   const [kind, setKind] = useState('laufend'); // anfragen | laufend | alle
   const [type, setType] = useState('all');
+  const [dept, setDept] = useState('all');    // admin-only department filter
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm());
@@ -58,10 +65,11 @@ export default function Termine() {
       if (kind === 'anfragen' && !isRequest(a)) return false;
       if (kind === 'laufend' && a.status !== 'confirmed') return false;
       if (type !== 'all' && a.type !== type) return false;
+      if (isAdmin && dept !== 'all' && (a.department || '') !== dept) return false;
       if (a.date && String(a.date).slice(0, 10) < cutoff) return false;
       return true;
     }),
-    [rows, kind, type, cutoff]
+    [rows, kind, type, dept, isAdmin, cutoff]
   );
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -126,6 +134,12 @@ export default function Termine() {
         <span className={`pill tab ${kind === 'laufend' ? 'active' : ''}`} onClick={() => setKind('laufend')}>Laufende Termine</span>
         <span className={`pill tab ${kind === 'alle' ? 'active' : ''}`} onClick={() => setKind('alle')}>Alle</span>
         <div className="spacer" />
+        {isAdmin && (
+          <select className="select" value={dept} onChange={(e) => setDept(e.target.value)} title="Abteilung">
+            <option value="all">Alle Abteilungen</option>
+            {Object.entries(DEPT_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
+        )}
         <select className="select" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="all">Alle Arten</option>
           {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
@@ -168,11 +182,10 @@ export default function Termine() {
                 <td>{a.handle || '—'}</td>
                 <td>{isRequest(a) ? <span className="badge open">Anfrage</span> : (STATUS_LABEL[a.status] || a.status || '—')}</td>
                 <td className="right no-print nowrap">
-                  {isRequest(a) ? <button className="btn sm" onClick={() => openDetail(a)}>Bearbeiten</button> : null}
-                  {a.createdByStaff ? <>
-                    {' '}<button className="btn sm ghost" onClick={() => openEdit(a)}>✏️</button>
-                    {' '}<button className="btn sm ghost" onClick={() => del(a)}>✕</button>
-                  </> : null}
+                  {isRequest(a) ? <button className="btn sm" onClick={() => openDetail(a)}>Anfrage</button> : null}
+                  {/* Every appointment is editable */}
+                  {' '}<button className="btn sm ghost" onClick={() => openEdit(a)} title="Bearbeiten">✏️</button>
+                  {a.createdByStaff ? <>{' '}<button className="btn sm ghost" onClick={() => del(a)} title="Löschen">✕</button></> : null}
                 </td>
               </tr>
             ))}

@@ -1,9 +1,13 @@
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 
-// Native desktop app. Loads the bundled UI (dist-electron) which talks to the
-// live backend at https://api.wilkenpoelker.de/api. webSecurity is relaxed so the
-// packaged file:// page may call the API cross-origin (internal trusted tool).
+// Native desktop shell. It loads the UI STRAIGHT FROM THE SERVER
+// (https://api.wilkenpoelker.de/pc) so every server deploy (git pull) updates
+// all company PCs automatically on next open — no more copying a new .exe.
+// If the server is unreachable (offline), it falls back to the bundled UI in
+// dist-electron. Both talk to the live backend at .../api.
+const REMOTE_URL = process.env.WP_PC_URL || 'https://api.wilkenpoelker.de/pc/';
+const LOCAL_FILE = path.join(__dirname, '..', 'dist-electron', 'index.html');
 
 let win;
 function createWindow() {
@@ -19,12 +23,24 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false, // allow the bundled page to call the live API
+      webSecurity: false, // internal trusted tool; page may call the API cross-origin
     },
   });
 
   Menu.setApplicationMenu(null);
-  win.loadFile(path.join(__dirname, '..', 'dist-electron', 'index.html'));
+
+  // If the remote UI can't load (offline / server down), fall back to the
+  // bundled copy exactly once, so the program still opens.
+  let usedFallback = false;
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (isMainFrame && !usedFallback && /^https?:/.test(validatedURL)) {
+      usedFallback = true;
+      win.loadFile(LOCAL_FILE);
+    }
+  });
+
+  // Always revalidate the document so a new deploy is picked up immediately.
+  win.loadURL(REMOTE_URL, { extraHeaders: 'pragma: no-cache\n' });
 
   // External links (e.g. Amazon) open in the real browser, not inside the app
   win.webContents.setWindowOpenHandler(({ url }) => {

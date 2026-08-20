@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, setToken, getToken, unwrap } from './api.js';
+import { api, setToken, getToken, getDept, setDept, unwrap } from './api.js';
 import Login from './Login.jsx';
 import Shell from './Shell.jsx';
 import { ToastProvider } from './toast.jsx';
@@ -16,22 +16,24 @@ function Root() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session on load
+  // Restore session on load. If we have a stored department, the api client will
+  // silently re-login when the token is missing/expired — so a restart or an
+  // expired token just works (on any number of PCs).
   useEffect(() => {
     (async () => {
-      if (!getToken()) { setLoading(false); return; }
+      if (!getToken() && !getDept()) { setLoading(false); return; }
       try {
         const me = unwrap(await api.get('/users/profile'));
         setUser(me.user || me);
       } catch {
-        setToken(null);
+        setToken(null); setDept(null);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const handleLogout = () => { setToken(null); setUser(null); };
+  const handleLogout = () => { setToken(null); setDept(null); setUser(null); };
 
   if (loading) {
     return <div style={{ height: '100vh', display: 'grid', placeItems: 'center', color: '#5b6b5d' }}>Lädt…</div>;

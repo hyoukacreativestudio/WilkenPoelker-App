@@ -65,7 +65,10 @@ const ROLE_DEPARTMENT = {
   sales_manager: 'verkauf',
   delivery_manager: 'lieferungen',
 };
-const SEE_ALL_ROLES = ['admin', 'super_admin', 'orders_manager'];
+// Roles that see, edit AND tick off orders across ALL departments — Service
+// acts exactly like the Bestellungen account here.
+const SEE_ALL_ROLES = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
+const ORDER_CHECKOFF_ROLES = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
 
 function departmentForRole(role) {
   return ROLE_DEPARTMENT[role] || null;
@@ -136,7 +139,7 @@ const updateOrder = asyncHandler(async (req, res) => {
   // Ticking an order off ("erledigt" = ordered) / reopening is reserved for
   // admins and the Bestellungen account — a department can't mark its own done.
   if (status) {
-    if (!isManager) throw new AppError('Nur Admin oder Bestellungen darf abhaken', 403, 'ORDER_CHECKOFF_FORBIDDEN');
+    if (!ORDER_CHECKOFF_ROLES.includes(req.user.role)) throw new AppError('Nur Admin oder Bestellungen darf abhaken', 403, 'ORDER_CHECKOFF_FORBIDDEN');
     updates.status = status;
     if (status === 'ordered') { updates.orderedBy = req.user.id; updates.orderedAt = new Date(); }
     else if (status === 'open') { updates.orderedBy = null; updates.orderedAt = null; }
@@ -217,7 +220,7 @@ const deleteWarehouseItem = asyncHandler(async (req, res) => {
 // App-created appointments show up automatically (same table). Staff can also
 // create their own by hand with a free-text customer (number/name/phone).
 
-const APPT_TYPES = ['service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing'];
+const APPT_TYPES = ['service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing', 'onsite_repair'];
 const APPT_STATUSES = ['pending', 'proposed', 'confirmed', 'cancelled', 'completed', 'rescheduled'];
 
 // Who sees every appointment (the general schedulers). Everyone else only sees
@@ -230,9 +233,19 @@ const listAppointments = asyncHandler(async (req, res) => {
   const where = {};
   if (req.query.status && req.query.status !== 'all') where.status = req.query.status;
   if (req.query.type && req.query.type !== 'all') where.type = req.query.type;
+  // Admin/orders may additionally filter by a specific department.
+  if (seesAllAppointments(req.user.role) && req.query.department && req.query.department !== 'all') {
+    where.department = req.query.department;
+  }
   // Auto-sort by department: a department account only sees its own appointments.
+  // Lieferungen additionally gets EVERY delivery-type appointment.
   if (!seesAllAppointments(req.user.role)) {
-    where.department = ROLE_TICKET_DEPARTMENT[req.user.role] || departmentForRole(req.user.role) || '__none__';
+    const dept = departmentForRole(req.user.role);
+    if (req.user.role === 'delivery_manager') {
+      where[Op.or] = [{ department: 'lieferungen' }, { type: 'delivery' }];
+    } else {
+      where.department = dept || '__none__';
+    }
   }
 
   const items = await Appointment.findAll({
@@ -354,18 +367,21 @@ const DEPT_TICKET_CATEGORIES = {
   cleaning_manager: ['cleaning'],
   motor_manager: ['motor'],
   service_manager: ['service', 'bike', 'cleaning', 'motor'],
+  sales_manager: ['bike'], // Verkauf also sees Fahrrad (bike) tickets
 };
-// The department key each role owns (matches the ticket's `department` field).
-const ROLE_TICKET_DEPARTMENT = {
-  bike_manager: 'fahrrad',
-  cleaning_manager: 'reinigung',
-  motor_manager: 'rasenmaeher',
-  robby_manager: 'robby',
-  motor_equipment_manager: 'motorgeraete',
-  ev_manager: 'elektro',
-  sales_manager: 'verkauf',
-  delivery_manager: 'lieferungen',
+// The department key(s) each role owns (matches the ticket's `department` field).
+// A role can own several departments — e.g. Verkauf also handles Fahrrad tickets.
+const ROLE_TICKET_DEPARTMENTS = {
+  bike_manager: ['fahrrad'],
+  cleaning_manager: ['reinigung'],
+  motor_manager: ['rasenmaeher'],
+  robby_manager: ['robby'],
+  motor_equipment_manager: ['motorgeraete'],
+  ev_manager: ['elektro'],
+  sales_manager: ['verkauf', 'fahrrad'],
+  delivery_manager: ['lieferungen'],
 };
+function deptsForTicketRole(role) { return ROLE_TICKET_DEPARTMENTS[role] || []; }
 function ticketCategoriesForRole(role) {
   if (['admin', 'super_admin', 'orders_manager'].includes(role)) return ALL_TICKET_CATEGORIES;
   return DEPT_TICKET_CATEGORIES[role] || [];
@@ -374,12 +390,11 @@ function seesAllTickets(role) {
   return ['admin', 'super_admin', 'orders_manager', 'service_manager'].includes(role);
 }
 // A staff member may access a ticket if they see all, or the ticket's department
-// matches their department, or (for old tickets without a department) its
-// category is in their category set.
+// is one of theirs, or (for old tickets without a department) its category is in
+// their category set.
 function canAccessTicket(role, ticket) {
   if (seesAllTickets(role)) return true;
-  const dept = ROLE_TICKET_DEPARTMENT[role];
-  if (dept && ticket.department === dept) return true;
+  if (ticket.department && deptsForTicketRole(role).includes(ticket.department)) return true;
   if (!ticket.department && ticketCategoriesForRole(role).includes(ticket.category)) return true;
   return false;
 }
@@ -387,8 +402,8 @@ function canAccessTicket(role, ticket) {
 const listTickets = asyncHandler(async (req, res) => {
   const role = req.user.role;
   const cats = ticketCategoriesForRole(role);
-  const dept = ROLE_TICKET_DEPARTMENT[role];
-  if (cats.length === 0 && !dept && !seesAllTickets(role)) {
+  const depts = deptsForTicketRole(role);
+  if (cats.length === 0 && depts.length === 0 && !seesAllTickets(role)) {
     return res.json({ success: true, data: { tickets: [] } });
   }
 
@@ -397,7 +412,7 @@ const listTickets = asyncHandler(async (req, res) => {
   if (!seesAllTickets(role)) {
     // Match by department (new tickets) OR by category when no department (old).
     const or = [];
-    if (dept) or.push({ department: dept });
+    if (depts.length) or.push({ department: { [Op.in]: depts } });
     if (cats.length) or.push({ department: null, category: { [Op.in]: cats } });
     where[Op.or] = or;
   }

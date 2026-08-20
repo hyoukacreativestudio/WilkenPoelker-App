@@ -171,6 +171,7 @@ async function connectDatabase() {
         { name: 'enum_repairs_status', value: 'sale_in_progress' },
         { name: 'enum_repairs_status', value: 'sale_test_drive' },
         { name: 'enum_notifications_type', value: 'ticket_closed' },
+        { name: 'enum_appointments_type', value: 'onsite_repair' },
         // Desktop/company-tool department roles
         { name: 'enum_users_role', value: 'sales_manager' },
         { name: 'enum_users_role', value: 'orders_manager' },

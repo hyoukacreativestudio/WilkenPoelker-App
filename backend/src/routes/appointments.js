@@ -5,7 +5,7 @@ const { authenticate } = require('../middlewares/auth');
 const { authorize, ROLES } = require('../middlewares/roles');
 const { validate, validators, body, query } = require('../middlewares/validate');
 
-const VALID_TYPES = ['service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing'];
+const VALID_TYPES = ['service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing', 'onsite_repair'];
 const VALID_STATUSES = ['pending', 'proposed', 'confirmed', 'cancelled', 'completed', 'rescheduled'];
 
 // GET /api/appointments - user's appointments (paginated, filtered)

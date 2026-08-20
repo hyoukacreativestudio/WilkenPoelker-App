@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, setToken, unwrap } from './api.js';
+import { api, setToken, setDept, unwrap } from './api.js';
 import { DEPARTMENTS } from './config.js';
 
 // Passwordless: click a department → you're in. Restricted server-side to the
@@ -19,6 +19,7 @@ export default function Login({ onLogin }) {
       const res = unwrap(await api.post('/desktop/login', { department: d.key }));
       if (!res?.accessToken) throw new Error('Anmeldung fehlgeschlagen');
       setToken(res.accessToken);
+      setDept(d.key); // remember for silent re-login when the token expires
       onLogin(res.user);
     } catch (err) {
       setError(err.message || 'Anmeldung fehlgeschlagen');
