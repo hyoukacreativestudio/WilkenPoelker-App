@@ -758,8 +758,9 @@ export default function AppointmentDetailScreen({ route, navigation }) {
         </View>
       )}
 
-      {/* Cancel Action */}
-      {isCancellable && appointment.status !== 'proposed' ? (
+      {/* Cancel Action — available for any active appointment, incl. a pending
+          proposal, so a customer can call off an appointment anytime. */}
+      {isCancellable ? (
         <Button
           title={t('appointments.cancelAppointment')}
           onPress={handleCancel}
