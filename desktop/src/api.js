@@ -54,12 +54,47 @@ async function reLogin() {
   } catch { return false; }
 }
 
+// ── Offline queue ──────────────────────────────────────────────────────
+// If a change (POST/PATCH/PUT/DELETE) can't reach the server, we store it and
+// replay it automatically once the connection is back. GETs can't be queued.
+const QKEY = 'wp_offline_queue';
+const readQueue = () => { try { return JSON.parse(localStorage.getItem(QKEY) || '[]'); } catch { return []; } };
+const writeQueue = (q) => { localStorage.setItem(QKEY, JSON.stringify(q)); try { window.dispatchEvent(new CustomEvent('wp-queue', { detail: q.length })); } catch {} };
+export const pendingCount = () => readQueue().length;
+const isQueueable = (path, method) => method !== 'GET' && !path.startsWith('/desktop/login') && !path.startsWith('/auth');
+
+let flushing = false;
+export async function flushQueue() {
+  if (flushing) return;
+  let q = readQueue();
+  if (!q.length) return;
+  flushing = true;
+  try {
+    while (q.length) {
+      const item = q[0];
+      let res;
+      try { res = await doFetch(item.path, { method: item.method, body: item.body }); }
+      catch { break; } // still offline — stop, keep the rest queued
+      if (res.status === 401) {
+        if (await reLogin()) { try { res = await doFetch(item.path, { method: item.method, body: item.body }); } catch { break; } }
+      }
+      // Any real response (2xx or a 4xx that won't fix itself) = processed.
+      q.shift(); writeQueue(q);
+    }
+  } finally { flushing = false; }
+}
+
 async function request(path, opts = {}, retried = false) {
+  const method = opts.method || 'GET';
   let res;
   try {
     res = await doFetch(path, opts);
   } catch (netErr) {
-    // No connection at all
+    // No connection. Queue the change so it syncs later; GETs just fail.
+    if (isQueueable(path, method)) {
+      const q = readQueue(); q.push({ path, method, body: opts.body, ts: Date.now() }); writeQueue(q);
+      return { success: true, data: { queued: true }, queued: true };
+    }
     const err = new Error('Keine Internetverbindung zum Server.');
     err.offline = true;
     throw err;
@@ -79,7 +114,15 @@ async function request(path, opts = {}, retried = false) {
     err.code = json?.error?.code;
     throw err;
   }
+  // Good connection → opportunistically flush anything that was queued offline.
+  if (readQueue().length) flushQueue();
   return json;
+}
+
+// Replay the queue when the connection returns, and periodically.
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => flushQueue());
+  setInterval(() => flushQueue(), 20000);
 }
 
 export const api = {

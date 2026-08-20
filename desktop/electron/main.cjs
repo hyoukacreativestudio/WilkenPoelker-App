@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell } = require('electron');
+const { app, BrowserWindow, Menu, shell, ipcMain, nativeImage } = require('electron');
 const path = require('path');
 
 // Native desktop shell. It loads the UI STRAIGHT FROM THE SERVER
@@ -24,6 +24,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: false, // internal trusted tool; page may call the API cross-origin
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
 
@@ -48,6 +49,20 @@ function createWindow() {
     return { action: 'allow' };
   });
 }
+
+// Taskbar badge: the UI sends a rendered number image + count. On Windows we
+// show it as an overlay icon; on macOS/Linux as a dock/badge count.
+ipcMain.on('wp-badge', (event, { dataUrl, count }) => {
+  if (!win) return;
+  try {
+    if (dataUrl && count > 0) {
+      win.setOverlayIcon(nativeImage.createFromDataURL(dataUrl), `${count} neue`);
+    } else {
+      win.setOverlayIcon(null, '');
+    }
+    if (app.setBadgeCount) app.setBadgeCount(count || 0); // macOS/Linux
+  } catch (e) { /* overlay not supported on this platform */ }
+});
 
 app.whenReady().then(createWindow);
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
