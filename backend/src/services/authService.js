@@ -461,6 +461,7 @@ module.exports = {
   findTaifunCustomerNumber,
   tryAutoAssignCustomerNumber,
   adminDeleteUser,
+  deleteUserCascade,
   generateAccessToken,
   generateRefreshToken,
   registerUser,
