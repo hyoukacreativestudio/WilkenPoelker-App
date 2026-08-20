@@ -415,11 +415,12 @@ cron.schedule('7 * * * *', async () => {
 cron.schedule('17 * * * *', async () => {
   try {
     const { Op } = require('sequelize');
-    const { Order, WarehouseItem } = require('./models');
+    const { WarehouseItem } = require('./models');
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const o = await Order.destroy({ where: { status: 'ordered', orderedAt: { [Op.lt]: cutoff } } });
+    // Orders are KEPT (deleted manually by month in the tool); only warehouse
+    // "brought" items are auto-purged after 24h.
     const w = await WarehouseItem.destroy({ where: { status: 'brought', broughtAt: { [Op.lt]: cutoff } } });
-    if (o || w) logger.info('Cron: purged done desktop orders/warehouse after 24h', { orders: o, warehouse: w });
+    if (w) logger.info('Cron: purged done warehouse items after 24h', { warehouse: w });
   } catch (err) {
     logger.error('Cron: desktop 24h purge failed', { error: err.message });
   }

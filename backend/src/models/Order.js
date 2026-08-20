@@ -74,6 +74,17 @@ const Order = sequelize.define('Order', {
   handle: {
     type: DataTypes.STRING,
   },
+  // A problem flagged on the order (e.g. "nicht lieferbar"). Shown red + on top
+  // in the department's list; the order's creator is notified.
+  problemNote: {
+    type: DataTypes.TEXT,
+  },
+  problemBy: {
+    type: DataTypes.STRING,
+  },
+  problemAt: {
+    type: DataTypes.DATE,
+  },
   orderedBy: {
     type: DataTypes.UUID,
   },

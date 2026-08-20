@@ -82,16 +82,28 @@ function creatorName(user) {
 const listOrders = asyncHandler(async (req, res) => {
   const where = {};
   if (req.query.status) where.status = req.query.status;
-  if (req.query.source) where.source = req.query.source;
+  // Filter by source, case-insensitive ("amazon" == "Amazon").
+  if (req.query.source && req.query.source !== 'all') {
+    const { fn, col, where: whereFn } = require('sequelize');
+    where[Op.and] = [whereFn(fn('lower', col('source_text')), String(req.query.source).toLowerCase())];
+  }
 
-  // orders_manager / admin see every department; everyone else only their own.
+  // orders_manager / admin / service see every department; others only their own.
   if (SEE_ALL_ROLES.includes(req.user.role)) {
     if (req.query.department && req.query.department !== 'all') where.department = req.query.department;
   } else {
     where.department = departmentForRole(req.user.role) || '__none__';
   }
 
-  const orders = await Order.findAll({ where, order: [['status', 'ASC'], ['createdAt', 'DESC']] });
+  // Problems first (red, on top), then open before done, newest first.
+  const orders = await Order.findAll({
+    where,
+    order: [
+      [require('sequelize').literal('CASE WHEN "problem_note" IS NOT NULL THEN 0 ELSE 1 END'), 'ASC'],
+      ['status', 'ASC'],
+      ['createdAt', 'DESC'],
+    ],
+  });
   res.json({ success: true, data: { orders } });
 });
 
@@ -161,6 +173,50 @@ const deleteOrder = asyncHandler(async (req, res) => {
   if (!isManager && order.createdBy !== req.user.id) throw new AppError('Keine Berechtigung', 403, 'FORBIDDEN');
   await order.destroy();
   res.json({ success: true, data: { deleted: true } });
+});
+
+// Flag/clear a problem on an order (e.g. "nicht lieferbar"). The person who
+// created the order gets a notification (+ push via the Notification hook).
+const setOrderProblem = asyncHandler(async (req, res) => {
+  const order = await Order.findByPk(req.params.id);
+  if (!order) throw new NotFoundError('Order');
+  const note = (req.body.note || '').trim();
+  const handle = (req.body.handle || '').trim();
+  await order.update({
+    problemNote: note || null,
+    problemBy: note ? (handle || null) : null,
+    problemAt: note ? new Date() : null,
+  });
+  // Notify the order's creator so it shows up (red, on top) for them.
+  if (note && order.createdBy) {
+    try {
+      const { Notification } = models;
+      await Notification.create({
+        userId: order.createdBy,
+        title: 'Problem bei Bestellung',
+        message: `${order.description || 'Bestellung'}: ${note}`,
+        type: 'system',
+        category: 'system',
+        relatedId: order.id,
+        relatedType: 'order',
+      });
+    } catch (e) { /* best-effort */ }
+  }
+  res.json({ success: true, data: { order } });
+});
+
+// Bulk-delete DONE ("ordered") orders created on/before a given month.
+// Query: ?before=YYYY-MM  (deletes everything up to and including that month).
+const purgeDoneOrders = asyncHandler(async (req, res) => {
+  const before = String(req.query.before || '');
+  const m = /^(\d{4})-(\d{2})$/.exec(before);
+  if (!m) throw new AppError('Monat im Format JJJJ-MM erforderlich', 400, 'MONTH_REQUIRED');
+  // First day of the month AFTER the selected one = exclusive upper bound.
+  const year = parseInt(m[1], 10);
+  const month = parseInt(m[2], 10); // 1-12
+  const upper = new Date(Date.UTC(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1));
+  const deleted = await Order.destroy({ where: { status: 'ordered', createdAt: { [Op.lt]: upper } } });
+  res.json({ success: true, data: { deleted } });
 });
 
 // ── Lager (Warehouse) ─────────────────────────────────────────────────
@@ -494,7 +550,7 @@ const updateTicket = asyncHandler(async (req, res) => {
 
 module.exports = {
   desktopLogin,
-  listOrders, createOrder, updateOrder, deleteOrder,
+  listOrders, createOrder, updateOrder, deleteOrder, setOrderProblem, purgeDoneOrders,
   listWarehouse, createWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
   listAppointments, createAppointment, updateAppointment, deleteAppointment,
   proposeAppointment, confirmAppointmentDesktop, askAppointmentQuestion,
