@@ -398,24 +398,35 @@ const createAppointment = asyncHandler(async (req, res) => {
 const updateAppointment = asyncHandler(async (req, res) => {
   const appointment = await Appointment.findByPk(req.params.id);
   if (!appointment) throw new NotFoundError('Appointment');
+  const wasCancelled = appointment.status === 'cancelled';
   const updates = {};
   if (req.body.status && APPT_STATUSES.includes(req.body.status)) updates.status = req.body.status;
   for (const f of ['title', 'description', 'date', 'startTime', 'endTime', 'customerNumber', 'customerName', 'phone', 'type', 'handle']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];
   }
   await appointment.update(updates);
+  // If staff just cancelled it, tell the customer (app appointments have a userId).
+  if (updates.status === 'cancelled' && !wasCancelled && appointment.userId && !appointment.createdByStaff) {
+    try {
+      const { Notification } = models;
+      await Notification.create({
+        userId: appointment.userId,
+        title: 'Termin abgesagt',
+        message: `Ihr Termin "${appointment.title}"${appointment.date ? ' am ' + appointment.date : ''} wurde abgesagt.`,
+        type: 'appointment_reminder',
+        category: 'appointment',
+        relatedId: appointment.id,
+        relatedType: 'appointment',
+      });
+    } catch (e) { /* best-effort */ }
+  }
   res.json({ success: true, data: { appointment } });
 });
 
 const deleteAppointment = asyncHandler(async (req, res) => {
   const appointment = await Appointment.findByPk(req.params.id);
   if (!appointment) throw new NotFoundError('Appointment');
-  // Only hand-entered (staff) appointments may be removed from the PC tool;
-  // app appointments are cancelled through the app flow.
-  if (!appointment.createdByStaff && !['admin', 'super_admin'].includes(req.user.role)) {
-    throw new AppError('App-Termine können hier nicht gelöscht werden', 403, 'FORBIDDEN');
-  }
-  await appointment.destroy();
+  await appointment.destroy(); // any staff member may remove an appointment
   res.json({ success: true, data: { deleted: true } });
 });
 

@@ -47,29 +47,35 @@ export default function Shell({ user, onLogout }) {
   const [dark, setDark] = useState(() => localStorage.getItem('wp_theme') === 'dark');
   const [pending, setPending] = useState(pendingCount());
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
-  const [notif, setNotif] = useState(0); // new tickets + appointment requests
+  const [notifs, setNotifs] = useState([]);      // notification rows
+  const [notifOpen, setNotifOpen] = useState(false);
+  const unread = useMemo(() => notifs.filter((n) => !n.read).length, [notifs]);
 
-  // Poll for new tickets / appointment requests → number on the taskbar icon.
+  // Poll notifications for this account → badge = unread; panel lists them.
+  const loadNotifs = React.useCallback(async () => {
+    try {
+      const res = await api.get('/notifications?limit=30');
+      const list = unwrap(res).notifications || [];
+      setNotifs(list);
+    } catch { /* ignore */ }
+  }, []);
   useEffect(() => {
     let active = true;
-    const poll = async () => {
-      try {
-        const [tk, ap] = await Promise.all([
-          api.get('/desktop/tickets?status=open').catch(() => null),
-          api.get('/desktop/appointments').catch(() => null),
-        ]);
-        const tickets = tk ? (unwrap(tk).tickets || []).length : 0;
-        const reqs = ap ? (unwrap(ap).appointments || []).filter((a) => ['pending', 'proposed'].includes(a.status)).length : 0;
-        const count = tickets + reqs;
-        if (!active) return;
-        setNotif(count);
-        setTaskbarBadge(count);
-      } catch { /* ignore */ }
-    };
-    poll();
-    const t = setInterval(poll, 45000);
+    const t = setInterval(() => { if (active) loadNotifs(); }, 45000);
+    loadNotifs();
     return () => { active = false; clearInterval(t); };
-  }, []);
+  }, [loadNotifs]);
+  useEffect(() => { setTaskbarBadge(unread); }, [unread]);
+
+  const markRead = async (n) => {
+    if (n.read) return;
+    setNotifs((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+    try { await api.put(`/notifications/${n.id}/read`); } catch { loadNotifs(); }
+  };
+  const markAllRead = async () => {
+    setNotifs((prev) => prev.map((x) => ({ ...x, read: true })));
+    try { await api.put('/notifications/read-all'); } catch { loadNotifs(); }
+  };
 
   // Track offline status + how many changes are waiting to sync.
   useEffect(() => {
@@ -128,11 +134,28 @@ export default function Shell({ user, onLogout }) {
             <div className="sub">{SUBTITLES[active] || ''}</div>
           </div>
           <div className="spacer" />
-          {notif > 0 && (
-            <span className="badge" style={{ background: '#E53E3E', color: '#fff', marginRight: 8 }} title="Neue Tickets / Terminanfragen">
-              🔔 {notif}
-            </span>
-          )}
+          <div style={{ position: 'relative', marginRight: 8 }}>
+            <button className="theme-toggle" onClick={() => { setNotifOpen((o) => !o); if (!notifOpen) loadNotifs(); }} title="Benachrichtigungen">
+              🔔{unread > 0 ? <span className="badge" style={{ background: '#E53E3E', color: '#fff', marginLeft: 4 }}>{unread}</span> : null}
+            </button>
+            {notifOpen && (
+              <div className="notif-panel" onClick={(e) => e.stopPropagation()}>
+                <div className="notif-head">
+                  <strong>Benachrichtigungen</strong>
+                  <button className="btn sm ghost" onClick={markAllRead} disabled={unread === 0}>Alle als gelesen</button>
+                </div>
+                <div className="notif-list">
+                  {notifs.length === 0 ? <div className="muted" style={{ padding: 14, textAlign: 'center' }}>Keine Benachrichtigungen.</div>
+                    : notifs.map((n) => (
+                      <div key={n.id} className={`notif-item ${n.read ? '' : 'unread'}`} onClick={() => markRead(n)}>
+                        <div className="notif-title">{!n.read ? <span className="dot" /> : null}{n.title}</div>
+                        <div className="notif-msg">{n.message}</div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
           {(!online || pending > 0) && (
             <span className="badge" style={{ background: online ? '#fff6e0' : '#f8d7da', color: online ? '#97650a' : '#a52834', marginRight: 8 }}
               title={online ? 'Änderungen werden synchronisiert' : 'Offline – Änderungen werden gespeichert und später gesendet'}>

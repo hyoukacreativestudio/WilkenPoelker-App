@@ -108,6 +108,7 @@ export default function Termine({ user }) {
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
   const del = async (a) => { if (confirm('Termin löschen?')) { try { await api.del(`/desktop/appointments/${a.id}`); setDetail(null); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
+  const cancelAppt = async (a) => { if (confirm('Termin absagen? Der Kunde wird benachrichtigt.')) { try { await api.patch(`/desktop/appointments/${a.id}`, { status: 'cancelled' }); setDetail(null); load(); toast('Termin abgesagt'); } catch (e) { toast(e.message, { type: 'error' }); } } };
 
   const openDetail = (a) => { setDetail(a); setPropDate(a.date ? String(a.date).slice(0, 10) : ''); setPropText(''); setQuestion(''); };
   const confirmAppt = async (a) => { setBusy(true); try { await api.post(`/desktop/appointments/${a.id}/confirm`); setDetail(null); load(); toast('Termin bestätigt'); } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); } };
@@ -188,7 +189,8 @@ export default function Termine({ user }) {
                   {isRequest(a) ? <button className="btn sm" onClick={() => openDetail(a)}>Anfrage</button> : null}
                   {/* Every appointment is editable */}
                   {' '}<button className="btn sm ghost" onClick={() => openEdit(a)} title="Bearbeiten">✏️</button>
-                  {a.createdByStaff ? <>{' '}<button className="btn sm ghost" onClick={() => del(a)} title="Löschen">✕</button></> : null}
+                  {a.status !== 'cancelled' ? <>{' '}<button className="btn sm ghost" onClick={() => cancelAppt(a)} title="Absagen">🚫</button></> : null}
+                  {' '}<button className="btn sm ghost" onClick={() => del(a)} title="Löschen">✕</button>
                 </td>
               </tr>
             ))}
