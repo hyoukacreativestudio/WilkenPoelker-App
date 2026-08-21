@@ -4,7 +4,7 @@ import { useToast } from '../toast.jsx';
 
 // All customers who bought a Robby. Search across everything, add/edit/delete.
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
-const emptyForm = () => ({ name: '', customerNumber: '', street: '', zip: '', city: '', phone: '', device: '', purchaseDate: '', notes: '', handle: savedHandle() });
+const emptyForm = () => ({ name: '', customerNumber: '', street: '', zip: '', city: '', phone: '', device: '', pin: '', purchaseDate: '', notes: '', handle: savedHandle() });
 
 export default function RobbyKunden() {
   const toast = useToast();
@@ -28,7 +28,7 @@ export default function RobbyKunden() {
   const openNew = () => { setEditingId(null); setForm(emptyForm()); setShowForm(true); };
   const openEdit = (r) => {
     setEditingId(r.id);
-    setForm({ name: r.name || '', customerNumber: r.customerNumber || '', street: r.street || '', zip: r.zip || '', city: r.city || '', phone: r.phone || '', device: r.device || '', purchaseDate: r.purchaseDate ? String(r.purchaseDate).slice(0, 10) : '', notes: r.notes || '', handle: savedHandle() });
+    setForm({ name: r.name || '', customerNumber: r.customerNumber || '', street: r.street || '', zip: r.zip || '', city: r.city || '', phone: r.phone || '', device: r.device || '', pin: r.pin || '', purchaseDate: r.purchaseDate ? String(r.purchaseDate).slice(0, 10) : '', notes: r.notes || '', handle: savedHandle() });
     setShowForm(true);
   };
   const submit = async () => {
@@ -45,7 +45,7 @@ export default function RobbyKunden() {
   return (
     <div>
       <div className="toolbar no-print">
-        <span className="search"><input className="input" placeholder="Suche: Name, Kd-Nr, Ort, Gerät, Datum…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 280 }} /></span>
+        <span className="search"><input className="input" placeholder="Suche: Name, Kd-Nr, Ort, Gerät, Pin, Datum…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 280 }} /></span>
         <div className="spacer" />
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
         <button className="btn" onClick={openNew}>+ Robby-Kunde</button>
@@ -55,7 +55,7 @@ export default function RobbyKunden() {
         <div className="empty"><div className="big">🤖</div>Keine Robby-Kunden.</div>
       ) : (
         <div className="table-wrap"><table>
-          <thead><tr><th>Name</th><th>Kd-Nr</th><th>Adresse</th><th>Telefon</th><th>Gerät</th><th>Gekauft am</th><th className="no-print"></th></tr></thead>
+          <thead><tr><th>Name</th><th>Kd-Nr</th><th>Adresse</th><th>Telefon</th><th>Gerät</th><th>Pin</th><th>Gekauft am</th><th className="no-print"></th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => openEdit(r)}>
@@ -64,6 +64,7 @@ export default function RobbyKunden() {
                 <td>{[r.street, [r.zip, r.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—'}</td>
                 <td>{r.phone ? <a href={`tel:${r.phone}`} onClick={(e) => e.stopPropagation()}>{r.phone}</a> : '—'}</td>
                 <td>{r.device || '—'}</td>
+                <td>{r.pin || '—'}</td>
                 <td>{r.purchaseDate ? String(r.purchaseDate).slice(0, 10) : '—'}</td>
                 <td className="right no-print" onClick={(e) => e.stopPropagation()}>
                   <button className="btn sm ghost" onClick={() => openEdit(r)}>✏️</button>{' '}
@@ -88,6 +89,9 @@ export default function RobbyKunden() {
               </label>
               <label className="field">Gerät (welcher Robby)
                 <input className="input" value={form.device} onChange={(e) => setForm({ ...form, device: e.target.value })} />
+              </label>
+              <label className="field">Pin
+                <input className="input" value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value })} />
               </label>
               <label className="field">Straße
                 <input className="input" value={form.street} onChange={(e) => setForm({ ...form, street: e.target.value })} />

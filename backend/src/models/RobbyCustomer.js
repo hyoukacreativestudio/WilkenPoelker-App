@@ -31,6 +31,9 @@ const RobbyCustomer = sequelize.define('RobbyCustomer', {
   device: {
     type: DataTypes.STRING, // which Robby model
   },
+  pin: {
+    type: DataTypes.STRING, // device PIN from the old customer list
+  },
   purchaseDate: {
     type: DataTypes.DATEONLY,
   },

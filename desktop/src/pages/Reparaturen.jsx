@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
-import { auftragCategoriesForRole } from '../config.js';
+import { auftragCategoriesForRole, REPAIR_DEPARTMENT_ROLE, REPAIR_DEPARTMENTS } from '../config.js';
 
 const CAT_LABEL = { reparatur: 'Reparatur', neu: 'Neu', leasing: 'Leasing' };
+const DEPT_LABEL = { fahrrad: 'Fahrrad', robby: 'Robby', rasenmaeher: 'Rasenmäher', motorgeraete: 'Motorgeräte', elektro: 'Elektrofahrzeuge' };
 const READY = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'LEASING_ABGESCHLOSSEN'];
 
 // Aufträge (Taifun outreach): customers to contact, split by category and by
@@ -16,18 +17,22 @@ export default function Reparaturen({ user }) {
   const [filter, setFilter] = useState('open');     // open | reached
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState('name');   // name | kdnr | auftrag
-  const [data, setData] = useState({ items: [], counts: { byCategory: {}, open: 0, reached: 0 } });
+  // Department roles (Fahrrad, Robby, …) are locked to their own repairs; Service
+  // and admins see all and can pick a department here.
+  const lockedDept = REPAIR_DEPARTMENT_ROLE[user.role] || null;
+  const [department, setDepartment] = useState(lockedDept || 'all');
+  const [data, setData] = useState({ items: [], counts: { byCategory: {}, byDepartment: {}, open: 0, reached: 0 } });
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
     try {
-      const q = new URLSearchParams({ filter, category, search, scope: 'no_account' });
+      const q = new URLSearchParams({ filter, category, department: lockedDept || department, search, scope: 'no_account' });
       setData(unwrap(await api.get(`/repairs/outreach?${q.toString()}`)));
-    } catch (e) { setData({ items: [], counts: { byCategory: {}, open: 0, reached: 0 } }); }
+    } catch (e) { setData({ items: [], counts: { byCategory: {}, byDepartment: {}, open: 0, reached: 0 } }); }
     finally { setLoading(false); }
   };
-  useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); /* eslint-disable-next-line */ }, [filter, category, search]);
+  useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); /* eslint-disable-next-line */ }, [filter, category, department, search]);
 
   const setReached = async (g, reached) => {
     try {
@@ -44,6 +49,7 @@ export default function Reparaturen({ user }) {
     .sort((a, b) => {
       if (sortKey === 'kdnr') return String(a.kdNr || '').localeCompare(String(b.kdNr || ''), undefined, { numeric: true });
       if (sortKey === 'auftrag') return String(firstNr(a)).localeCompare(String(firstNr(b)), undefined, { numeric: true });
+      if (sortKey === 'abteilung') return String(a.department || 'zzz').localeCompare(String(b.department || 'zzz')) || String(a.customerName || '').localeCompare(String(b.customerName || ''));
       return String(a.customerName || a.kdNr || '').localeCompare(String(b.customerName || b.kdNr || ''));
     });
   const bc = data.counts?.byCategory || {};
@@ -58,10 +64,21 @@ export default function Reparaturen({ user }) {
         ))}
         <div className="spacer" />
         <span className="search"><input className="input" placeholder="Name, Telefon, Ort, Nr." value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 220 }} /></span>
+        {lockedDept
+          ? <span className="pill" title="Deine Abteilung">{DEPT_LABEL[lockedDept]}</span>
+          : (
+            <select className="select" value={department} onChange={(e) => setDepartment(e.target.value)} title="Abteilung">
+              <option value="all">Alle Abteilungen</option>
+              {REPAIR_DEPARTMENTS.map((d) => (
+                <option key={d.key} value={d.key}>{DEPT_LABEL[d.key]}{data.counts?.byDepartment?.[d.key] ? ` (${data.counts.byDepartment[d.key]})` : ''}</option>
+              ))}
+            </select>
+          )}
         <select className="select" value={sortKey} onChange={(e) => setSortKey(e.target.value)} title="Sortieren">
           <option value="name">Name A–Z</option>
           <option value="kdnr">Kundennummer</option>
           <option value="auftrag">Auftragsnummer</option>
+          {!lockedDept ? <option value="abteilung">Abteilung</option> : null}
         </select>
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
       </div>
@@ -82,7 +99,7 @@ export default function Reparaturen({ user }) {
           <tbody>
             {items.map((g) => (
               <tr key={g.id} className={g.reached ? 'done' : ''}>
-                <td><strong>{g.customerName || g.kdNr}</strong><div className="muted">Kd {g.kdNr}</div></td>
+                <td><strong>{g.customerName || g.kdNr}</strong><div className="muted">Kd {g.kdNr}{g.department ? ` · ${DEPT_LABEL[g.department] || g.department}` : ''}</div></td>
                 <td>{g.phone || g.mobile ? <a href={`tel:${g.phone || g.mobile}`}>{g.phone || g.mobile}</a> : '—'}</td>
                 <td>{[g.zip, g.city].filter(Boolean).join(' ') || '—'}</td>
                 <td>{(g.orders || []).map((o) => (

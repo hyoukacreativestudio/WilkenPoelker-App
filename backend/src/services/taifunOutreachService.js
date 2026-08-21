@@ -18,7 +18,29 @@ function customerName(c) {
 }
 const norm = (s) => String(s == null ? '' : s).toLowerCase();
 
-async function listOutreach({ filter = 'open', category = 'all', search = '', scope = 'no_account', limit = 3000 } = {}) {
+// Department the order belongs to, read from the prefix of its title (info) or
+// order number (nr): FA→Fahrrad, RY→Robby, RM/RT→Rasenmäher, MG→Motorgeräte,
+// EF→Elektrofahrzeuge. Lets each department see only their own customers.
+const DEPT_PREFIX = [
+  { dept: 'fahrrad', prefixes: ['FA'] },
+  { dept: 'robby', prefixes: ['RY'] },
+  { dept: 'rasenmaeher', prefixes: ['RM', 'RT'] },
+  { dept: 'motorgeraete', prefixes: ['MG'] },
+  { dept: 'elektro', prefixes: ['EF'] },
+];
+function departmentFromOrder(o) {
+  const fields = [o.info, o.nr];
+  for (const raw of fields) {
+    const s = String(raw == null ? '' : raw).trim().toUpperCase();
+    if (!s) continue;
+    for (const { dept, prefixes } of DEPT_PREFIX) {
+      if (prefixes.some((p) => s.startsWith(p))) return dept;
+    }
+  }
+  return null;
+}
+
+async function listOutreach({ filter = 'open', category = 'all', department = 'all', search = '', scope = 'no_account', limit = 3000 } = {}) {
   const rows = await TaifunOrder.findAll({
     where: { appHidden: false, vanishedAt: null, storno: false },
     include: [{
@@ -43,6 +65,7 @@ async function listOutreach({ filter = 'open', category = 'all', search = '', sc
     appStatus: o.appStatus,
     appStatusLabel: o.appStatusLabel,
     appCategory: o.appCategory || 'reparatur',
+    department: departmentFromOrder(o),
     reachedAt: o.reachedAt,
     kdNr: o.kdNr,
     hasAccount: accountSet.has(o.kdNr),
@@ -55,6 +78,16 @@ async function listOutreach({ filter = 'open', category = 'all', search = '', sc
   }));
 
   if (scope === 'no_account') orders = orders.filter((o) => !o.hasAccount);
+
+  // Department counts (over all orders in scope, before the department filter)
+  // so each tab can show how many are waiting for it.
+  const byDepartment = { fahrrad: 0, robby: 0, rasenmaeher: 0, motorgeraete: 0, elektro: 0 };
+  for (const o of orders) {
+    if (!o.reachedAt && o.department && byDepartment[o.department] !== undefined) byDepartment[o.department] += 1;
+  }
+
+  // Restrict to one department (by title/number prefix) when asked.
+  if (department && department !== 'all') orders = orders.filter((o) => o.department === department);
 
   // Group by customer + category
   const groups = new Map();
@@ -77,8 +110,9 @@ async function listOutreach({ filter = 'open', category = 'all', search = '', sc
       };
       groups.set(key, g);
     }
+    if (!g.department && o.department) g.department = o.department;
     g.orders.push({
-      nr: o.nr, info: o.info, date: o.date,
+      nr: o.nr, info: o.info, date: o.date, department: o.department,
       appStatus: o.appStatus, appStatusLabel: o.appStatusLabel, reachedAt: o.reachedAt,
     });
   }
@@ -133,7 +167,7 @@ async function listOutreach({ filter = 'open', category = 'all', search = '', sc
 
   return {
     items: sel,
-    counts: { byCategory, open: openCount, reached: reachedCount, total: sel.length },
+    counts: { byCategory, byDepartment, open: openCount, reached: reachedCount, total: sel.length },
   };
 }
 

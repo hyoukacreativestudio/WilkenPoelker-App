@@ -595,7 +595,7 @@ const listRobbyCustomers = asyncHandler(async (req, res) => {
   const q = String(req.query.search || '').trim().toLowerCase();
   const all = await RobbyCustomer.findAll({ order: [['name', 'ASC']] });
   const items = !q ? all : all.filter((c) => {
-    const hay = [c.name, c.customerNumber, c.street, c.zip, c.city, c.phone, c.device, c.purchaseDate, c.notes]
+    const hay = [c.name, c.customerNumber, c.street, c.zip, c.city, c.phone, c.device, c.pin, c.purchaseDate, c.notes]
       .filter(Boolean).join(' ').toLowerCase();
     return hay.includes(q);
   });
@@ -613,6 +613,7 @@ const createRobbyCustomer = asyncHandler(async (req, res) => {
     city: b.city || null,
     phone: b.phone || null,
     device: b.device || null,
+    pin: b.pin || null,
     purchaseDate: b.purchaseDate || null,
     notes: b.notes || null,
     createdByHandle: b.handle || null,
@@ -624,7 +625,7 @@ const updateRobbyCustomer = asyncHandler(async (req, res) => {
   const customer = await RobbyCustomer.findByPk(req.params.id);
   if (!customer) throw new NotFoundError('RobbyCustomer');
   const updates = {};
-  for (const f of ['name', 'customerNumber', 'street', 'zip', 'city', 'phone', 'device', 'purchaseDate', 'notes']) {
+  for (const f of ['name', 'customerNumber', 'street', 'zip', 'city', 'phone', 'device', 'pin', 'purchaseDate', 'notes']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f] || null;
   }
   await customer.update(updates);

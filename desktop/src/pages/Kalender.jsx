@@ -15,9 +15,16 @@ const DEPTS = [
 const CONFIG = {
   service_manager: { dept: 'fahrrad', limit: 6 },
   robby_manager: { dept: 'robby', limit: null },
+  cleaning_manager: { dept: 'reinigung', limit: null },
   admin: { dept: 'fahrrad', limit: null, pick: true },
   super_admin: { dept: 'fahrrad', limit: null, pick: true },
 };
+// Departments that take no appointments on certain weekdays (0=So … 6=Sa).
+// Fahrrad: no appointments Fri/Sat/Sun — those days show red with 0.
+const CLOSED_WEEKDAYS = {
+  fahrrad: [5, 6, 0],
+};
+const isClosedDay = (dept, day) => (CLOSED_WEEKDAYS[dept] || []).includes(day.getDay());
 const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -98,13 +105,14 @@ export default function Kalender({ user }) {
                 const k = iso(day);
                 const list = byDay[k] || [];
                 const inMonth = day.getMonth() === cursor.m;
+                const closed = isClosedDay(dept, day);
                 const full = limit && list.length >= limit;
-                const free = limit && list.length < limit;
                 return (
-                  <div key={k} className="cal-cell" style={{ opacity: inMonth ? 1 : 0.4, borderColor: k === todayIso ? 'var(--dept)' : undefined, cursor: 'pointer' }} onClick={() => setOpenDay(k)}>
+                  <div key={k} className="cal-cell" style={{ opacity: inMonth ? 1 : 0.4, background: closed ? '#f8d7da55' : undefined, borderColor: k === todayIso ? 'var(--dept)' : undefined, cursor: 'pointer' }} onClick={() => setOpenDay(k)}>
                     <div className="cal-daynum">
                       <span>{day.getDate()}</span>
-                      {limit ? <span className="badge" style={{ background: full ? '#f8d7da' : '#d3f2df', color: full ? '#a52834' : '#1f7a45', fontSize: 11 }}>{list.length}/{limit}{full ? ' voll' : ''}</span>
+                      {closed ? <span className="badge" style={{ background: '#f8d7da', color: '#a52834', fontSize: 11 }}>0 · zu</span>
+                             : limit ? <span className="badge" style={{ background: full ? '#f8d7da' : '#d3f2df', color: full ? '#a52834' : '#1f7a45', fontSize: 11 }}>{list.length}/{limit}{full ? ' voll' : ''}</span>
                              : (list.length ? <span className="badge open" style={{ fontSize: 11 }}>{list.length}</span> : null)}
                     </div>
                     <div className="cal-items">
@@ -128,6 +136,9 @@ export default function Kalender({ user }) {
         <div className="backdrop" onClick={() => setOpenDay(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 640 }}>
             <h2>{openDay.split('-').reverse().join('.')}{limit ? ` · ${(byDay[openDay] || []).length}/${limit}` : ''}</h2>
+            {isClosedDay(dept, new Date(openDay)) ? (
+              <div className="badge" style={{ background: '#f8d7da', color: '#a52834', marginBottom: 8 }}>Geschlossen – an diesem Wochentag keine Termine</div>
+            ) : null}
             {(byDay[openDay] || []).length === 0 ? (
               <div className="muted" style={{ padding: 12 }}>Keine Termine an diesem Tag.</div>
             ) : (

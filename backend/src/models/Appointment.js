@@ -22,7 +22,7 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.TEXT,
   },
   type: {
-    type: DataTypes.ENUM('service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing', 'onsite_repair'),
+    type: DataTypes.ENUM('service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing', 'onsite_repair', 'new_installation'),
     allowNull: false,
   },
   date: {

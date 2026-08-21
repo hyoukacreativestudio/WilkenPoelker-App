@@ -313,9 +313,19 @@ export default function Bestellungen({ user }) {
                 <textarea className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </label>
             </div>
-            <div className="modal-actions">
-              <button className="btn ghost" onClick={() => setShowForm(false)}>Abbrechen</button>
-              <button className="btn" onClick={submit} disabled={busy || !form.handle.trim()}>Speichern</button>
+            <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
+              <div>
+                {editingId && (
+                  <button className="btn ghost" style={{ color: '#a52834' }}
+                    onClick={async () => { if (confirm('Bestellung wirklich löschen?')) { try { await api.del(`/desktop/orders/${editingId}`); setShowForm(false); setEditingId(null); setDetail(null); load(); toast('Bestellung gelöscht'); } catch (e) { toast(e.message, { type: 'error' }); } } }}>
+                    🗑 Löschen
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn ghost" onClick={() => setShowForm(false)}>Abbrechen</button>
+                <button className="btn" onClick={submit} disabled={busy || !form.handle.trim()}>Speichern</button>
+              </div>
             </div>
           </div>
         </div>

@@ -137,6 +137,7 @@ const getOutreach = asyncHandler(async (req, res) => {
   const result = await outreach.listOutreach({
     filter: req.query.filter || 'open',       // open | reached | all
     category: req.query.category || 'all',    // all | reparatur | neu | leasing
+    department: req.query.department || 'all', // all | fahrrad | robby | rasenmaeher | motorgeraete | elektro
     search: req.query.search || '',
     scope: req.query.scope || 'no_account',   // no_account | all
   });

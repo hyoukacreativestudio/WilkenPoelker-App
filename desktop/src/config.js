@@ -23,14 +23,34 @@ export const colorForRole = (role) => ROLE_INFO[role]?.color || '#2E7D32';
 
 const SEE_ALL = ['admin', 'super_admin'];
 
+// Which "Aufträge/Reparaturen" department a role is limited to. Repairs are
+// tagged by their title/number prefix (FA→Fahrrad, RY→Robby, RM/RT→Rasenmäher,
+// MG→Motorgeräte, EF→Elektrofahrzeuge); each department role sees only its own.
+// Service + admins are NOT listed here → they see every department and can
+// filter/sort by it.
+export const REPAIR_DEPARTMENT_ROLE = {
+  bike_manager: 'fahrrad',
+  robby_manager: 'robby',
+  motor_manager: 'rasenmaeher',
+  motor_equipment_manager: 'motorgeraete',
+  ev_manager: 'elektro',
+};
+export const REPAIR_DEPARTMENTS = [
+  { key: 'fahrrad', label: 'Fahrrad' },
+  { key: 'robby', label: 'Robby' },
+  { key: 'rasenmaeher', label: 'Rasenmäher' },
+  { key: 'motorgeraete', label: 'Motorgeräte' },
+  { key: 'elektro', label: 'Elektrofahrzeuge' },
+];
+
 // Which modules a role sees in the sidebar.
 export function modulesForRole(role) {
   const all = SEE_ALL.includes(role);
   return [
     { key: 'uebersicht',   label: 'Übersicht',    icon: '🏠', show: true },
     { key: 'termine',      label: 'Termine',      icon: '📅', show: true },
-    { key: 'kalender',     label: 'Kalender',     icon: '📆', show: all || role === 'service_manager' || role === 'robby_manager' },
-    { key: 'reparaturen',  label: 'Aufträge',     icon: '🔧', show: all || role === 'service_manager' || role === 'sales_manager' },
+    { key: 'kalender',     label: 'Kalender',     icon: '📆', show: all || role === 'service_manager' || role === 'robby_manager' || role === 'cleaning_manager' },
+    { key: 'reparaturen',  label: 'Aufträge',     icon: '🔧', show: all || role === 'service_manager' || role === 'sales_manager' || REPAIR_DEPARTMENT_ROLE[role] != null },
     { key: 'tickets',      label: 'Tickets',      icon: '💬', show: true },
     { key: 'robbykunden',  label: 'Robby-Kunden', icon: '🤖', show: all || role === 'robby_manager' },
     { key: 'kundennummern', label: 'Kundennummern', icon: '🔢', show: all || role === 'service_manager' || role === 'sales_manager' },
