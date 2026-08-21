@@ -18,31 +18,27 @@ function customerName(c) {
 }
 const norm = (s) => String(s == null ? '' : s).toLowerCase();
 
-// Department the order belongs to, read from the prefix of its title (info) or
-// order number (nr): FA→Fahrrad, RY→Robby, RM/RT→Rasenmäher, MG→Motorgeräte,
-// EF→Elektrofahrzeuge. Lets each department see only their own customers.
-const DEPT_PREFIX = [
-  { dept: 'fahrrad', prefixes: ['FA', 'EB'] },
-  { dept: 'robby', prefixes: ['RY'] },
-  { dept: 'rasenmaeher', prefixes: ['RM', 'RT'] },
-  { dept: 'motorgeraete', prefixes: ['MG'] },
-  { dept: 'elektro', prefixes: ['EF'] },
-];
-// The prefix must sit at the very start and be followed by a non-letter (digit,
-// space, dash, …) or end of string — so a code like "FA-2401" matches Fahrrad
-// but the word "Fahrrad" does not get mis-classified.
-function matchesPrefix(s, prefix) {
-  if (!s.startsWith(prefix)) return false;
-  const next = s.charAt(prefix.length);
-  return next === '' || !/[A-Z]/.test(next);
-}
+// Department the order belongs to, read from the department CODE in its title
+// (info) or order number (nr). Taifun titles look like "26 FA Rep 3407" —
+// <year> <CODE> Rep <number> — so the code is a standalone token, not the start
+// of the string. Codes: FA/EB→Fahrrad, RY→Robby, RM/RT→Rasenmäher,
+// MG→Motorgeräte, EF→Elektrofahrzeuge. Lets each department see only its own.
+const CODE_DEPARTMENT = {
+  FA: 'fahrrad', EB: 'fahrrad',
+  RY: 'robby',
+  RM: 'rasenmaeher', RT: 'rasenmaeher',
+  MG: 'motorgeraete',
+  EF: 'elektro',
+};
 function departmentFromOrder(o) {
   const fields = [o.info, o.nr];
   for (const raw of fields) {
-    const s = String(raw == null ? '' : raw).trim().toUpperCase();
+    const s = String(raw == null ? '' : raw).toUpperCase();
     if (!s) continue;
-    for (const { dept, prefixes } of DEPT_PREFIX) {
-      if (prefixes.some((p) => matchesPrefix(s, p))) return dept;
+    // Split into word tokens and match the code exactly (so "FAHRRAD" or "REP"
+    // never match, only a standalone "FA", "MG", …).
+    for (const tok of s.split(/[^A-Z0-9]+/)) {
+      if (CODE_DEPARTMENT[tok]) return CODE_DEPARTMENT[tok];
     }
   }
   return null;
