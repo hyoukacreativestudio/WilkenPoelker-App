@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { TYPES } from './Termine.jsx';
 
 // Month calendar of appointments. Service sees the Fahrrad calendar (max 6/day,
 // so free days are obvious); Robby sees the Robby calendar (no limit). Admin can
@@ -12,19 +13,25 @@ const DEPTS = [
   { key: 'elektro', label: 'Elektrofahrzeuge' }, { key: 'verkauf', label: 'Verkauf' },
   { key: 'lieferungen', label: 'Lieferungen' },
 ];
+// The calendar filters by the SAME department the account tags its
+// appointments with (see desktopController.departmentForRole) — otherwise
+// hand-entered appointments would never appear. Service manages the bike
+// service calendar (max 6/day); Robby/Kärcher have no limit.
 const CONFIG = {
-  service_manager: { dept: 'fahrrad', limit: 6 },
+  service_manager: { dept: 'service', limit: 6 },
   robby_manager: { dept: 'robby', limit: null },
   cleaning_manager: { dept: 'reinigung', limit: null },
-  admin: { dept: 'fahrrad', limit: null, pick: true },
-  super_admin: { dept: 'fahrrad', limit: null, pick: true },
+  admin: { dept: 'service', limit: null, pick: true },
+  super_admin: { dept: 'service', limit: null, pick: true },
 };
 // Departments that take no appointments on certain weekdays (0=So … 6=Sa).
-// Fahrrad: no appointments Fri/Sat/Sun — those days show red with 0.
+// The Service (bike) calendar: no appointments Fri/Sat/Sun → red with 0.
 const CLOSED_WEEKDAYS = {
-  fahrrad: [5, 6, 0],
+  service: [5, 6, 0],
 };
 const isClosedDay = (dept, day) => (CLOSED_WEEKDAYS[dept] || []).includes(day.getDay());
+const savedHandle = () => (typeof localStorage !== 'undefined' ? localStorage.getItem('wp_handle') || '' : '');
+const emptyForm = (date = '') => ({ title: '', type: 'repair', date, startTime: '', endTime: '', customerName: '', customerNumber: '', phone: '', description: '', handle: savedHandle() });
 const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -39,6 +46,21 @@ export default function Kalender({ user }) {
   const [cursor, setCursor] = useState(() => { const n = new Date(); return { y: n.getFullYear(), m: n.getMonth() }; });
   const [openDay, setOpenDay] = useState(null); // iso date string of the enlarged day
   const [times, setTimes] = useState({});        // { apptId: 'HH:MM' } local edits
+  const [createForm, setCreateForm] = useState(null); // form object when creating a new appointment
+  const [busy, setBusy] = useState(false);
+
+  const openCreate = (dateIso) => setCreateForm(emptyForm(dateIso || ''));
+  const submitCreate = async () => {
+    // Only the Kürzel is mandatory — time (and everything else) stays optional.
+    if (!createForm.handle.trim()) { toast('Bitte dein Kürzel angeben', { type: 'error' }); return; }
+    setBusy(true);
+    try {
+      await api.post('/desktop/appointments', { ...createForm, department: dept });
+      toast('Termin angelegt');
+      setCreateForm(null);
+      await load();
+    } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -93,6 +115,7 @@ export default function Kalender({ user }) {
           </select>
         )}
         {limit ? <span className="muted">max. {limit} pro Tag — grün = frei, rot = voll</span> : <span className="muted">ohne Limit</span>}
+        <button className="btn" onClick={() => openCreate(todayIso)}>+ Termin</button>
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
       </div>
 
@@ -158,9 +181,53 @@ export default function Kalender({ user }) {
                 ))}
               </div>
             )}
+            <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
+              <button className="btn" onClick={() => { const d = openDay; setOpenDay(null); openCreate(d); }}>+ Neuer Termin</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
+                <button className="btn ghost" onClick={() => setOpenDay(null)}>Schließen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create a new appointment right from the calendar — same fields as Termine. */}
+      {createForm && (
+        <div className="backdrop" onClick={() => setCreateForm(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Neuer Termin</h2>
+            <div className="form-grid">
+              <label className="field">Kürzel *
+                <input className="input" value={createForm.handle} onChange={(e) => setCreateForm({ ...createForm, handle: e.target.value })} autoFocus />
+              </label>
+              <label className="field">Art
+                <select className="input" value={createForm.type} onChange={(e) => setCreateForm({ ...createForm, type: e.target.value })}>
+                  {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                </select>
+              </label>
+              <label className="field">Datum
+                <input className="input" type="date" value={createForm.date} onChange={(e) => setCreateForm({ ...createForm, date: e.target.value })} />
+              </label>
+              <label className="field">Uhrzeit (optional)
+                <input className="input" type="time" value={createForm.startTime} onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value })} />
+              </label>
+              <label className="field">Kunde
+                <input className="input" value={createForm.customerName} onChange={(e) => setCreateForm({ ...createForm, customerName: e.target.value })} />
+              </label>
+              <label className="field">Kundennummer
+                <input className="input" value={createForm.customerNumber} onChange={(e) => setCreateForm({ ...createForm, customerNumber: e.target.value })} />
+              </label>
+              <label className="field">Telefon
+                <input className="input" value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} />
+              </label>
+              <label className="field full">Titel / Notiz
+                <input className="input" value={createForm.title} onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })} />
+              </label>
+            </div>
             <div className="modal-actions">
-              <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
-              <button className="btn" onClick={() => setOpenDay(null)}>Schließen</button>
+              <button className="btn ghost" onClick={() => setCreateForm(null)}>Abbrechen</button>
+              <button className="btn" onClick={submitCreate} disabled={busy || !createForm.handle.trim()}>Speichern</button>
             </div>
           </div>
         </div>

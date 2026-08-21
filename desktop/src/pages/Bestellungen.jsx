@@ -76,6 +76,10 @@ export default function Bestellungen({ user }) {
     const arr = rows.filter((r) => sourceFilter === 'all' || String(r.sourceText || '').toLowerCase() === sourceFilter.toLowerCase());
     const { key, dir } = sort;
     arr.sort((a, b) => {
+      // Orders with a red problem note are ALWAYS pinned to the very top,
+      // no matter which column the list is sorted by.
+      const ap = a.problemNote ? 1 : 0, bp = b.problemNote ? 1 : 0;
+      if (ap !== bp) return bp - ap;
       let av = a[key] ?? '', bv = b[key] ?? '';
       if (key === 'quantity' || key === 'quantityForStock') { av = +av; bv = +bv; }
       else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase(); }

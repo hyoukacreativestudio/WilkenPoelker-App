@@ -5,7 +5,7 @@ import { useToast } from '../toast.jsx';
 // Appointments created in the app show up here automatically (same backend).
 // Staff can also create their own by hand with a free-text customer.
 // Sortable by date, customer, type. Past (>24h) appointments are hidden.
-const TYPES = [
+export const TYPES = [
   { key: 'repair', label: 'Reparatur' },
   { key: 'onsite_repair', label: 'Reparatur vor Ort' },
   { key: 'property_viewing', label: 'Besichtigung' },

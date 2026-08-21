@@ -22,19 +22,27 @@ const norm = (s) => String(s == null ? '' : s).toLowerCase();
 // order number (nr): FA→Fahrrad, RY→Robby, RM/RT→Rasenmäher, MG→Motorgeräte,
 // EF→Elektrofahrzeuge. Lets each department see only their own customers.
 const DEPT_PREFIX = [
-  { dept: 'fahrrad', prefixes: ['FA'] },
+  { dept: 'fahrrad', prefixes: ['FA', 'EB'] },
   { dept: 'robby', prefixes: ['RY'] },
   { dept: 'rasenmaeher', prefixes: ['RM', 'RT'] },
   { dept: 'motorgeraete', prefixes: ['MG'] },
   { dept: 'elektro', prefixes: ['EF'] },
 ];
+// The prefix must sit at the very start and be followed by a non-letter (digit,
+// space, dash, …) or end of string — so a code like "FA-2401" matches Fahrrad
+// but the word "Fahrrad" does not get mis-classified.
+function matchesPrefix(s, prefix) {
+  if (!s.startsWith(prefix)) return false;
+  const next = s.charAt(prefix.length);
+  return next === '' || !/[A-Z]/.test(next);
+}
 function departmentFromOrder(o) {
   const fields = [o.info, o.nr];
   for (const raw of fields) {
     const s = String(raw == null ? '' : raw).trim().toUpperCase();
     if (!s) continue;
     for (const { dept, prefixes } of DEPT_PREFIX) {
-      if (prefixes.some((p) => s.startsWith(p))) return dept;
+      if (prefixes.some((p) => matchesPrefix(s, p))) return dept;
     }
   }
   return null;
