@@ -49,7 +49,7 @@ export function modulesForRole(role) {
   return [
     { key: 'uebersicht',   label: 'Übersicht',    icon: '🏠', show: true },
     { key: 'termine',      label: 'Termine',      icon: '📅', show: true },
-    { key: 'kalender',     label: 'Kalender',     icon: '📆', show: all || role === 'service_manager' || role === 'robby_manager' || role === 'cleaning_manager' },
+    { key: 'kalender',     label: 'Kalender',     icon: '📆', show: all || role === 'service_manager' || role === 'robby_manager' || role === 'cleaning_manager' || role === 'bike_manager' },
     { key: 'reparaturen',  label: 'Aufträge',     icon: '🔧', show: all || role === 'service_manager' || role === 'sales_manager' || REPAIR_DEPARTMENT_ROLE[role] != null },
     { key: 'tickets',      label: 'Tickets',      icon: '💬', show: true },
     { key: 'robbykunden',  label: 'Robby-Kunden', icon: '🤖', show: all || role === 'robby_manager' },

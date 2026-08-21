@@ -375,7 +375,11 @@ const createAppointment = asyncHandler(async (req, res) => {
   if (!handle || !String(handle).trim()) throw new AppError('Kürzel ist erforderlich', 400, 'HANDLE_REQUIRED');
   const apptType = type && APPT_TYPES.includes(type) ? type : 'other';
 
-  const department = req.body.department || departmentForRole(req.user.role) || null;
+  // Service manages the Fahrrad (bike) calendar, so its hand-entered
+  // appointments default there (not to a separate "service" bucket) — that's
+  // the calendar Service and the Fahrrad department both look at.
+  const roleDept = req.user.role === 'service_manager' ? 'fahrrad' : departmentForRole(req.user.role);
+  const department = req.body.department || roleDept || null;
   const appointment = await Appointment.create({
     userId: req.user.id, // staff account owns the hand-entered appointment
     title: (title && String(title).trim()) || 'Termin',
