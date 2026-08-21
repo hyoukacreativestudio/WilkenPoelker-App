@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 
@@ -11,6 +11,7 @@ export default function RobbyKunden() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('name'); // name | customerNumber | device | city | purchaseDate
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm());
@@ -42,10 +43,29 @@ export default function RobbyKunden() {
   };
   const del = async (r) => { if (confirm(`${r.name} löschen?`)) { try { await api.del(`/desktop/robby-customers/${r.id}`); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
 
+  const sorted = useMemo(() => {
+    const s = String(sortKey);
+    const cmp = (a, b) => {
+      if (s === 'customerNumber') return String(a.customerNumber || '').localeCompare(String(b.customerNumber || ''), undefined, { numeric: true });
+      if (s === 'device') return String(a.device || '').localeCompare(String(b.device || ''));
+      if (s === 'city') return String(a.city || a.street || '').localeCompare(String(b.city || b.street || ''));
+      if (s === 'purchaseDate') return String(b.purchaseDate || '').localeCompare(String(a.purchaseDate || '')); // newest first
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    };
+    return [...rows].sort(cmp);
+  }, [rows, sortKey]);
+
   return (
     <div>
       <div className="toolbar no-print">
         <span className="search"><input className="input" placeholder="Suche: Name, Kd-Nr, Ort, Gerät, Pin, Datum…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 280 }} /></span>
+        <select className="select" value={sortKey} onChange={(e) => setSortKey(e.target.value)} title="Sortieren">
+          <option value="name">Name A–Z</option>
+          <option value="customerNumber">Kundennummer</option>
+          <option value="device">Gerät</option>
+          <option value="city">Ort</option>
+          <option value="purchaseDate">Gekauft (neueste zuerst)</option>
+        </select>
         <div className="spacer" />
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
         <button className="btn" onClick={openNew}>+ Robby-Kunde</button>
@@ -57,7 +77,7 @@ export default function RobbyKunden() {
         <div className="table-wrap"><table>
           <thead><tr><th>Name</th><th>Kd-Nr</th><th>Adresse</th><th>Telefon</th><th>Gerät</th><th>Pin</th><th>Gekauft am</th><th className="no-print"></th></tr></thead>
           <tbody>
-            {rows.map((r) => (
+            {sorted.map((r) => (
               <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => openEdit(r)}>
                 <td><strong>{r.name}</strong>{r.notes ? <div className="muted" style={{ fontSize: 12 }}>{r.notes}</div> : null}</td>
                 <td>{r.customerNumber || '—'}</td>
