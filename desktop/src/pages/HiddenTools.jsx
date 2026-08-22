@@ -376,10 +376,13 @@ function Urlaubsanfragen({ employees }) {
 // ── Tab 3: Urlaubskalender (approved, filter by department) ────────────────
 const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 const CAL_WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const ABSENCE_LABEL = { urlaub: 'Urlaub', krank: 'Krankmeldung', sonstiges: 'Sonstiges' };
 function Urlaubskalender({ departments }) {
+  const toast = useToast();
   const [dept, setDept] = useState('all');
   const [cursor, setCursor] = useState(() => { const n = new Date(); return { y: n.getFullYear(), m: n.getMonth() }; });
   const [entries, setEntries] = useState([]);
+  const [openDay, setOpenDay] = useState(null);
 
   const load = async () => {
     try {
@@ -389,6 +392,12 @@ function Urlaubskalender({ departments }) {
     } catch (e) { setEntries([]); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [dept]);
+
+  const removeVacation = async (v) => {
+    if (!confirm(`Urlaub von ${v.personName} löschen?`)) return;
+    try { await api.del(`/desktop/hidden/vacations/${v.id}`); toast('Gelöscht'); load(); }
+    catch (e) { toast(e.message, { type: 'error' }); }
+  };
 
   const byDay = useMemo(() => {
     const map = {};
@@ -428,15 +437,16 @@ function Urlaubskalender({ departments }) {
             {week.map((day) => {
               const k = iso(day); const list = byDay[k] || []; const inMonth = day.getMonth() === cursor.m;
               return (
-                <div key={k} className="cal-cell" style={{ opacity: inMonth ? 1 : 0.4 }}>
+                <div key={k} className="cal-cell" style={{ opacity: inMonth ? 1 : 0.4, cursor: list.length ? 'pointer' : 'default' }} onClick={() => { if (list.length) setOpenDay(k); }}>
                   <div className="cal-daynum"><span>{day.getDate()}</span>{list.length ? <span className="badge open" style={{ fontSize: 11 }}>{list.length}</span> : null}</div>
                   <div className="cal-items">
                     {list.slice(0, 5).map((v) => (
-                      <div key={v.id} className="cal-item" title={`${v.personName} (${v.department || ''})`} style={{ background: '#e6f0ff' }}>
+                      <div key={v.id} title={`${v.personName} (${v.department || ''})`}
+                        style={{ background: '#2b6cb0', color: '#fff', borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {v.personName}
                       </div>
                     ))}
-                    {list.length > 5 ? <div className="muted" style={{ fontSize: 11 }}>+{list.length - 5}</div> : null}
+                    {list.length > 5 ? <div className="muted" style={{ fontSize: 11 }}>+{list.length - 5} mehr</div> : null}
                   </div>
                 </div>
               );
@@ -444,6 +454,32 @@ function Urlaubskalender({ departments }) {
           </div>
         ))}
       </div>
+
+      {/* Open a day → everything cleanly listed */}
+      {openDay && (
+        <div className="backdrop" onClick={() => setOpenDay(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 560 }}>
+            <h2>Urlaub am {deDate(openDay)}</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 420, overflowY: 'auto' }}>
+              {(byDay[openDay] || []).map((v) => (
+                <div key={v.id} className="card" style={{ padding: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <strong>{v.personName}</strong>
+                    {v.department ? <span className="muted"> · {v.department}</span> : null}
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {ABSENCE_LABEL[v.type] || 'Urlaub'} · {deDate(v.startDate)} – {deDate(v.endDate)}{v.note ? ` · ${v.note}` : ''}
+                    </div>
+                  </div>
+                  <button className="btn sm ghost" onClick={() => removeVacation(v)}>✕</button>
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setOpenDay(null)}>Schließen</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
