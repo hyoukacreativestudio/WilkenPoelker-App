@@ -25,6 +25,7 @@ import Kundennummern from './pages/Kundennummern.jsx';
 import RobbyKunden from './pages/RobbyKunden.jsx';
 import Kalender from './pages/Kalender.jsx';
 import Quellen from './pages/Quellen.jsx';
+import HiddenTools from './pages/HiddenTools.jsx';
 
 const PAGES = { termine: Termine, kalender: Kalender, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, quellen: Quellen, lager: Lager };
 
@@ -49,6 +50,18 @@ export default function Shell({ user, onLogout }) {
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const [notifs, setNotifs] = useState([]);      // notification rows
   const [notifOpen, setNotifOpen] = useState(false);
+  const [hiddenOpen, setHiddenOpen] = useState(false); // hidden admin tools
+  const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+  const darkClicks = React.useRef([]);
+  // Secret: 3 quick taps on the dark-mode button (admin only) open the tools.
+  const onDarkClick = () => {
+    setDark((d) => !d);
+    if (!isAdmin) return;
+    const t = Date.now();
+    darkClicks.current = darkClicks.current.filter((x) => t - x < 800);
+    darkClicks.current.push(t);
+    if (darkClicks.current.length >= 3) { darkClicks.current = []; setHiddenOpen(true); }
+  };
   const unread = useMemo(() => notifs.filter((n) => !n.read).length, [notifs]);
 
   // Poll notifications for this account → badge = unread; panel lists them.
@@ -162,7 +175,7 @@ export default function Shell({ user, onLogout }) {
               {online ? '⏳' : '📴 Offline'}{pending > 0 ? ` · ${pending} wartet` : ''}
             </span>
           )}
-          <button className="theme-toggle" onClick={() => setDark((d) => !d)} title={dark ? 'Heller Modus' : 'Dunkler Modus'}>
+          <button className="theme-toggle" onClick={onDarkClick} title={dark ? 'Heller Modus' : 'Dunkler Modus'}>
             {dark ? '☀️' : '🌙'}
           </button>
         </div>
@@ -172,6 +185,7 @@ export default function Shell({ user, onLogout }) {
             : <Page user={user} />}
         </div>
       </main>
+      {hiddenOpen && <HiddenTools user={user} onClose={() => setHiddenOpen(false)} />}
     </div>
   );
 }

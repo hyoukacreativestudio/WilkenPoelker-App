@@ -53,4 +53,17 @@ router.get('/tickets/:id', authenticate, authorize(...STAFF), desktop.getTicket)
 router.post('/tickets/:id/message', authenticate, authorize(...STAFF), desktop.addTicketMessage);
 router.patch('/tickets/:id', authenticate, authorize(...STAFF), desktop.updateTicket);
 
+// ── Hidden admin tools: time clock + vacations (admin only) ──
+const hidden = require('../controllers/hiddenToolsController');
+const ADMIN = ['admin', 'super_admin'];
+router.get('/hidden/employees', authenticate, authorize(...ADMIN), hidden.listEmployees);
+router.get('/hidden/timeclock', authenticate, authorize(...ADMIN), hidden.listTimeClock);
+router.get('/hidden/timeclock/status', authenticate, authorize(...ADMIN), hidden.clockStatus);
+router.post('/hidden/timeclock/punch', authenticate, authorize(...ADMIN), hidden.punch);
+router.delete('/hidden/timeclock/:id', authenticate, authorize(...ADMIN), hidden.deleteTimeClock);
+router.get('/hidden/vacations', authenticate, authorize(...ADMIN), hidden.listVacations);
+router.post('/hidden/vacations', authenticate, authorize(...ADMIN), hidden.createVacation);
+router.post('/hidden/vacations/:id/approve', authenticate, authorize(...ADMIN), hidden.approveVacation);
+router.delete('/hidden/vacations/:id', authenticate, authorize(...ADMIN), hidden.deleteVacation);
+
 module.exports = router;

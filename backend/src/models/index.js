@@ -30,6 +30,8 @@ const TaifunOrder = require('./TaifunOrder');
 const Order = require('./Order');
 const WarehouseItem = require('./WarehouseItem');
 const RobbyCustomer = require('./RobbyCustomer');
+const TimeClock = require('./TimeClock');
+const VacationEntry = require('./VacationEntry');
 
 // ==========================================
 // ASSOCIATIONS
@@ -211,4 +213,6 @@ module.exports = {
   Order,
   WarehouseItem,
   RobbyCustomer,
+  TimeClock,
+  VacationEntry,
 };
