@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 
@@ -25,7 +27,7 @@ function mondayOf(date) { const d = new Date(date); const off = (d.getDay() + 6)
 
 export default function HiddenTools({ user, onClose }) {
   const toast = useToast();
-  const [tab, setTab] = useState('stempel');
+  const [tab, setTab] = useState('einstempeln');
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
 
@@ -46,12 +48,13 @@ export default function HiddenTools({ user, onClose }) {
           <button className="btn ghost" onClick={onClose}>Schließen ✕</button>
         </div>
         <div className="toolbar no-print" style={{ marginBottom: 10 }}>
-          {[['stempel', '⏱️ Stempeluhr'], ['anfragen', '📝 Urlaubsanfragen'], ['kalender', '📅 Urlaubskalender']].map(([k, l]) => (
+          {[['einstempeln', '⏱️ Einstempeln'], ['auswertung', '📊 Auswertung'], ['anfragen', '📝 Urlaubsanfragen'], ['kalender', '📅 Urlaubskalender']].map(([k, l]) => (
             <span key={k} className={`pill tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{l}</span>
           ))}
         </div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {tab === 'stempel' && <Stempeluhr />}
+          {tab === 'einstempeln' && <Einstempeln />}
+          {tab === 'auswertung' && <Auswertung />}
           {tab === 'anfragen' && <Urlaubsanfragen employees={employees} onChanged={() => {}} />}
           {tab === 'kalender' && <Urlaubskalender departments={departments} />}
         </div>
@@ -60,49 +63,107 @@ export default function HiddenTools({ user, onClose }) {
   );
 }
 
-// ── Tab 1: Stempeluhr + Auswertung ─────────────────────────────────────────
-function Stempeluhr() {
+// ── Tab 1: Einstempeln ─────────────────────────────────────────────────────
+function Einstempeln() {
   const toast = useToast();
   const [name, setName] = useState(() => localStorage.getItem('wp_stempel_name') || '');
   const [activity, setActivity] = useState(() => localStorage.getItem('wp_stempel_activity') || 'App-Entwicklung');
   const [running, setRunning] = useState(false);
   const [openEntry, setOpenEntry] = useState(null);
   const [now, setNow] = useState(Date.now());
-  const today = new Date();
-  const [from, setFrom] = useState(iso(addDays(mondayOf(today), -21)));
-  const [to, setTo] = useState(iso(today));
-  const [entries, setEntries] = useState([]);
-  const [vacations, setVacations] = useState([]);
-  const [doneEntries, setDoneEntries] = useState([]);
-  const [showDone, setShowDone] = useState(false);
 
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
-
   const loadStatus = async (nm) => {
     if (!nm) return;
     try { const d = unwrap(await api.get(`/desktop/hidden/timeclock/status?name=${encodeURIComponent(nm)}`)); setRunning(d.running); setOpenEntry(d.entry || null); }
     catch (e) { /* ignore */ }
   };
+  useEffect(() => { loadStatus(name); /* eslint-disable-next-line */ }, []);
+
+  const punch = async () => {
+    if (!name.trim()) { toast('Bitte zuerst deinen Namen eingeben', { type: 'error' }); return; }
+    localStorage.setItem('wp_stempel_name', name.trim());
+    localStorage.setItem('wp_stempel_activity', activity.trim() || 'App-Entwicklung');
+    try {
+      const d = unwrap(await api.post('/desktop/hidden/timeclock/punch', { name: name.trim(), activity: activity.trim() }));
+      setRunning(d.running); setOpenEntry(d.entry || null);
+      toast(d.running ? 'Eingestempelt' : 'Ausgestempelt');
+    } catch (e) { toast(e.message, { type: 'error' }); }
+  };
+
+  const elapsed = openEntry && running ? Math.max(0, now - new Date(openEntry.clockIn).getTime()) : 0;
+  const elapsedStr = `${pad(Math.floor(elapsed / 3600000))}:${pad(Math.floor(elapsed / 60000) % 60)}:${pad(Math.floor(elapsed / 1000) % 60)}`;
+
+  return (
+    <div>
+      <div className="card" style={{ padding: 18, maxWidth: 520, margin: '0 auto' }}>
+        <div className="form-grid">
+          <label className="field">Name
+            <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Dein Name" />
+          </label>
+          <label className="field">Tätigkeit
+            <input className="input" value={activity} onChange={(e) => setActivity(e.target.value)} />
+          </label>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 16 }}>
+          <button className="btn" style={{ background: running ? '#E53E3E' : undefined, fontSize: 18, padding: '14px 28px' }} onClick={punch}>
+            {running ? '■ Ausstempeln' : '▶ Einstempeln'}
+          </button>
+          {running
+            ? <span style={{ fontSize: 30, fontVariantNumeric: 'tabular-nums', fontWeight: 800 }}>{elapsedStr}</span>
+            : <span className="muted">nicht eingestempelt</span>}
+          {running && openEntry ? <span className="muted">seit {new Date(openEntry.clockIn).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</span> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Tab 2: Auswertung (report + who's clocked in + PDF) ─────────────────────
+function Auswertung() {
+  const toast = useToast();
+  const today = new Date();
+  const [names, setNames] = useState([]);
+  const [name, setName] = useState(() => localStorage.getItem('wp_stempel_name') || '');
+  const [from, setFrom] = useState(iso(addDays(mondayOf(today), -49)));
+  const [to, setTo] = useState(iso(today));
+  const [entries, setEntries] = useState([]);
+  const [vacations, setVacations] = useState([]);
+  const [doneEntries, setDoneEntries] = useState([]);
+  const [showDone, setShowDone] = useState(false);
+  const [nowRunning, setNowRunning] = useState([]);
+  const [tick, setTick] = useState(Date.now());
+
+  useEffect(() => { const t = setInterval(() => setTick(Date.now()), 1000); return () => clearInterval(t); }, []);
+
+  // Who is clocked in right now (refreshed every 20s + on mount).
+  const loadRunning = async () => {
+    try { const d = unwrap(await api.get('/desktop/hidden/timeclock/running')); setNowRunning(d.entries || []); }
+    catch (e) { setNowRunning([]); }
+  };
+  useEffect(() => { loadRunning(); const t = setInterval(loadRunning, 20000); return () => clearInterval(t); }, []);
+
   const loadReport = async () => {
-    if (!name) return;
+    if (!name) { setEntries([]); return; }
     try {
       const d = unwrap(await api.get(`/desktop/hidden/timeclock?name=${encodeURIComponent(name)}&from=${from}&to=${to}&scope=active`));
       setEntries(d.entries || []);
+      setNames(d.names || []);
       const dn = unwrap(await api.get(`/desktop/hidden/timeclock?name=${encodeURIComponent(name)}&scope=done`));
       setDoneEntries(dn.entries || []);
       const v = unwrap(await api.get(`/desktop/hidden/vacations?status=approved&from=${from}&to=${to}`));
       setVacations((v.entries || []).filter((e) => e.personName === name));
     } catch (e) { setEntries([]); }
   };
-  useEffect(() => { loadStatus(name); }, []);
-  useEffect(() => { if (name) loadReport(); /* eslint-disable-next-line */ }, [name, from, to]);
+  // Load the names list once even before a person is chosen.
+  useEffect(() => { (async () => { try { const d = unwrap(await api.get('/desktop/hidden/timeclock')); setNames(d.names || []); } catch (e) {} })(); }, []);
+  useEffect(() => { loadReport(); /* eslint-disable-next-line */ }, [name, from, to]);
 
   const markDone = async (date, done) => {
     try { await api.post('/desktop/hidden/timeclock/done', { name, date, done }); loadReport(); }
     catch (e) { toast(e.message, { type: 'error' }); }
   };
 
-  // Group the checked-off entries by day for the "Erledigt" list.
   const doneDays = useMemo(() => {
     const map = {};
     for (const e of doneEntries) {
@@ -114,53 +175,41 @@ function Stempeluhr() {
     return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
   }, [doneEntries]);
 
-  const punch = async () => {
-    if (!name.trim()) { toast('Bitte zuerst deinen Namen eingeben', { type: 'error' }); return; }
-    localStorage.setItem('wp_stempel_name', name.trim());
-    localStorage.setItem('wp_stempel_activity', activity.trim() || 'App-Entwicklung');
-    try {
-      const d = unwrap(await api.post('/desktop/hidden/timeclock/punch', { name: name.trim(), activity: activity.trim() }));
-      setRunning(d.running); setOpenEntry(d.entry || null);
-      toast(d.running ? 'Eingestempelt' : 'Ausgestempelt');
-      loadReport();
-    } catch (e) { toast(e.message, { type: 'error' }); }
-  };
-
-  const elapsed = openEntry && running ? Math.max(0, now - new Date(openEntry.clockIn).getTime()) : 0;
-  const elapsedStr = `${pad(Math.floor(elapsed / 3600000))}:${pad(Math.floor(elapsed / 60000) % 60)}:${pad(Math.floor(elapsed / 1000) % 60)}`;
-
-  // Build the report grouped by ISO week.
   const report = useMemo(() => buildReport(entries, vacations, from, to), [entries, vacations, from, to]);
 
   return (
     <div>
-      <div className="card" style={{ padding: 14, marginBottom: 14 }}>
-        <div className="form-grid">
-          <label className="field">Name
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Dein Name" />
-          </label>
-          <label className="field">Tätigkeit
-            <input className="input" value={activity} onChange={(e) => setActivity(e.target.value)} />
-          </label>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
-          <button className="btn" style={{ background: running ? '#E53E3E' : undefined, fontSize: 16, padding: '10px 20px' }} onClick={punch}>
-            {running ? '■ Ausstempeln' : '▶ Einstempeln'}
-          </button>
-          {running ? <span style={{ fontSize: 22, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>{elapsedStr}</span>
-                   : <span className="muted">nicht eingestempelt</span>}
-        </div>
+      {/* Who is currently clocked in */}
+      <div className="card" style={{ padding: 12, marginBottom: 12, background: nowRunning.length ? 'rgba(31,122,69,.08)' : undefined }}>
+        <strong>🟢 Aktuell eingestempelt</strong>
+        {nowRunning.length === 0 ? <span className="muted" style={{ marginLeft: 8 }}>gerade niemand</span> : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
+            {nowRunning.map((e) => {
+              const el = Math.max(0, tick - new Date(e.clockIn).getTime());
+              const es = `${pad(Math.floor(el / 3600000))}:${pad(Math.floor(el / 60000) % 60)}`;
+              return (
+                <span key={e.id} className="badge" style={{ background: '#1f7a45', color: '#fff' }}>
+                  {e.personName} · {es} h (seit {new Date(e.clockIn).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })})
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="toolbar no-print" style={{ marginBottom: 8 }}>
-        <strong>Auswertung</strong>
+        <select className="select" value={name} onChange={(e) => setName(e.target.value)}>
+          <option value="">— Mitarbeiter wählen —</option>
+          {names.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
         <div className="spacer" />
         <label className="muted">von <input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ width: 150 }} /></label>
         <label className="muted">bis <input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ width: 150 }} /></label>
-        <button className="btn" onClick={() => printReport(name, report)} disabled={!name}>🖨️ Als PDF</button>
+        <button className="btn" onClick={() => savePDF(name, report)} disabled={!name || report.length === 0}>💾 PDF speichern</button>
       </div>
 
-      {report.length === 0 ? <div className="empty"><div className="big">⏱️</div>Keine Zeiten im Zeitraum.</div>
+      {!name ? <div className="empty"><div className="big">📊</div>Bitte oben einen Mitarbeiter wählen.</div>
+        : report.length === 0 ? <div className="empty"><div className="big">⏱️</div>Keine Zeiten im Zeitraum.</div>
         : report.map((w) => (
           <div key={`${w.year}-${w.week}`} style={{ marginBottom: 18 }}>
             <div style={{ fontWeight: 700, color: 'var(--dept)', marginBottom: 6 }}>KW {w.week} · {deDate(w.start).slice(0, 6)} – {deDate(w.end)}</div>
@@ -249,33 +298,39 @@ function buildReport(entries, vacations, from, to) {
   return [...weeks.values()];
 }
 
-// Open a clean print window (→ user saves as PDF), styled like the report.
-function printReport(name, report) {
-  const rows = report.map((w) => `
-    <h3>KW ${w.week} · ${deDate(w.start).slice(0, 6)} – ${deDate(w.end)}</h3>
-    <table>
-      <thead><tr><th>Datum</th><th>Tag</th><th>Tätigkeit</th><th class="r">Stunden</th></tr></thead>
-      <tbody>
-        ${w.rows.map((r) => `<tr class="${r.absence ? 'vac' : ''}"><td>${deDate(r.date)}</td><td>${r.wd}</td><td>${r.absence ? r.absenceLabel : (r.hours ? r.activity : '')}</td><td class="r">${r.absence ? '–' : fmtH(r.hours)}</td></tr>`).join('')}
-        <tr class="sum"><td></td><td></td><td>Summe KW ${w.week}</td><td class="r">${fmtH(w.total)}</td></tr>
-      </tbody>
-    </table>`).join('');
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Zeiterfassung ${name}</title>
-    <style>
-      body{font-family:Arial,Helvetica,sans-serif;color:#1a2330;margin:32px;}
-      h1{font-size:20px;} h3{color:#22516f;margin:20px 0 6px;}
-      table{border-collapse:collapse;width:100%;margin-bottom:6px;font-size:13px;}
-      th{background:#22516f;color:#fff;text-align:left;padding:7px 10px;}
-      td{border:1px solid #d6dde5;padding:6px 10px;}
-      .r{text-align:right;} .sum td{background:#eef2f6;font-weight:700;}
-      .vac td{color:#8a94a6;background:#f7f8fa;}
-    </style></head><body>
-    <h1>Zeiterfassung · ${name}</h1>${rows}
-    <script>window.onload=function(){window.print();}<\/script>
-    </body></html>`;
-  const w = window.open('', '_blank');
-  if (!w) return;
-  w.document.write(html); w.document.close();
+// Generate + download a real PDF (jsPDF), laid out like the boss's report.
+function savePDF(name, report) {
+  if (!report.length) return;
+  const doc = new jsPDF();
+  const totalH = report.reduce((s, w) => s + w.total, 0);
+  const first = report[0], last = report[report.length - 1];
+  doc.setFontSize(16); doc.setTextColor(26, 35, 48);
+  doc.text('Homeoffice-Stunden · Zeiterfassung', 14, 18);
+  doc.setFontSize(11); doc.setTextColor(90, 100, 115);
+  doc.text(`${name} · ${deDate(first.start)} – ${deDate(last.end)} · gesamt ${fmtH(totalH)}`, 14, 25);
+
+  let y = 32;
+  for (const w of report) {
+    if (y > 260) { doc.addPage(); y = 18; }
+    doc.setFontSize(12); doc.setTextColor(34, 81, 111);
+    doc.text(`KW ${w.week} · ${deDate(w.start).slice(0, 6)} – ${deDate(w.end)}`, 14, y);
+    autoTable(doc, {
+      startY: y + 2,
+      head: [['Datum', 'Tag', 'Tätigkeit', 'Stunden']],
+      body: [
+        ...w.rows.map((r) => [deDate(r.date), r.wd, r.absence ? r.absenceLabel : (r.hours ? r.activity : ''), r.absence ? '–' : fmtH(r.hours)]),
+        [{ content: '', colSpan: 2 }, { content: `Summe KW ${w.week}`, styles: { fontStyle: 'bold' } }, { content: fmtH(w.total), styles: { fontStyle: 'bold', halign: 'right' } }],
+      ],
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [34, 81, 111], textColor: 255 },
+      columnStyles: { 3: { halign: 'right' } },
+      theme: 'grid',
+      margin: { left: 14, right: 14 },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+  const safe = name.replace(/[^\wäöüÄÖÜß-]+/g, '_');
+  doc.save(`Zeiterfassung_${safe}.pdf`);
 }
 
 // ── Tab 2: Urlaubsanfragen (create + approve) ──────────────────────────────

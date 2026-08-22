@@ -26,6 +26,12 @@ const clockStatus = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { running: !!open, entry: open } });
 });
 
+// Everyone currently clocked in (open sessions) — shown atop the report.
+const runningNow = asyncHandler(async (req, res) => {
+  const entries = await TimeClock.findAll({ where: { clockOut: null }, order: [['clockIn', 'ASC']] });
+  res.json({ success: true, data: { entries } });
+});
+
 // Toggle: if a session is open → clock out; else clock in.
 const punch = asyncHandler(async (req, res) => {
   const name = String(req.body.name || '').trim();
@@ -149,6 +155,6 @@ const deleteVacation = asyncHandler(async (req, res) => {
 
 module.exports = {
   listEmployees,
-  clockStatus, punch, listTimeClock, markDayDone, deleteTimeClock,
+  clockStatus, runningNow, punch, listTimeClock, markDayDone, deleteTimeClock,
   listVacations, createVacation, approveVacation, deleteVacation,
 };

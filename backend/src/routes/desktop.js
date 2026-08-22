@@ -59,6 +59,7 @@ const ADMIN = ['admin', 'super_admin'];
 router.get('/hidden/employees', authenticate, authorize(...ADMIN), hidden.listEmployees);
 router.get('/hidden/timeclock', authenticate, authorize(...ADMIN), hidden.listTimeClock);
 router.get('/hidden/timeclock/status', authenticate, authorize(...ADMIN), hidden.clockStatus);
+router.get('/hidden/timeclock/running', authenticate, authorize(...ADMIN), hidden.runningNow);
 router.post('/hidden/timeclock/punch', authenticate, authorize(...ADMIN), hidden.punch);
 router.post('/hidden/timeclock/done', authenticate, authorize(...ADMIN), hidden.markDayDone);
 router.delete('/hidden/timeclock/:id', authenticate, authorize(...ADMIN), hidden.deleteTimeClock);
