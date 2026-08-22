@@ -60,6 +60,7 @@ router.get('/hidden/employees', authenticate, authorize(...ADMIN), hidden.listEm
 router.get('/hidden/timeclock', authenticate, authorize(...ADMIN), hidden.listTimeClock);
 router.get('/hidden/timeclock/status', authenticate, authorize(...ADMIN), hidden.clockStatus);
 router.post('/hidden/timeclock/punch', authenticate, authorize(...ADMIN), hidden.punch);
+router.post('/hidden/timeclock/done', authenticate, authorize(...ADMIN), hidden.markDayDone);
 router.delete('/hidden/timeclock/:id', authenticate, authorize(...ADMIN), hidden.deleteTimeClock);
 router.get('/hidden/vacations', authenticate, authorize(...ADMIN), hidden.listVacations);
 router.post('/hidden/vacations', authenticate, authorize(...ADMIN), hidden.createVacation);

@@ -25,6 +25,12 @@ const TimeClock = sequelize.define('TimeClock', {
     type: DataTypes.STRING,
     defaultValue: 'App-Entwicklung',
   },
+  // When a day is checked off ("erledigt") it moves out of the active list.
+  // Can be undone for a week; after that it is auto-deleted.
+  doneAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
   note: {
     type: DataTypes.TEXT,
   },

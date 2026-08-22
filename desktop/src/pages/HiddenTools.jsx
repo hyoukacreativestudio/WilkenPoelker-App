@@ -73,6 +73,8 @@ function Stempeluhr() {
   const [to, setTo] = useState(iso(today));
   const [entries, setEntries] = useState([]);
   const [vacations, setVacations] = useState([]);
+  const [doneEntries, setDoneEntries] = useState([]);
+  const [showDone, setShowDone] = useState(false);
 
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
@@ -84,14 +86,33 @@ function Stempeluhr() {
   const loadReport = async () => {
     if (!name) return;
     try {
-      const d = unwrap(await api.get(`/desktop/hidden/timeclock?name=${encodeURIComponent(name)}&from=${from}&to=${to}`));
+      const d = unwrap(await api.get(`/desktop/hidden/timeclock?name=${encodeURIComponent(name)}&from=${from}&to=${to}&scope=active`));
       setEntries(d.entries || []);
+      const dn = unwrap(await api.get(`/desktop/hidden/timeclock?name=${encodeURIComponent(name)}&scope=done`));
+      setDoneEntries(dn.entries || []);
       const v = unwrap(await api.get(`/desktop/hidden/vacations?status=approved&from=${from}&to=${to}`));
       setVacations((v.entries || []).filter((e) => e.personName === name));
     } catch (e) { setEntries([]); }
   };
   useEffect(() => { loadStatus(name); }, []);
   useEffect(() => { if (name) loadReport(); /* eslint-disable-next-line */ }, [name, from, to]);
+
+  const markDone = async (date, done) => {
+    try { await api.post('/desktop/hidden/timeclock/done', { name, date, done }); loadReport(); }
+    catch (e) { toast(e.message, { type: 'error' }); }
+  };
+
+  // Group the checked-off entries by day for the "Erledigt" list.
+  const doneDays = useMemo(() => {
+    const map = {};
+    for (const e of doneEntries) {
+      const day = iso(new Date(e.clockIn));
+      const h = e.clockOut ? (new Date(e.clockOut) - new Date(e.clockIn)) / 3600000 : 0;
+      if (!map[day]) map[day] = { date: day, hours: 0, doneAt: e.doneAt };
+      map[day].hours += h;
+    }
+    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+  }, [doneEntries]);
 
   const punch = async () => {
     if (!name.trim()) { toast('Bitte zuerst deinen Namen eingeben', { type: 'error' }); return; }
@@ -144,22 +165,52 @@ function Stempeluhr() {
           <div key={`${w.year}-${w.week}`} style={{ marginBottom: 18 }}>
             <div style={{ fontWeight: 700, color: 'var(--dept)', marginBottom: 6 }}>KW {w.week} · {deDate(w.start).slice(0, 6)} – {deDate(w.end)}</div>
             <div className="table-wrap"><table>
-              <thead><tr><th>Datum</th><th>Tag</th><th>Tätigkeit</th><th className="right">Stunden</th></tr></thead>
+              <thead><tr><th className="no-print" style={{ width: 34 }}>✓</th><th>Datum</th><th>Tag</th><th>Tätigkeit</th><th className="right">Stunden</th></tr></thead>
               <tbody>
                 {w.rows.map((r) => (
-                  <tr key={r.date} style={r.vacation ? { color: '#8a94a6' } : undefined}>
+                  <tr key={r.date} style={r.absence ? { color: '#8a94a6' } : undefined}>
+                    <td className="no-print" style={{ textAlign: 'center' }}>
+                      {!r.absence && r.hours ? <input type="checkbox" title="Als erledigt abhaken" onChange={() => markDone(r.date, true)} /> : null}
+                    </td>
                     <td>{deDate(r.date)}</td><td>{r.wd}</td>
-                    <td>{r.vacation ? 'Urlaub' : (r.hours ? r.activity : '')}</td>
-                    <td className="right">{r.vacation ? '–' : fmtH(r.hours)}</td>
+                    <td>{r.absence ? r.absenceLabel : (r.hours ? r.activity : '')}</td>
+                    <td className="right">{r.absence ? '–' : fmtH(r.hours)}</td>
                   </tr>
                 ))}
                 <tr style={{ fontWeight: 700, background: 'var(--dept-soft)' }}>
-                  <td></td><td></td><td>Summe KW {w.week}</td><td className="right">{fmtH(w.total)}</td>
+                  <td className="no-print"></td><td></td><td></td><td>Summe KW {w.week}</td><td className="right">{fmtH(w.total)}</td>
                 </tr>
               </tbody>
             </table></div>
           </div>
         ))}
+
+      {/* Erledigte Tage: rückgängig innerhalb einer Woche, danach Auto-Löschung */}
+      <div style={{ marginTop: 16, borderTop: '1px solid var(--dept-soft)', paddingTop: 10 }}>
+        <button className="btn ghost" onClick={() => setShowDone((s) => !s)}>
+          {showDone ? '▾' : '▸'} Erledigt ({doneDays.length})
+        </button>
+        {showDone && (
+          doneDays.length === 0 ? <div className="muted" style={{ padding: 10 }}>Keine erledigten Tage.</div> : (
+            <>
+              <div className="muted" style={{ fontSize: 12, margin: '6px 0' }}>Abgehakte Tage werden nach 1 Woche automatisch gelöscht.</div>
+              <div className="table-wrap"><table>
+                <thead><tr><th>Datum</th><th className="right">Stunden</th><th>Erledigt am</th><th className="right"></th></tr></thead>
+                <tbody>
+                  {doneDays.map((d) => (
+                    <tr key={d.date}>
+                      <td>{deDate(d.date)}</td>
+                      <td className="right">{fmtH(d.hours)}</td>
+                      <td className="muted">{d.doneAt ? deDate(String(d.doneAt).slice(0, 10)) : ''}</td>
+                      <td className="right"><button className="btn sm ghost" onClick={() => markDone(d.date, false)}>↩ Rückgängig</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+            </>
+          )
+        )}
+      </div>
     </div>
   );
 }
@@ -175,21 +226,22 @@ function buildReport(entries, vacations, from, to) {
   }
   const activityByDay = {};
   for (const e of entries) { if (e.clockIn) activityByDay[iso(new Date(e.clockIn))] = e.activity || 'App-Entwicklung'; }
-  const vacDays = new Set();
-  for (const v of vacations) { let d = parseISO(v.startDate); const end = parseISO(v.endDate); while (d <= end) { vacDays.add(iso(d)); d = addDays(d, 1); } }
+  const vacType = {};
+  for (const v of vacations) { let d = parseISO(v.startDate); const end = parseISO(v.endDate); while (d <= end) { vacType[iso(d)] = v.type || 'urlaub'; d = addDays(d, 1); } }
 
   const weeks = new Map();
   let d = parseISO(from); const end = parseISO(to);
   while (d <= end) {
     const k = iso(d);
     const hasWork = hoursByDay[k] > 0;
-    const isVac = vacDays.has(k);
+    const isVac = !!vacType[k];
     if (hasWork || isVac) {
       const { week, year } = isoWeek(d);
       const wk = `${year}-${pad(week)}`;
       if (!weeks.has(wk)) { const mon = mondayOf(d); weeks.set(wk, { week, year, start: iso(mon), end: iso(addDays(mon, 6)), rows: [], total: 0 }); }
       const w = weeks.get(wk);
-      w.rows.push({ date: k, wd: wd(d), hours: hoursByDay[k] || 0, activity: activityByDay[k] || 'App-Entwicklung', vacation: isVac && !hasWork });
+      const absence = isVac && !hasWork;
+      w.rows.push({ date: k, wd: wd(d), hours: hoursByDay[k] || 0, activity: activityByDay[k] || 'App-Entwicklung', absence, absenceLabel: vacType[k] === 'krank' ? 'Krankmeldung' : 'Urlaub' });
       if (hasWork) w.total += hoursByDay[k];
     }
     d = addDays(d, 1);
@@ -204,7 +256,7 @@ function printReport(name, report) {
     <table>
       <thead><tr><th>Datum</th><th>Tag</th><th>Tätigkeit</th><th class="r">Stunden</th></tr></thead>
       <tbody>
-        ${w.rows.map((r) => `<tr class="${r.vacation ? 'vac' : ''}"><td>${deDate(r.date)}</td><td>${r.wd}</td><td>${r.vacation ? 'Urlaub' : (r.hours ? r.activity : '')}</td><td class="r">${r.vacation ? '–' : fmtH(r.hours)}</td></tr>`).join('')}
+        ${w.rows.map((r) => `<tr class="${r.absence ? 'vac' : ''}"><td>${deDate(r.date)}</td><td>${r.wd}</td><td>${r.absence ? r.absenceLabel : (r.hours ? r.activity : '')}</td><td class="r">${r.absence ? '–' : fmtH(r.hours)}</td></tr>`).join('')}
         <tr class="sum"><td></td><td></td><td>Summe KW ${w.week}</td><td class="r">${fmtH(w.total)}</td></tr>
       </tbody>
     </table>`).join('');

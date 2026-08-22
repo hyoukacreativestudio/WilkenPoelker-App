@@ -42,9 +42,16 @@ const punch = asyncHandler(async (req, res) => {
 });
 
 const listTimeClock = asyncHandler(async (req, res) => {
+  // Auto-delete days that were checked off more than a week ago.
+  const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+  await TimeClock.destroy({ where: { doneAt: { [Op.ne]: null, [Op.lt]: weekAgo } } });
+
   const name = String(req.query.name || '').trim();
+  const scope = req.query.scope || 'active'; // active | done | all
   const where = {};
   if (name) where.personName = name;
+  if (scope === 'active') where.doneAt = null;
+  else if (scope === 'done') where.doneAt = { [Op.ne]: null };
   if (req.query.from || req.query.to) {
     where.clockIn = {};
     if (req.query.from) where.clockIn[Op.gte] = new Date(`${req.query.from}T00:00:00`);
@@ -53,6 +60,19 @@ const listTimeClock = asyncHandler(async (req, res) => {
   const entries = await TimeClock.findAll({ where, order: [['clockIn', 'ASC']] });
   const names = (await TimeClock.findAll({ attributes: ['personName'], group: ['personName'] })).map((r) => r.personName);
   res.json({ success: true, data: { entries, names } });
+});
+
+// Check off / restore a whole day (all of a person's sessions on that date).
+const markDayDone = asyncHandler(async (req, res) => {
+  const name = String(req.body.name || '').trim();
+  const date = String(req.body.date || '').slice(0, 10);
+  if (!name || !date) throw new AppError('Name und Datum erforderlich', 400, 'BAD_REQUEST');
+  const from = new Date(`${date}T00:00:00`); const to = new Date(`${date}T23:59:59`);
+  const [count] = await TimeClock.update(
+    { doneAt: req.body.done === false ? null : new Date() },
+    { where: { personName: name, clockIn: { [Op.gte]: from, [Op.lte]: to } } },
+  );
+  res.json({ success: true, data: { updated: count } });
 });
 
 const deleteTimeClock = asyncHandler(async (req, res) => {
@@ -129,6 +149,6 @@ const deleteVacation = asyncHandler(async (req, res) => {
 
 module.exports = {
   listEmployees,
-  clockStatus, punch, listTimeClock, deleteTimeClock,
+  clockStatus, punch, listTimeClock, markDayDone, deleteTimeClock,
   listVacations, createVacation, approveVacation, deleteVacation,
 };
