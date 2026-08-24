@@ -267,7 +267,8 @@ export default function Kalender({ user }) {
                     {timed.map((a) => {
                       const [H, M] = hm(a.startTime).split(':').map(Number);
                       const top = Math.max(0, (H - HOUR0) * PXH + (M / 60) * PXH);
-                      const eh = hm(a.endTime); let dur = 45;
+                      // No end time given → the block is exactly one hour.
+                      const eh = hm(a.endTime); let dur = 60;
                       if (eh) { const [EH, EM] = eh.split(':').map(Number); dur = Math.max(20, (EH * 60 + EM) - (H * 60 + M)); }
                       const height = Math.max(22, (dur / 60) * PXH);
                       return (
