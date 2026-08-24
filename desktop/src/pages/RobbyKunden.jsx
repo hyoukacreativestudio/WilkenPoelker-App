@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { TYPES } from './Termine.jsx';
 
 // All customers who bought a Robby. Search across everything, add/edit/delete.
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
@@ -16,6 +17,8 @@ export default function RobbyKunden() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [busy, setBusy] = useState(false);
+  const [apptFor, setApptFor] = useState(null); // customer we're creating an appointment for
+  const [apptForm, setApptForm] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -42,6 +45,25 @@ export default function RobbyKunden() {
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
   const del = async (r) => { if (confirm(`${r.name} löschen?`)) { try { await api.del(`/desktop/robby-customers/${r.id}`); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
+
+  // Create a Robby appointment straight from a customer row.
+  const openAppt = (r) => {
+    setApptFor(r);
+    setApptForm({ type: 'onsite_repair', date: '', startTime: '', endTime: '', title: r.device ? `Robby ${r.device}` : '', handle: savedHandle() });
+  };
+  const submitAppt = async () => {
+    if (!apptForm.handle.trim()) { toast('Bitte dein Kürzel angeben', { type: 'error' }); return; }
+    setBusy(true);
+    try {
+      await api.post('/desktop/appointments', {
+        department: 'robby', type: apptForm.type, date: apptForm.date || null,
+        startTime: apptForm.startTime || null, endTime: apptForm.endTime || null,
+        title: apptForm.title, customerName: apptFor.name, customerNumber: apptFor.customerNumber || null,
+        phone: apptFor.phone || null, handle: apptForm.handle.trim(),
+      });
+      toast('Termin im Robby-Kalender angelegt'); setApptFor(null); setApptForm(null);
+    } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
 
   const sorted = useMemo(() => {
     const s = String(sortKey);
@@ -87,6 +109,7 @@ export default function RobbyKunden() {
                 <td>{r.pin || '—'}</td>
                 <td>{r.purchaseDate ? String(r.purchaseDate).slice(0, 10) : '—'}</td>
                 <td className="right no-print" onClick={(e) => e.stopPropagation()}>
+                  <button className="btn sm" onClick={() => openAppt(r)} title="Termin erstellen">📅 Termin</button>{' '}
                   <button className="btn sm ghost" onClick={() => openEdit(r)}>✏️</button>{' '}
                   <button className="btn sm ghost" onClick={() => del(r)}>✕</button>
                 </td>
@@ -135,6 +158,41 @@ export default function RobbyKunden() {
             <div className="modal-actions">
               <button className="btn ghost" onClick={() => setShowForm(false)}>Abbrechen</button>
               <button className="btn" onClick={submit} disabled={busy || !form.name.trim()}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {apptForm && apptFor && (
+        <div className="backdrop" onClick={() => { setApptFor(null); setApptForm(null); }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Termin für {apptFor.name}</h2>
+            <div className="muted" style={{ marginBottom: 8 }}>{apptFor.customerNumber ? `Kd ${apptFor.customerNumber} · ` : ''}{apptFor.device || ''} → landet im Robby-Kalender</div>
+            <div className="form-grid">
+              <label className="field">Kürzel *
+                <input className="input" value={apptForm.handle} onChange={(e) => setApptForm({ ...apptForm, handle: e.target.value })} autoFocus />
+              </label>
+              <label className="field">Art
+                <select className="input" value={apptForm.type} onChange={(e) => setApptForm({ ...apptForm, type: e.target.value })}>
+                  {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                </select>
+              </label>
+              <label className="field">Datum
+                <input className="input" type="date" value={apptForm.date} onChange={(e) => setApptForm({ ...apptForm, date: e.target.value })} />
+              </label>
+              <label className="field">Uhrzeit (optional)
+                <input className="input" type="time" value={apptForm.startTime} onChange={(e) => setApptForm({ ...apptForm, startTime: e.target.value })} />
+              </label>
+              <label className="field">Bis (optional)
+                <input className="input" type="time" value={apptForm.endTime} onChange={(e) => setApptForm({ ...apptForm, endTime: e.target.value })} />
+              </label>
+              <label className="field full">Titel / Notiz
+                <input className="input" value={apptForm.title} onChange={(e) => setApptForm({ ...apptForm, title: e.target.value })} />
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button className="btn ghost" onClick={() => { setApptFor(null); setApptForm(null); }}>Abbrechen</button>
+              <button className="btn" onClick={submitAppt} disabled={busy || !apptForm.handle.trim()}>Termin anlegen</button>
             </div>
           </div>
         </div>

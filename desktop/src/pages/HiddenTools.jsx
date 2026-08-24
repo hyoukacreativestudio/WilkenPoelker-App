@@ -26,17 +26,7 @@ function isoWeek(date) {
 function mondayOf(date) { const d = new Date(date); const off = (d.getDay() + 6) % 7; return addDays(d, -off); }
 
 export default function HiddenTools({ user, onClose }) {
-  const toast = useToast();
   const [tab, setTab] = useState('einstempeln');
-  const [employees, setEmployees] = useState([]);
-  const [departments, setDepartments] = useState([]);
-
-  useEffect(() => {
-    (async () => {
-      try { const d = unwrap(await api.get('/desktop/hidden/employees')); setEmployees(d.employees || []); setDepartments(d.departments || []); }
-      catch (e) { /* ignore */ }
-    })();
-  }, []);
 
   return (
     <div className="backdrop" onClick={onClose}>
@@ -48,15 +38,13 @@ export default function HiddenTools({ user, onClose }) {
           <button className="btn ghost" onClick={onClose}>Schließen ✕</button>
         </div>
         <div className="toolbar no-print" style={{ marginBottom: 10 }}>
-          {[['einstempeln', '⏱️ Einstempeln'], ['auswertung', '📊 Auswertung'], ['anfragen', '📝 Urlaubsanfragen'], ['kalender', '📅 Urlaubskalender']].map(([k, l]) => (
+          {[['einstempeln', '⏱️ Einstempeln'], ['auswertung', '📊 Auswertung']].map(([k, l]) => (
             <span key={k} className={`pill tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{l}</span>
           ))}
         </div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {tab === 'einstempeln' && <Einstempeln />}
           {tab === 'auswertung' && <Auswertung />}
-          {tab === 'anfragen' && <Urlaubsanfragen employees={employees} onChanged={() => {}} />}
-          {tab === 'kalender' && <Urlaubskalender departments={departments} />}
         </div>
       </div>
     </div>
@@ -71,6 +59,7 @@ function Einstempeln() {
   const [running, setRunning] = useState(false);
   const [openEntry, setOpenEntry] = useState(null);
   const [now, setNow] = useState(Date.now());
+  const [note, setNote] = useState(''); // optional: what did you do (on clock-out)
 
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
   const loadStatus = async (nm) => {
@@ -85,8 +74,12 @@ function Einstempeln() {
     localStorage.setItem('wp_stempel_name', name.trim());
     localStorage.setItem('wp_stempel_activity', activity.trim() || 'App-Entwicklung');
     try {
-      const d = unwrap(await api.post('/desktop/hidden/timeclock/punch', { name: name.trim(), activity: activity.trim() }));
+      // Note is only sent on clock-out (when a session is running).
+      const body = { name: name.trim(), activity: activity.trim() };
+      if (running) body.note = note.trim();
+      const d = unwrap(await api.post('/desktop/hidden/timeclock/punch', body));
       setRunning(d.running); setOpenEntry(d.entry || null);
+      if (!d.running) setNote('');
       toast(d.running ? 'Eingestempelt' : 'Ausgestempelt');
     } catch (e) { toast(e.message, { type: 'error' }); }
   };
@@ -105,6 +98,11 @@ function Einstempeln() {
             <input className="input" value={activity} onChange={(e) => setActivity(e.target.value)} />
           </label>
         </div>
+        {running && (
+          <label className="field" style={{ marginTop: 14 }}>Notiz (optional) – was hast du gemacht?
+            <textarea className="input" value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="z. B. Kalender überarbeitet, Bugfixes…" />
+          </label>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 16 }}>
           <button className="btn" style={{ background: running ? '#E53E3E' : undefined, fontSize: 18, padding: '14px 28px' }} onClick={punch}>
             {running ? '■ Ausstempeln' : '▶ Einstempeln'}
@@ -128,7 +126,6 @@ function Auswertung() {
   const [from, setFrom] = useState(iso(addDays(mondayOf(today), -49)));
   const [to, setTo] = useState(iso(today));
   const [entries, setEntries] = useState([]);
-  const [vacations, setVacations] = useState([]);
   const [doneEntries, setDoneEntries] = useState([]);
   const [showDone, setShowDone] = useState(false);
   const [nowRunning, setNowRunning] = useState([]);
@@ -151,8 +148,6 @@ function Auswertung() {
       setNames(d.names || []);
       const dn = unwrap(await api.get(`/desktop/hidden/timeclock?name=${encodeURIComponent(name)}&scope=done`));
       setDoneEntries(dn.entries || []);
-      const v = unwrap(await api.get(`/desktop/hidden/vacations?status=approved&from=${from}&to=${to}`));
-      setVacations((v.entries || []).filter((e) => e.personName === name));
     } catch (e) { setEntries([]); }
   };
   // Load the names list once even before a person is chosen.
@@ -175,7 +170,7 @@ function Auswertung() {
     return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
   }, [doneEntries]);
 
-  const report = useMemo(() => buildReport(entries, vacations, from, to), [entries, vacations, from, to]);
+  const report = useMemo(() => buildReport(entries, from, to), [entries, from, to]);
 
   return (
     <div>
@@ -217,13 +212,13 @@ function Auswertung() {
               <thead><tr><th className="no-print" style={{ width: 34 }}>✓</th><th>Datum</th><th>Tag</th><th>Tätigkeit</th><th className="right">Stunden</th></tr></thead>
               <tbody>
                 {w.rows.map((r) => (
-                  <tr key={r.date} style={r.absence ? { color: '#8a94a6' } : undefined}>
+                  <tr key={r.date}>
                     <td className="no-print" style={{ textAlign: 'center' }}>
-                      {!r.absence && r.hours ? <input type="checkbox" title="Als erledigt abhaken" onChange={() => markDone(r.date, true)} /> : null}
+                      {r.hours ? <input type="checkbox" title="Als erledigt abhaken" onChange={() => markDone(r.date, true)} /> : null}
                     </td>
                     <td>{deDate(r.date)}</td><td>{r.wd}</td>
-                    <td>{r.absence ? r.absenceLabel : (r.hours ? r.activity : '')}</td>
-                    <td className="right">{r.absence ? '–' : fmtH(r.hours)}</td>
+                    <td>{r.hours ? r.activity : ''}{r.note ? <span className="muted"> · {r.note}</span> : null}</td>
+                    <td className="right">{fmtH(r.hours)}</td>
                   </tr>
                 ))}
                 <tr style={{ fontWeight: 700, background: 'var(--dept-soft)' }}>
@@ -264,8 +259,8 @@ function Auswertung() {
   );
 }
 
-// Aggregate punches per day, mark vacation days, group into ISO weeks.
-function buildReport(entries, vacations, from, to) {
+// Aggregate punches per day, group into ISO weeks.
+function buildReport(entries, from, to) {
   const hoursByDay = {};
   for (const e of entries) {
     if (!e.clockIn || !e.clockOut) continue;
@@ -273,25 +268,25 @@ function buildReport(entries, vacations, from, to) {
     const h = (new Date(e.clockOut).getTime() - new Date(e.clockIn).getTime()) / 3600000;
     if (h > 0) hoursByDay[day] = (hoursByDay[day] || 0) + h;
   }
-  const activityByDay = {};
-  for (const e of entries) { if (e.clockIn) activityByDay[iso(new Date(e.clockIn))] = e.activity || 'App-Entwicklung'; }
-  const vacType = {};
-  for (const v of vacations) { let d = parseISO(v.startDate); const end = parseISO(v.endDate); while (d <= end) { vacType[iso(d)] = v.type || 'urlaub'; d = addDays(d, 1); } }
+  const activityByDay = {}; const noteByDay = {};
+  for (const e of entries) {
+    if (!e.clockIn) continue;
+    const day = iso(new Date(e.clockIn));
+    activityByDay[day] = e.activity || 'App-Entwicklung';
+    if (e.note) noteByDay[day] = noteByDay[day] ? `${noteByDay[day]}; ${e.note}` : e.note;
+  }
 
   const weeks = new Map();
   let d = parseISO(from); const end = parseISO(to);
   while (d <= end) {
     const k = iso(d);
-    const hasWork = hoursByDay[k] > 0;
-    const isVac = !!vacType[k];
-    if (hasWork || isVac) {
+    if (hoursByDay[k] > 0) {
       const { week, year } = isoWeek(d);
       const wk = `${year}-${pad(week)}`;
       if (!weeks.has(wk)) { const mon = mondayOf(d); weeks.set(wk, { week, year, start: iso(mon), end: iso(addDays(mon, 6)), rows: [], total: 0 }); }
       const w = weeks.get(wk);
-      const absence = isVac && !hasWork;
-      w.rows.push({ date: k, wd: wd(d), hours: hoursByDay[k] || 0, activity: activityByDay[k] || 'App-Entwicklung', absence, absenceLabel: vacType[k] === 'krank' ? 'Krankmeldung' : 'Urlaub' });
-      if (hasWork) w.total += hoursByDay[k];
+      w.rows.push({ date: k, wd: wd(d), hours: hoursByDay[k], activity: activityByDay[k] || 'App-Entwicklung', note: noteByDay[k] || '' });
+      w.total += hoursByDay[k];
     }
     d = addDays(d, 1);
   }
@@ -318,7 +313,7 @@ function savePDF(name, report) {
       startY: y + 2,
       head: [['Datum', 'Tag', 'Tätigkeit', 'Stunden']],
       body: [
-        ...w.rows.map((r) => [deDate(r.date), r.wd, r.absence ? r.absenceLabel : (r.hours ? r.activity : ''), r.absence ? '–' : fmtH(r.hours)]),
+        ...w.rows.map((r) => [deDate(r.date), r.wd, r.note ? `${r.activity} · ${r.note}` : r.activity, fmtH(r.hours)]),
         [{ content: '', colSpan: 2 }, { content: `Summe KW ${w.week}`, styles: { fontStyle: 'bold' } }, { content: fmtH(w.total), styles: { fontStyle: 'bold', halign: 'right' } }],
       ],
       styles: { fontSize: 9, cellPadding: 2 },
@@ -331,210 +326,4 @@ function savePDF(name, report) {
   }
   const safe = name.replace(/[^\wäöüÄÖÜß-]+/g, '_');
   doc.save(`Zeiterfassung_${safe}.pdf`);
-}
-
-// ── Tab 2: Urlaubsanfragen (create + approve) ──────────────────────────────
-function Urlaubsanfragen({ employees }) {
-  const toast = useToast();
-  const [personName, setPersonName] = useState('');
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
-  const [note, setNote] = useState('');
-  const [conflicts, setConflicts] = useState([]);
-  const [pending, setPending] = useState([]);
-  const [busy, setBusy] = useState(false);
-
-  const dept = useMemo(() => employees.find((e) => e.name === personName)?.department || '', [employees, personName]);
-
-  const loadPending = async () => {
-    try { const d = unwrap(await api.get('/desktop/hidden/vacations?status=pending')); setPending(d.entries || []); }
-    catch (e) { setPending([]); }
-  };
-  useEffect(() => { loadPending(); }, []);
-
-  const submit = async () => {
-    if (!personName) { toast('Bitte Mitarbeiter wählen', { type: 'error' }); return; }
-    if (!start || !end) { toast('Bitte Zeitraum wählen', { type: 'error' }); return; }
-    setBusy(true); setConflicts([]);
-    try {
-      const d = unwrap(await api.post('/desktop/hidden/vacations', { personName, department: dept, startDate: start, endDate: end, note }));
-      setConflicts(d.conflicts || []);
-      toast('Urlaubsanfrage erstellt');
-      setNote('');
-      loadPending();
-    } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
-  };
-  const approve = async (r) => { try { await api.post(`/desktop/hidden/vacations/${r.id}/approve`); toast('Bestätigt – im Kalender eingetragen'); loadPending(); } catch (e) { toast(e.message, { type: 'error' }); } };
-  const reject = async (r) => { if (!confirm('Anfrage ablehnen?')) return; try { await api.del(`/desktop/hidden/vacations/${r.id}`); toast('Abgelehnt'); loadPending(); } catch (e) { toast(e.message, { type: 'error' }); } };
-
-  return (
-    <div>
-      <div className="card" style={{ padding: 14, marginBottom: 14 }}>
-        <strong>Neue Urlaubsanfrage</strong>
-        <div className="form-grid" style={{ marginTop: 8 }}>
-          <label className="field">Mitarbeiter
-            <select className="input" value={personName} onChange={(e) => setPersonName(e.target.value)}>
-              <option value="">— wählen —</option>
-              {employees.map((e) => <option key={e.name} value={e.name}>{e.name}</option>)}
-            </select>
-          </label>
-          <label className="field">Abteilung
-            <input className="input" value={dept} readOnly placeholder="—" />
-          </label>
-          <label className="field">Von
-            <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-          </label>
-          <label className="field">Bis
-            <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-          </label>
-          <label className="field full">Notiz
-            <input className="input" value={note} onChange={(e) => setNote(e.target.value)} />
-          </label>
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <button className="btn" onClick={submit} disabled={busy}>Anfrage stellen</button>
-        </div>
-        {conflicts.length > 0 && (
-          <div style={{ marginTop: 10, padding: 10, border: '1px solid #f5b5b5', background: 'rgba(229,62,62,.08)', borderRadius: 8, color: '#a52834' }}>
-            ⚠ Achtung: In der Abteilung <strong>{dept}</strong> hat im gleichen Zeitraum bereits jemand Urlaub:
-            <ul style={{ margin: '6px 0 0 18px' }}>
-              {conflicts.map((c) => <li key={c.id}>{c.personName}: {deDate(c.startDate)} – {deDate(c.endDate)}{c.status === 'pending' ? ' (offen)' : ''}</li>)}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      <strong>Offene Anfragen ({pending.length})</strong>
-      {pending.length === 0 ? <div className="empty" style={{ padding: 20 }}>Keine offenen Anfragen.</div> : (
-        <div className="table-wrap"><table>
-          <thead><tr><th>Mitarbeiter</th><th>Abteilung</th><th>Zeitraum</th><th>Notiz</th><th className="right"></th></tr></thead>
-          <tbody>
-            {pending.map((r) => (
-              <tr key={r.id}>
-                <td><strong>{r.personName}</strong></td>
-                <td>{r.department || '—'}</td>
-                <td>{deDate(r.startDate)} – {deDate(r.endDate)}</td>
-                <td className="muted">{r.note || ''}</td>
-                <td className="right">
-                  <button className="btn sm" onClick={() => approve(r)}>✓ Bestätigen</button>{' '}
-                  <button className="btn sm ghost" onClick={() => reject(r)}>✕ Ablehnen</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table></div>
-      )}
-    </div>
-  );
-}
-
-// ── Tab 3: Urlaubskalender (approved, filter by department) ────────────────
-const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-const CAL_WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const ABSENCE_LABEL = { urlaub: 'Urlaub', krank: 'Krankmeldung', sonstiges: 'Sonstiges' };
-function Urlaubskalender({ departments }) {
-  const toast = useToast();
-  const [dept, setDept] = useState('all');
-  const [cursor, setCursor] = useState(() => { const n = new Date(); return { y: n.getFullYear(), m: n.getMonth() }; });
-  const [entries, setEntries] = useState([]);
-  const [openDay, setOpenDay] = useState(null);
-
-  const load = async () => {
-    try {
-      const q = dept === 'all' ? '' : `&department=${encodeURIComponent(dept)}`;
-      const d = unwrap(await api.get(`/desktop/hidden/vacations?status=approved${q}`));
-      setEntries(d.entries || []);
-    } catch (e) { setEntries([]); }
-  };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [dept]);
-
-  const removeVacation = async (v) => {
-    if (!confirm(`Urlaub von ${v.personName} löschen?`)) return;
-    try { await api.del(`/desktop/hidden/vacations/${v.id}`); toast('Gelöscht'); load(); }
-    catch (e) { toast(e.message, { type: 'error' }); }
-  };
-
-  const byDay = useMemo(() => {
-    const map = {};
-    for (const v of entries) {
-      let d = parseISO(v.startDate); const end = parseISO(v.endDate);
-      while (d <= end) { (map[iso(d)] = map[iso(d)] || []).push(v); d = addDays(d, 1); }
-    }
-    return map;
-  }, [entries]);
-
-  const weeks = useMemo(() => {
-    const first = new Date(cursor.y, cursor.m, 1);
-    const off = (first.getDay() + 6) % 7;
-    const start = new Date(cursor.y, cursor.m, 1 - off);
-    const out = [];
-    for (let w = 0; w < 6; w++) { const row = []; for (let i = 0; i < 7; i++) { const day = new Date(start); day.setDate(start.getDate() + w * 7 + i); row.push(day); } out.push(row); }
-    return out;
-  }, [cursor]);
-  const move = (delta) => setCursor((c) => { const d = new Date(c.y, c.m + delta, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
-
-  return (
-    <div>
-      <div className="toolbar no-print" style={{ marginBottom: 10 }}>
-        <button className="btn ghost" onClick={() => move(-1)}>←</button>
-        <strong style={{ minWidth: 150, textAlign: 'center' }}>{MONTHS[cursor.m]} {cursor.y}</strong>
-        <button className="btn ghost" onClick={() => move(1)}>→</button>
-        <div className="spacer" />
-        <select className="select" value={dept} onChange={(e) => setDept(e.target.value)}>
-          <option value="all">Alle Abteilungen</option>
-          {departments.map((d) => <option key={d} value={d}>{d}</option>)}
-        </select>
-      </div>
-      <div className="cal">
-        <div className="cal-head">{CAL_WD.map((d) => <div key={d} className="cal-wd">{d}</div>)}</div>
-        {weeks.map((week, wi) => (
-          <div key={wi} className="cal-row">
-            {week.map((day) => {
-              const k = iso(day); const list = byDay[k] || []; const inMonth = day.getMonth() === cursor.m;
-              return (
-                <div key={k} className="cal-cell" style={{ opacity: inMonth ? 1 : 0.4, cursor: list.length ? 'pointer' : 'default' }} onClick={() => { if (list.length) setOpenDay(k); }}>
-                  <div className="cal-daynum"><span>{day.getDate()}</span>{list.length ? <span className="badge open" style={{ fontSize: 11 }}>{list.length}</span> : null}</div>
-                  <div className="cal-items">
-                    {list.slice(0, 5).map((v) => (
-                      <div key={v.id} title={`${v.personName} (${v.department || ''})`}
-                        style={{ background: '#2b6cb0', color: '#fff', borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {v.personName}
-                      </div>
-                    ))}
-                    {list.length > 5 ? <div className="muted" style={{ fontSize: 11 }}>+{list.length - 5} mehr</div> : null}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-
-      {/* Open a day → everything cleanly listed */}
-      {openDay && (
-        <div className="backdrop" onClick={() => setOpenDay(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 560 }}>
-            <h2>Urlaub am {deDate(openDay)}</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 420, overflowY: 'auto' }}>
-              {(byDay[openDay] || []).map((v) => (
-                <div key={v.id} className="card" style={{ padding: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <strong>{v.personName}</strong>
-                    {v.department ? <span className="muted"> · {v.department}</span> : null}
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      {ABSENCE_LABEL[v.type] || 'Urlaub'} · {deDate(v.startDate)} – {deDate(v.endDate)}{v.note ? ` · ${v.note}` : ''}
-                    </div>
-                  </div>
-                  <button className="btn sm ghost" onClick={() => removeVacation(v)}>✕</button>
-                </div>
-              ))}
-            </div>
-            <div className="modal-actions">
-              <button className="btn" onClick={() => setOpenDay(null)}>Schließen</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }

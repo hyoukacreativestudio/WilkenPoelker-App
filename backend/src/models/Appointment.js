@@ -125,6 +125,16 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  // Added later on the Fahrrad calendar: repair number + the Kürzel of who
+  // should process the appointment.
+  repairNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  assignedHandle: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   tableName: 'appointments',
   timestamps: true,

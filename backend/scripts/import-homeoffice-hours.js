@@ -7,10 +7,9 @@
 
 const { Op } = require('sequelize');
 const { sequelize } = require('../src/config/database');
-const { TimeClock, VacationEntry } = require('../src/models');
+const { TimeClock } = require('../src/models');
 
 const NAME = 'Dominik';
-const DEPARTMENT = 'Neurad';
 const RANGE = { from: '2026-06-01', to: '2026-08-21' };
 
 // [date, hours, activity?] — one work session per day, starting 08:00.
@@ -28,21 +27,12 @@ const WORK = [
   ['2026-08-18', 4.5, 'Krankmeldung'], ['2026-08-19', 4.5], ['2026-08-20', 6], ['2026-08-21', 5.5],
 ];
 
-// [start, end, type] — absences (0 h).
-const ABSENCES = [
-  ['2026-07-20', '2026-07-25', 'urlaub'],
-  ['2026-08-07', '2026-08-09', 'urlaub'],
-  ['2026-08-17', '2026-08-17', 'krank'],
-];
-
 async function run() {
   await sequelize.authenticate();
   await TimeClock.sync();
-  await VacationEntry.sync();
 
   // Clear a previous import of this person in the range.
   await TimeClock.destroy({ where: { personName: NAME, clockIn: { [Op.gte]: new Date(`${RANGE.from}T00:00:00`), [Op.lte]: new Date(`${RANGE.to}T23:59:59`) } } });
-  await VacationEntry.destroy({ where: { personName: NAME, startDate: { [Op.gte]: RANGE.from, [Op.lte]: RANGE.to } } });
 
   let total = 0;
   const punches = WORK.map(([date, hours, activity]) => {
@@ -53,11 +43,7 @@ async function run() {
   });
   await TimeClock.bulkCreate(punches);
 
-  for (const [startDate, endDate, type] of ABSENCES) {
-    await VacationEntry.create({ personName: NAME, department: DEPARTMENT, startDate, endDate, type, status: 'approved', note: 'PDF-Import' });
-  }
-
-  console.log(`Imported ${punches.length} work days (${total} h total) + ${ABSENCES.length} absences for ${NAME}.`);
+  console.log(`Imported ${punches.length} work days (${total} h total) for ${NAME}.`);
   await sequelize.close();
 }
 
