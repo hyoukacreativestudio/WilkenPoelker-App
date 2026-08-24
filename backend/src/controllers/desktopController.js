@@ -412,7 +412,12 @@ const updateAppointment = asyncHandler(async (req, res) => {
   const updates = {};
   if (req.body.status && APPT_STATUSES.includes(req.body.status)) updates.status = req.body.status;
   for (const f of ['title', 'description', 'date', 'startTime', 'endTime', 'customerNumber', 'customerName', 'phone', 'type', 'handle', 'repairNumber', 'assignedHandle', 'workDone', 'warnNote']) {
-    if (req.body[f] !== undefined) updates[f] = req.body[f];
+    if (req.body[f] !== undefined) {
+      let v = req.body[f];
+      // Empty date/time strings must become NULL (Postgres rejects '' for DATE/TIME).
+      if ((f === 'date' || f === 'startTime' || f === 'endTime') && v === '') v = null;
+      updates[f] = v;
+    }
   }
   await appointment.update(updates);
   // If staff just cancelled it, tell the customer (app appointments have a userId).
