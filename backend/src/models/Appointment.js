@@ -135,6 +135,15 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  // Fahrrad "Termine heute": tick off a repair, or flag it red if it won't be done.
+  workDone: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  warnNote: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
 }, {
   tableName: 'appointments',
   timestamps: true,

@@ -360,6 +360,8 @@ const listAppointments = asyncHandler(async (req, res) => {
       handle: a.handle || '',
       repairNumber: a.repairNumber || '',
       assignedHandle: a.assignedHandle || '',
+      workDone: !!a.workDone,
+      warnNote: a.warnNote || '',
       proposedText: a.proposedText || '',
       staffQuestion: a.staffQuestion || '',
       customerNote: a.customerNote || '',
@@ -409,7 +411,7 @@ const updateAppointment = asyncHandler(async (req, res) => {
   const wasCancelled = appointment.status === 'cancelled';
   const updates = {};
   if (req.body.status && APPT_STATUSES.includes(req.body.status)) updates.status = req.body.status;
-  for (const f of ['title', 'description', 'date', 'startTime', 'endTime', 'customerNumber', 'customerName', 'phone', 'type', 'handle', 'repairNumber', 'assignedHandle']) {
+  for (const f of ['title', 'description', 'date', 'startTime', 'endTime', 'customerNumber', 'customerName', 'phone', 'type', 'handle', 'repairNumber', 'assignedHandle', 'workDone', 'warnNote']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];
   }
   await appointment.update(updates);

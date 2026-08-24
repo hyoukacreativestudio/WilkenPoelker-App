@@ -168,9 +168,11 @@ export default function Kalender({ user }) {
 
   const printDay = (k) => {
     const list = (byDay[k] || []).slice().sort((a, b) => String(a.startTime || '').localeCompare(String(b.startTime || '')));
-    const rowsHtml = list.map((a) => `<tr><td>${hm(a.startTime) || '—'}</td><td>${a.repairNumber || ''}</td><td>${a.assignedHandle || ''}</td><td>${a.customerName || ''}${a.customerNumber ? ` (Kd ${a.customerNumber})` : ''}</td><td>${typeLabel(a.type)}${a.title ? ` · ${a.title}` : ''}</td></tr>`).join('');
+    const rep = isFahrrad;
+    const head = `<tr><th>Uhrzeit</th>${rep ? '<th>Rep-Nr.</th><th>Kürzel</th>' : ''}<th>Kunde</th><th>Art / Notiz</th></tr>`;
+    const rowsHtml = list.map((a) => `<tr><td>${hm(a.startTime) || '—'}</td>${rep ? `<td>${a.repairNumber || ''}</td><td>${a.assignedHandle || ''}</td>` : ''}<td>${a.customerName || ''}${a.customerNumber ? ` (Kd ${a.customerNumber})` : ''}</td><td>${typeLabel(a.type)}${a.title ? ` · ${a.title}` : ''}</td></tr>`).join('');
     printHTML(`Tagesplan ${k}`, `<h1>Tagesplan · ${k.split('-').reverse().join('.')} · ${DEPTS.find((d) => d.key === dept)?.label || dept}</h1>
-      <table><thead><tr><th>Uhrzeit</th><th>Rep-Nr.</th><th>Kürzel</th><th>Kunde</th><th>Art / Notiz</th></tr></thead><tbody>${rowsHtml || '<tr><td colspan=5>Keine Termine</td></tr>'}</tbody></table>`);
+      <table><thead>${head}</thead><tbody>${rowsHtml || `<tr><td colspan=${rep ? 5 : 3}>Keine Termine</td></tr>`}</tbody></table>`);
   };
 
   const move = (delta) => setCursor((c) => { const d = new Date(c.y, c.m + delta, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
@@ -240,7 +242,7 @@ export default function Kalender({ user }) {
             </div>
             {/* all-day (no time) */}
             <div style={{ display: 'grid', gridTemplateColumns: `56px repeat(5, 1fr)`, borderTop: '1px solid var(--dept-soft)', minHeight: 26 }}>
-              <div style={{ fontSize: 10, color: '#8a94a6', padding: 4 }}>ganztags</div>
+              <div style={{ fontSize: 10, color: '#8a94a6', padding: 4 }}>Ohne feste<br />Uhrzeit</div>
               {weekDays.map((d) => {
                 const list = (byDay[iso(d)] || []).filter((a) => !a.startTime);
                 return <div key={iso(d)} style={{ borderLeft: '1px solid var(--dept-soft)', padding: 2 }}>
@@ -345,11 +347,13 @@ export default function Kalender({ user }) {
                         <div style={{ flex: 1, minWidth: 150 }}>
                           <strong>{a.customerName || a.title || typeLabel(a.type)}</strong>
                           {a.customerNumber ? <span className="muted"> · Kd {a.customerNumber}</span> : null}
-                          <div className="muted" style={{ fontSize: 12 }}>{typeLabel(a.type)}{a.title ? ` · ${a.title}` : ''}{a.phone ? ` · ☎ ${a.phone}` : ''}</div>
+                          {a.workDone ? <span className="badge" style={{ background: '#d3f2df', color: '#1f7a45', marginLeft: 6 }}>✓ erledigt</span> : null}
+                          <div className="muted" style={{ fontSize: 12 }}>{typeLabel(a.type)}{a.title ? ` · ${a.title}` : ''}{a.repairNumber ? ` · Rep ${a.repairNumber}` : ''}{a.phone ? ` · ☎ ${a.phone}` : ''}</div>
+                          {a.warnNote ? <div style={{ color: '#c53030', fontWeight: 700, fontSize: 12 }}>⚠ {a.warnNote}</div> : null}
                         </div>
                         {!readOnly ? <button className="btn sm ghost" onClick={() => cancelAppt(a)}>🚫</button> : null}
                       </div>
-                      {!readOnly && (
+                      {!readOnly && isFahrrad && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                           <label className="field" style={{ margin: 0 }}>Rep-Nr.
                             <input className="input" style={{ width: 150 }} value={e.repairNumber !== undefined ? e.repairNumber : (a.repairNumber || '')} onChange={(ev) => setEdits((x) => ({ ...x, [a.id]: { ...x[a.id], repairNumber: ev.target.value } }))} />
