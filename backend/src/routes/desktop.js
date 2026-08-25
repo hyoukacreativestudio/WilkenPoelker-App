@@ -53,6 +53,13 @@ router.get('/tickets/:id', authenticate, authorize(...STAFF), desktop.getTicket)
 router.post('/tickets/:id/message', authenticate, authorize(...STAFF), desktop.addTicketMessage);
 router.patch('/tickets/:id', authenticate, authorize(...STAFF), desktop.updateTicket);
 
+// ── Fahrrad repair jobs (worklist: assign + tick off) ──
+const repairJobs = require('../controllers/repairJobController');
+router.get('/repairjobs', authenticate, authorize(...STAFF), repairJobs.listRepairJobs);
+router.post('/repairjobs', authenticate, authorize(...STAFF), repairJobs.createRepairJob);
+router.patch('/repairjobs/:id', authenticate, authorize(...STAFF), repairJobs.updateRepairJob);
+router.delete('/repairjobs/:id', authenticate, authorize(...STAFF), repairJobs.deleteRepairJob);
+
 // ── Hidden admin tools: time clock (admin only) ──
 const hidden = require('../controllers/hiddenToolsController');
 const ADMIN = ['admin', 'super_admin'];

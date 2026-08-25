@@ -25,16 +25,18 @@ import Kundennummern from './pages/Kundennummern.jsx';
 import RobbyKunden from './pages/RobbyKunden.jsx';
 import Kalender from './pages/Kalender.jsx';
 import TermineHeute from './pages/TermineHeute.jsx';
+import ReparaturenHeute from './pages/ReparaturenHeute.jsx';
 import Quellen from './pages/Quellen.jsx';
 import HiddenTools from './pages/HiddenTools.jsx';
 
-const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, quellen: Quellen, lager: Lager };
+const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturenheute: ReparaturenHeute, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, quellen: Quellen, lager: Lager };
 
 const SUBTITLES = {
   uebersicht: 'Überblick für deine Abteilung',
   termine: 'Termine aus der App – automatisch eingetragen',
   kalender: 'Terminübersicht im Monatskalender',
   termineheute: 'Reparaturen für heute – abhaken oder Warnung setzen',
+  reparaturenheute: 'Reparaturen den Werkstatt-Mitarbeitern zuteilen',
   reparaturen: 'Noch nicht erreichte Kunden anrufen',
   tickets: 'Tickets deiner Abteilung bearbeiten',
   robbykunden: 'Alle Kunden mit einem Robby',
