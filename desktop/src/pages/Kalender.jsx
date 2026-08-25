@@ -27,13 +27,25 @@ const CONFIG = {
 const DEPT_RULES = { fahrrad: { limit: 6, closed: [5, 6, 0] } };
 const isClosedDay = (dept, day) => (DEPT_RULES[dept]?.closed || []).includes(day.getDay());
 
-// Distinct colour per appointment type (Google-Calendar style).
-const TYPE_COLOR = {
-  repair: '#3182CE', onsite_repair: '#DD6B20', property_viewing: '#805AD5',
-  new_installation: '#2F855A', pickup: '#D69E2E', delivery: '#BE185D',
-  inspection: '#0891B2', consultation: '#6B46C1', service: '#E53E3E', other: '#718096',
+// Robby/Kärcher calendar: colour by the mechanic's Kürzel (Urlaub always red).
+const KUERZEL_COLOR = {
+  MB: '#F2C200', // Marcel Baumann – gelb
+  RQ: '#F97316', // Rainer Quappe – orange
+  MT: '#9333EA', // Mirco Tammen – lila
+  AR: '#7DD3FC', // Andreas Rohlmann – hellblau
 };
-const typeColor = (t) => TYPE_COLOR[t] || '#718096';
+const URLAUB_COLOR = '#DC2626';
+const FALLBACK_COLOR = '#94A3B8';
+const apptColor = (a) => {
+  if (a.type === 'urlaub') return URLAUB_COLOR;
+  const k = String(a.assignedHandle || a.handle || '').trim().toUpperCase();
+  return KUERZEL_COLOR[k] || FALLBACK_COLOR;
+};
+// Dark text on light chips (yellow / light-blue), white otherwise.
+const contrastText = (hex) => {
+  const h = hex.replace('#', ''); const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? '#1a2330' : '#ffffff';
+};
 const TYPE_LABEL = Object.fromEntries(TYPES.map((t) => [t.key, t.label]));
 const typeLabel = (t) => TYPE_LABEL[t] || t || 'Termin';
 
@@ -143,11 +155,19 @@ export default function Kalender({ user }) {
   }, [rows, dept]);
 
   const openCreate = (dateIso, startTime = '') => setCreateForm({ ...emptyForm(dateIso || ''), startTime });
+  const openEdit = (a) => setCreateForm({
+    _id: a.id, title: a.title || '', type: a.type || 'repair', date: String(a.date || '').slice(0, 10),
+    startTime: hm(a.startTime), endTime: hm(a.endTime), customerName: a.customerName || '',
+    customerNumber: a.customerNumber || '', phone: a.phone || '', handle: a.handle || savedHandle(),
+  });
   const submitCreate = async () => {
     if (!createForm.handle.trim()) { toast('Bitte dein Kürzel angeben', { type: 'error' }); return; }
     setBusy(true);
-    try { await api.post('/desktop/appointments', { ...createForm, department: dept }); toast('Termin angelegt'); setCreateForm(null); await load(); }
-    catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+    try {
+      if (createForm._id) { await api.patch(`/desktop/appointments/${createForm._id}`, createForm); toast('Termin gespeichert'); }
+      else { await api.post('/desktop/appointments', { ...createForm, department: dept }); toast('Termin angelegt'); }
+      setCreateForm(null); await load();
+    } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
   const saveTime = async (a) => {
     const t = times[a.id] !== undefined ? times[a.id] : hm(a.startTime);
@@ -227,6 +247,18 @@ export default function Kalender({ user }) {
         {readOnly ? <span className="muted">nur ansehen</span> : <button className="btn" onClick={() => openCreate(showWeek ? iso(weekStart) : todayIso)}>+ Termin</button>}
       </div>
 
+      {isColorCal && (
+        <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', margin: '0 0 8px', fontSize: 12 }}>
+          {[['MB', 'Marcel Baumann'], ['RQ', 'Rainer Quappe'], ['MT', 'Mirco Tammen'], ['AR', 'Andreas Rohlmann']].map(([k, name]) => (
+            <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: KUERZEL_COLOR[k] }} /> {k} · {name}
+            </span>
+          ))}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: URLAUB_COLOR }} /> Urlaub</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: FALLBACK_COLOR }} /> andere</span>
+        </div>
+      )}
+
       {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div>
         : showWeek ? (
           /* ── Week view (Google-style colour blocks) ── */
@@ -246,7 +278,7 @@ export default function Kalender({ user }) {
               {weekDays.map((d) => {
                 const list = (byDay[iso(d)] || []).filter((a) => !a.startTime);
                 return <div key={iso(d)} style={{ borderLeft: '1px solid var(--dept-soft)', padding: 2 }}>
-                  {list.map((a) => <div key={a.id} onClick={() => setOpenDay(iso(d))} title={typeLabel(a.type)} style={{ background: typeColor(a.type), color: '#fff', borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.customerName || a.title || typeLabel(a.type)}</div>)}
+                  {list.map((a) => <div key={a.id} onClick={(ev) => { ev.stopPropagation(); readOnly ? setOpenDay(iso(d)) : openEdit(a); }} title={`${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} – ${a.customerName || ''}`} style={{ background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || typeLabel(a.type))}</div>)}
                 </div>;
               })}
             </div>
@@ -272,9 +304,9 @@ export default function Kalender({ user }) {
                       if (eh) { const [EH, EM] = eh.split(':').map(Number); dur = Math.max(20, (EH * 60 + EM) - (H * 60 + M)); }
                       const height = Math.max(22, (dur / 60) * PXH);
                       return (
-                        <div key={a.id} onClick={(ev) => { ev.stopPropagation(); setOpenDay(k); }} title={`${hm(a.startTime)} ${typeLabel(a.type)} – ${a.customerName || ''}`}
-                          style={{ position: 'absolute', top, left: 2, right: 2, height, background: typeColor(a.type), color: '#fff', borderRadius: 5, padding: '2px 5px', fontSize: 11, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.2)' }}>
-                          <b>{hm(a.startTime)}</b> {a.customerName || a.title || typeLabel(a.type)}
+                        <div key={a.id} onClick={(ev) => { ev.stopPropagation(); readOnly ? setOpenDay(k) : openEdit(a); }} title={`${hm(a.startTime)} ${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} – ${a.customerName || ''}`}
+                          style={{ position: 'absolute', top, left: 2, right: 2, height, background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 5, padding: '2px 5px', fontSize: 11, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.2)', cursor: 'pointer' }}>
+                          <b>{hm(a.startTime)}</b> {a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || typeLabel(a.type))}
                         </div>
                       );
                     })}
@@ -307,11 +339,12 @@ export default function Kalender({ user }) {
                       {holidayName ? <div className="muted" style={{ fontSize: 10, color: '#a52834', padding: '0 4px' }}>{holidayName}</div> : null}
                       <div className="cal-items">
                         {list.slice(0, 7).map((a) => (
-                          <div key={a.id} title={`${typeLabel(a.type)} ${a.customerName || ''}`}
+                          <div key={a.id} title={`${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} ${a.customerName || ''}`}
+                            onClick={isColorCal && !readOnly ? (ev) => { ev.stopPropagation(); openEdit(a); } : undefined}
                             style={isColorCal
-                              ? { background: typeColor(a.type), color: '#fff', borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+                              ? { background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: readOnly ? 'pointer' : 'pointer' }
                               : { fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {a.startTime ? <b>{hm(a.startTime)} </b> : null}{a.customerName || a.title || typeLabel(a.type)}{a.assignedHandle ? ` [${a.assignedHandle}]` : ''}
+                            {a.startTime ? <b>{hm(a.startTime)} </b> : null}{isColorCal && a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || typeLabel(a.type))}{!isColorCal && a.assignedHandle ? ` [${a.assignedHandle}]` : ''}
                           </div>
                         ))}
                         {list.length > 7 ? <div className="muted" style={{ fontSize: 11 }}>+{list.length - 7} mehr</div> : null}
@@ -338,7 +371,7 @@ export default function Kalender({ user }) {
                   return (
                     <div key={a.id} className="card" style={{ padding: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <span style={{ width: 10, height: 10, borderRadius: 5, background: typeColor(a.type) }} />
+                        <span style={{ width: 10, height: 10, borderRadius: 5, background: apptColor(a) }} />
                         {readOnly ? <span className="badge" style={{ minWidth: 54 }}>{hm(a.startTime) || '—'}</span> : (
                           <>
                             <input className="input" type="time" style={{ width: 104 }} value={times[a.id] !== undefined ? times[a.id] : hm(a.startTime)} onChange={(ev) => setTimes((t) => ({ ...t, [a.id]: ev.target.value }))} />
@@ -352,7 +385,8 @@ export default function Kalender({ user }) {
                           <div className="muted" style={{ fontSize: 12 }}>{typeLabel(a.type)}{a.title ? ` · ${a.title}` : ''}{a.repairNumber ? ` · Rep ${a.repairNumber}` : ''}{a.phone ? ` · ☎ ${a.phone}` : ''}</div>
                           {a.warnNote ? <div style={{ color: '#c53030', fontWeight: 700, fontSize: 12 }}>⚠ {a.warnNote}</div> : null}
                         </div>
-                        {!readOnly ? <button className="btn sm ghost" onClick={() => cancelAppt(a)}>🚫</button> : null}
+                        {!readOnly ? <button className="btn sm ghost" onClick={() => { setOpenDay(null); openEdit(a); }} title="Bearbeiten">✏️</button> : null}
+                        {!readOnly ? <button className="btn sm ghost" onClick={() => cancelAppt(a)} title="Absagen">🚫</button> : null}
                       </div>
                       {!readOnly && isFahrrad && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -385,7 +419,7 @@ export default function Kalender({ user }) {
       {createForm && (
         <div className="backdrop" onClick={() => setCreateForm(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Neuer Termin</h2>
+            <h2>{createForm._id ? 'Termin bearbeiten' : 'Neuer Termin'}</h2>
             <div className="form-grid">
               <label className="field">Kürzel *
                 <input className="input" value={createForm.handle} onChange={(e) => setCreateForm({ ...createForm, handle: e.target.value })} autoFocus />

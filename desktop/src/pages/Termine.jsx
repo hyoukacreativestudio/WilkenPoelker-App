@@ -10,6 +10,7 @@ export const TYPES = [
   { key: 'onsite_repair', label: 'Reparatur vor Ort' },
   { key: 'property_viewing', label: 'Besichtigung' },
   { key: 'new_installation', label: 'Neue Installation' },
+  { key: 'urlaub', label: 'Urlaub' },
   { key: 'pickup', label: 'Abholung' },
   { key: 'delivery', label: 'Lieferung' },
   { key: 'inspection', label: 'Inspektion' },
