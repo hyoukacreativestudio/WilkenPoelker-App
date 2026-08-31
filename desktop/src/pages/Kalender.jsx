@@ -101,6 +101,28 @@ function printHTML(title, inner) {
 
 const HOUR0 = 7, HOUR1 = 20, PXH = 44; // week grid 07–20 Uhr
 
+// Lay overlapping events into side-by-side columns so nothing overlaps.
+// Each event needs _s/_e (start/end minutes); adds _col + _cols.
+function layoutColumns(evs) {
+  const sorted = [...evs].sort((a, b) => a._s - b._s || a._e - b._e);
+  let cluster = [], clusterEnd = -1; const out = [];
+  const flush = () => {
+    const colEnds = [];
+    for (const ev of cluster) {
+      let c = 0; for (; c < colEnds.length; c++) if (colEnds[c] <= ev._s) break;
+      ev._col = c; colEnds[c] = ev._e;
+    }
+    for (const ev of cluster) { ev._cols = colEnds.length; out.push(ev); }
+    cluster = []; clusterEnd = -1;
+  };
+  for (const ev of sorted) {
+    if (cluster.length && ev._s >= clusterEnd) flush();
+    cluster.push(ev); clusterEnd = Math.max(clusterEnd, ev._e);
+  }
+  if (cluster.length) flush();
+  return out;
+}
+
 export default function Kalender({ user }) {
   const toast = useToast();
   const cfg = CONFIG[user.role] || { dept: 'fahrrad', pick: true };
@@ -269,7 +291,7 @@ export default function Kalender({ user }) {
               <div />
               {weekDays.map((d) => {
                 const hn = holidays[iso(d)];
-                return <div key={iso(d)} style={{ textAlign: 'center', padding: '6px 2px', fontWeight: 700, background: iso(d) === todayIso ? 'var(--dept-soft)' : (hn ? '#f8d7da' : 'transparent'), color: hn ? '#a52834' : undefined }}>
+                return <div key={iso(d)} onClick={() => setOpenDay(iso(d))} title="Tagesübersicht öffnen" style={{ textAlign: 'center', padding: '6px 2px', fontWeight: 700, cursor: 'pointer', background: iso(d) === todayIso ? 'var(--dept-soft)' : (hn ? '#f8d7da' : 'transparent'), color: hn ? '#a52834' : undefined }}>
                   {WD[(d.getDay() + 6) % 7]} {pad(d.getDate())}.{pad(d.getMonth() + 1)}.{hn ? <div style={{ fontSize: 10 }}>{hn}</div> : null}
                 </div>;
               })}
@@ -293,23 +315,27 @@ export default function Kalender({ user }) {
               </div>
               {weekDays.map((d) => {
                 const k = iso(d);
-                const timed = (byDay[k] || []).filter((a) => a.startTime);
+                // Compute start/end minutes, then lay overlapping events side-by-side.
+                const timed = layoutColumns((byDay[k] || []).filter((a) => a.startTime).map((a) => {
+                  const [H, M] = hm(a.startTime).split(':').map(Number);
+                  const s = H * 60 + M;
+                  const eh = hm(a.endTime); let e = s + 60; // no end → 1 hour
+                  if (eh) { const [EH, EM] = eh.split(':').map(Number); e = Math.max(s + 20, EH * 60 + EM); }
+                  return { a, _s: s, _e: e };
+                }));
                 return (
                   <div key={k} style={{ position: 'relative', borderLeft: '1px solid var(--dept-soft)', height: (HOUR1 - HOUR0) * PXH, cursor: readOnly ? 'default' : 'pointer' }}
                     onClick={(e) => { if (readOnly) return; const rect = e.currentTarget.getBoundingClientRect(); const mins = Math.round(((e.clientY - rect.top) / PXH * 60 + HOUR0 * 60) / 15) * 15; openCreate(k, `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`); }}>
                     {Array.from({ length: HOUR1 - HOUR0 }, (_, i) => <div key={i} style={{ position: 'absolute', top: i * PXH, left: 0, right: 0, borderTop: '1px solid #eef0f3', height: 0 }} />)}
-                    {timed.map((a) => {
-                      const [H, M] = hm(a.startTime).split(':').map(Number);
-                      const top = Math.max(0, (H - HOUR0) * PXH + (M / 60) * PXH);
-                      // No end time given → the block is exactly one hour.
-                      const eh = hm(a.endTime); let dur = 60;
-                      if (eh) { const [EH, EM] = eh.split(':').map(Number); dur = Math.max(20, (EH * 60 + EM) - (H * 60 + M)); }
-                      const height = Math.max(22, (dur / 60) * PXH);
+                    {timed.map(({ a, _s, _e, _col, _cols }) => {
+                      const top = Math.max(0, (_s - HOUR0 * 60) / 60 * PXH);
+                      const height = Math.max(22, (_e - _s) / 60 * PXH);
+                      const widthPct = 100 / _cols;
                       return (
                         <div key={a.id} onClick={(ev) => { ev.stopPropagation(); readOnly ? setOpenDay(k) : openEdit(a); }} title={`${hm(a.startTime)} ${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} – ${a.customerName || ''}`}
-                          style={{ position: 'absolute', top, left: 2, right: 2, height, background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 5, padding: '2px 5px', fontSize: 11, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.2)', cursor: 'pointer' }}>
+                          style={{ position: 'absolute', top, left: `calc(${_col * widthPct}% + 1px)`, width: `calc(${widthPct}% - 2px)`, height, background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 5, padding: '2px 4px', fontSize: 11, lineHeight: 1.15, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.2)', cursor: 'pointer', boxSizing: 'border-box' }}>
                           <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><b>{hm(a.startTime)}</b> {a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || '—')}</div>
-                          {a.type !== 'urlaub' ? <div style={{ fontSize: 10, opacity: 0.9, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{typeLabel(a.type)}</div> : null}
+                          {a.type !== 'urlaub' && height > 30 ? <div style={{ fontSize: 10, opacity: 0.9, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{typeLabel(a.type)}</div> : null}
                         </div>
                       );
                     })}

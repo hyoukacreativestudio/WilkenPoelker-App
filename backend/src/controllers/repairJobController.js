@@ -79,6 +79,12 @@ const updateRepairJob = asyncHandler(async (req, res) => {
     updates.doneAt = req.body.done ? new Date() : null;
   }
   await job.update(updates);
+  // If this job came from an appointment, tick that appointment off too.
+  if (req.body.done !== undefined && job.sourceAppointmentId) {
+    try {
+      await Appointment.update({ workDone: !!req.body.done }, { where: { id: job.sourceAppointmentId } });
+    } catch (e) { /* non-blocking */ }
+  }
   res.json({ success: true, data: { job } });
 });
 

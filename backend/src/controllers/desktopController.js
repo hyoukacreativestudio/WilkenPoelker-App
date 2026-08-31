@@ -428,6 +428,17 @@ const updateAppointment = asyncHandler(async (req, res) => {
     }
   }
   await appointment.update(updates);
+  // Keep the linked "Reparaturen heute" job in sync when this appointment is
+  // ticked off / un-ticked (and vice-versa in repairJobController).
+  if (updates.workDone !== undefined) {
+    try {
+      const { RepairJob } = models;
+      await RepairJob.update(
+        { done: !!updates.workDone, doneAt: updates.workDone ? new Date() : null },
+        { where: { sourceAppointmentId: appointment.id } },
+      );
+    } catch (e) { /* non-blocking */ }
+  }
   // If staff just cancelled it, tell the customer (app appointments have a userId).
   if (updates.status === 'cancelled' && !wasCancelled && appointment.userId && !appointment.createdByStaff) {
     try {

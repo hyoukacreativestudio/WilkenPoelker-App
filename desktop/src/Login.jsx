@@ -11,6 +11,7 @@ export default function Login({ onLogin }) {
   const [error, setError] = useState('');
   const [pwFor, setPwFor] = useState(null); // department awaiting its password
   const [pw, setPw] = useState('');
+  const [showPw, setShowPw] = useState(false);
 
   useEffect(() => { document.documentElement.setAttribute('data-theme', 'light'); }, []);
 
@@ -31,7 +32,7 @@ export default function Login({ onLogin }) {
   const pick = (d) => {
     if (busy) return;
     setError('');
-    if (d.key === 'admin') { setPwFor(d); setPw(''); return; }
+    if (d.key === 'admin') { setPwFor(d); setPw(''); setShowPw(false); return; }
     doLogin(d);
   };
   const submitPw = () => { const d = pwFor; setPwFor(null); doLogin(d, pw); };
@@ -71,10 +72,16 @@ export default function Login({ onLogin }) {
         <div className="backdrop" {...backdropHandlers(() => setPwFor(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 360 }}>
             <h2>🛡️ Admin – Passwort</h2>
-            <input className="input" type="password" value={pw} autoFocus
-              onChange={(e) => setPw(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') submitPw(); }}
-              placeholder="Passwort" style={{ marginTop: 8 }} />
+            <div style={{ position: 'relative', marginTop: 8 }}>
+              <input className="input" type={showPw ? 'text' : 'password'} value={pw} autoFocus
+                onChange={(e) => setPw(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') submitPw(); }}
+                placeholder="Passwort" style={{ paddingRight: 40, width: '100%' }} />
+              <button type="button" onClick={() => setShowPw((s) => !s)} title={showPw ? 'Verbergen' : 'Anzeigen'}
+                style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>
+                {showPw ? '🙈' : '👁️'}
+              </button>
+            </div>
             <div className="modal-actions">
               <button className="btn ghost" onClick={() => setPwFor(null)}>Abbrechen</button>
               <button className="btn" onClick={submitPw} disabled={!pw}>Anmelden</button>
