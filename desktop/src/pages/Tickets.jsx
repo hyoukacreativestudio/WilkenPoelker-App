@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap, mediaUrl } from '../api.js';
 import { useToast } from '../toast.jsx';
 
@@ -125,7 +126,7 @@ function TicketDetail({ id, onClose, onChanged, toast }) {
   const isStaff = (m) => m.sender && m.sender.role && m.sender.role !== 'customer';
 
   return (
-    <div className="backdrop" onClick={onClose}>
+    <div className="backdrop" {...backdropHandlers(onClose)}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 640 }}>
         {loading || !ticket ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : (
           <>

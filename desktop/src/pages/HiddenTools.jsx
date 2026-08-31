@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { api, unwrap } from '../api.js';
@@ -29,7 +30,7 @@ export default function HiddenTools({ user, onClose }) {
   const [tab, setTab] = useState('einstempeln');
 
   return (
-    <div className="backdrop" onClick={onClose}>
+    <div className="backdrop" {...backdropHandlers(onClose)}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 'min(960px, 96vw)', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <h2 style={{ margin: 0 }}>🛠️ Interne Tools</h2>

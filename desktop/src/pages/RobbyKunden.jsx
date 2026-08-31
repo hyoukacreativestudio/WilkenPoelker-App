@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { TYPES } from './Termine.jsx';
@@ -120,7 +121,7 @@ export default function RobbyKunden() {
       )}
 
       {showForm && (
-        <div className="backdrop" onClick={() => setShowForm(false)}>
+        <div className="backdrop" {...backdropHandlers(() => setShowForm(false))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingId ? 'Robby-Kunde bearbeiten' : 'Neuer Robby-Kunde'}</h2>
             <div className="form-grid">
@@ -164,7 +165,7 @@ export default function RobbyKunden() {
       )}
 
       {apptForm && apptFor && (
-        <div className="backdrop" onClick={() => { setApptFor(null); setApptForm(null); }}>
+        <div className="backdrop" {...backdropHandlers(() => { setApptFor(null); setApptForm(null); })}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Termin für {apptFor.name}</h2>
             <div className="muted" style={{ marginBottom: 8 }}>{apptFor.customerNumber ? `Kd ${apptFor.customerNumber} · ` : ''}{apptFor.device || ''} → landet im Robby-Kalender</div>

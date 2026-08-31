@@ -1,31 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { api, setToken, setDept, unwrap } from './api.js';
+import { backdropHandlers } from './backdrop.js';
 import { DEPARTMENTS } from './config.js';
 
 // Passwordless: click a department → you're in. Restricted server-side to the
-// department/manager accounts (never real customer accounts).
+// department/manager accounts (never real customer accounts). The Admin account
+// additionally asks for a password.
 export default function Login({ onLogin }) {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState('');
+  const [pwFor, setPwFor] = useState(null); // department awaiting its password
+  const [pw, setPw] = useState('');
 
-  // The login card is always light — force the light theme so text stays readable
-  // even if a dark-mode session left data-theme="dark" on the root.
   useEffect(() => { document.documentElement.setAttribute('data-theme', 'light'); }, []);
 
-  const pick = async (d) => {
-    if (busy) return;
+  const doLogin = async (d, password) => {
     setBusy(d.key); setError('');
     try {
-      const res = unwrap(await api.post('/desktop/login', { department: d.key }));
+      const res = unwrap(await api.post('/desktop/login', { department: d.key, password }));
       if (!res?.accessToken) throw new Error('Anmeldung fehlgeschlagen');
       setToken(res.accessToken);
-      setDept(d.key); // remember for silent re-login when the token expires
+      setDept(d.key);
       onLogin(res.user);
     } catch (err) {
       setError(err.message || 'Anmeldung fehlgeschlagen');
       setBusy(null);
     }
   };
+
+  const pick = (d) => {
+    if (busy) return;
+    setError('');
+    if (d.key === 'admin') { setPwFor(d); setPw(''); return; }
+    doLogin(d);
+  };
+  const submitPw = () => { const d = pwFor; setPwFor(null); doLogin(d, pw); };
 
   return (
     <div className="login-wrap">
@@ -57,6 +66,22 @@ export default function Login({ onLogin }) {
         {error ? <div className="login-error">{error}</div> : null}
         <div className="login-hint">Abmelden &amp; Abteilung wechseln ist jederzeit oben links möglich.</div>
       </div>
+
+      {pwFor && (
+        <div className="backdrop" {...backdropHandlers(() => setPwFor(null))}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 360 }}>
+            <h2>🛡️ Admin – Passwort</h2>
+            <input className="input" type="password" value={pw} autoFocus
+              onChange={(e) => setPw(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submitPw(); }}
+              placeholder="Passwort" style={{ marginTop: 8 }} />
+            <div className="modal-actions">
+              <button className="btn ghost" onClick={() => setPwFor(null)}>Abbrechen</button>
+              <button className="btn" onClick={submitPw} disabled={!pw}>Anmelden</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

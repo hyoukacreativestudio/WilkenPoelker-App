@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { TYPES } from './Termine.jsx';
@@ -82,7 +83,7 @@ export default function TermineHeute({ user }) {
         )}
 
       {warnFor && (
-        <div className="backdrop" onClick={() => setWarnFor(null)}>
+        <div className="backdrop" {...backdropHandlers(() => setWarnFor(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 480 }}>
             <h2>Warnung – wird nicht fertig</h2>
             <div className="muted" style={{ marginBottom: 8 }}>{warnFor.repairNumber ? `Rep-Nr. ${warnFor.repairNumber} · ` : ''}{warnFor.customerName || ''}</div>

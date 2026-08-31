@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { ORDER_DEPARTMENTS, departmentForRole } from '../config.js';
 // (unwrap used for the purge response)
@@ -11,6 +12,8 @@ const CHECKOFF = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
 const deptLabel = (key) => ORDER_DEPARTMENTS.find((d) => d.key === key)?.label || key;
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
 const emptyForm = () => ({ sourceText: 'Shop', link: '', articleNumber: '', description: '', customerName: '', customerNumber: '', quantity: 1, quantityForStock: 0, notes: '', handle: savedHandle() });
+// One article line for the multi-article create form (shared customer/Kürzel).
+const emptyArticle = () => ({ sourceText: 'Shop', articleNumber: '', description: '', quantity: 1, quantityForStock: 0, link: '', notes: '' });
 
 // Remembered order sources for the quick-pick dropdown (case-insensitive, per PC)
 const SOURCES_KEY = 'wp_sources';
@@ -43,6 +46,7 @@ export default function Bestellungen({ user }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm());
+  const [articles, setArticles] = useState([emptyArticle()]); // multi-article (new only)
   const [detail, setDetail] = useState(null); // an order shown in the detail modal
   const [busy, setBusy] = useState(false);
   const [sourceFilter, setSourceFilter] = useState('all');
@@ -50,15 +54,27 @@ export default function Bestellungen({ user }) {
   const [problemFor, setProblemFor] = useState(null); // order being flagged
   const [problemText, setProblemText] = useState('');
 
-  // All known sources = remembered (localStorage) + those on the loaded orders,
-  // deduped case-insensitively.
+  // The server's live source list reflects merges (a merged-away source is gone).
+  // Managers get it; others fall back to remembered + visible-order sources.
+  const [serverSources, setServerSources] = useState(null); // null = not loaded/authorised
   const knownSources = useMemo(() => {
     const map = new Map();
-    [...loadSources(), ...rows.map((r) => r.sourceText).filter(Boolean)].forEach((s) => {
+    const base = serverSources ? serverSources : loadSources();
+    [...base, ...rows.map((r) => r.sourceText).filter(Boolean)].forEach((s) => {
       const k = String(s).toLowerCase(); if (!map.has(k)) map.set(k, s);
     });
     return [...map.values()].sort((a, b) => a.localeCompare(b));
-  }, [rows]);
+  }, [rows, serverSources]);
+
+  const loadSourceList = async () => {
+    try {
+      const d = unwrap(await api.get('/desktop/orders/sources'));
+      const names = (d.sources || []).map((s) => s.name);
+      setServerSources(names);
+      // Prune stale (merged-away) names from this PC's remembered list.
+      try { localStorage.setItem(SOURCES_KEY, JSON.stringify([...new Set([...names])])); } catch { /* ignore */ }
+    } catch (e) { /* not authorised (non-manager) → keep localStorage fallback */ }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -70,7 +86,7 @@ export default function Bestellungen({ user }) {
       setRows(data.orders || []);
     } catch (e) { setRows([]); } finally { setLoading(false); }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [dept, status]);
+  useEffect(() => { load(); loadSourceList(); /* eslint-disable-next-line */ }, [dept, status]);
 
   const sorted = useMemo(() => {
     const arr = rows.filter((r) => sourceFilter === 'all' || String(r.sourceText || '').toLowerCase() === sourceFilter.toLowerCase());
@@ -92,7 +108,7 @@ export default function Bestellungen({ user }) {
   const toggleSort = (key) => setSort((s) => ({ key, dir: s.key === key && s.dir === 'asc' ? 'desc' : 'asc' }));
   const arrow = (key) => sort.key === key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
 
-  const openNew = () => { setEditingId(null); setForm(emptyForm()); setShowForm(true); };
+  const openNew = () => { setEditingId(null); setForm(emptyForm()); setArticles([emptyArticle()]); setShowForm(true); };
   const openEdit = (r) => {
     setEditingId(r.id);
     setForm({
@@ -110,17 +126,27 @@ export default function Bestellungen({ user }) {
     setBusy(true);
     try {
       localStorage.setItem('wp_handle', form.handle.trim());
-      rememberSource(form.sourceText);
       if (editingId) {
+        rememberSource(form.sourceText);
         await api.patch(`/desktop/orders/${editingId}`, form);
         toast('Gespeichert');
       } else {
-        const payload = { ...form };
-        if (isManager && dept !== 'all') payload.department = dept;
-        await api.post('/desktop/orders', payload);
-        toast('Bestellung gespeichert');
+        // One order per article; customer + Kürzel are shared across them.
+        const arts = articles.filter((a) => (a.description || a.articleNumber || a.sourceText || '').trim());
+        if (arts.length === 0) { toast('Bitte mindestens einen Artikel angeben', { type: 'error' }); setBusy(false); return; }
+        for (const a of arts) {
+          const payload = {
+            sourceText: a.sourceText, articleNumber: a.articleNumber, description: a.description,
+            quantity: a.quantity, quantityForStock: a.quantityForStock, link: a.link, notes: a.notes,
+            customerName: form.customerName, customerNumber: form.customerNumber, handle: form.handle.trim(),
+          };
+          if (isManager && dept !== 'all') payload.department = dept;
+          rememberSource(a.sourceText);
+          await api.post('/desktop/orders', payload);
+        }
+        toast(arts.length > 1 ? `${arts.length} Bestellungen gespeichert` : 'Bestellung gespeichert');
       }
-      setShowForm(false); setEditingId(null); setForm(emptyForm()); load();
+      setShowForm(false); setEditingId(null); setForm(emptyForm()); setArticles([emptyArticle()]); load();
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
   const check = async (r, done) => {
@@ -220,7 +246,7 @@ export default function Bestellungen({ user }) {
 
       {/* Detail modal — open an order to see everything + click the link */}
       {detail && (
-        <div className="backdrop" onClick={() => setDetail(null)}>
+        <div className="backdrop" {...backdropHandlers(() => setDetail(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Bestellung{detail.status === 'ordered' ? ' · erledigt' : ''}</h2>
             {detail.problemNote ? (
@@ -258,7 +284,7 @@ export default function Bestellungen({ user }) {
 
       {/* Problem note modal (free text) */}
       {problemFor && (
-        <div className="backdrop" onClick={() => setProblemFor(null)}>
+        <div className="backdrop" {...backdropHandlers(() => setProblemFor(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 480 }}>
             <h2>Problem melden</h2>
             <div className="muted" style={{ marginBottom: 10 }}>{problemFor.description}{problemFor.customerName ? ` · ${problemFor.customerName}` : ''}</div>
@@ -276,30 +302,13 @@ export default function Bestellungen({ user }) {
 
       {/* Create / edit form */}
       {showForm && (
-        <div className="backdrop" onClick={() => setShowForm(false)}>
+        <div className="backdrop" {...backdropHandlers(() => setShowForm(false))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingId ? 'Bestellung bearbeiten' : `Neue Bestellung${isManager && dept !== 'all' ? ` – ${deptLabel(dept)}` : ''}`}</h2>
+            {/* Shared: Kürzel + customer (used for every article) */}
             <div className="form-grid">
-              <label className="field full">Was ist es?
-                <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} autoFocus />
-              </label>
               <label className="field">Dein Kürzel *
-                <input className="input" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="z. B. MK" />
-              </label>
-              <label className="field">Quelle
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <select className="input" style={{ maxWidth: 150 }} value={knownSources.includes(form.sourceText) ? form.sourceText : ''} onChange={(e) => { if (e.target.value) setForm({ ...form, sourceText: e.target.value }); }}>
-                    <option value="">Auswählen ▼</option>
-                    {knownSources.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                  <input className="input" style={{ flex: 1 }} value={form.sourceText} onChange={(e) => setForm({ ...form, sourceText: e.target.value })} placeholder="oder neu tippen…" />
-                </div>
-              </label>
-              <label className="field">Artikelnummer
-                <input className="input" value={form.articleNumber} onChange={(e) => setForm({ ...form, articleNumber: e.target.value })} />
-              </label>
-              <label className="field full">Link (optional)
-                <input className="input" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="https://…" />
+                <input className="input" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="z. B. MK" autoFocus />
               </label>
               <label className="field">Kundenname
                 <input className="input" value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} />
@@ -307,16 +316,85 @@ export default function Bestellungen({ user }) {
               <label className="field">Kundennummer
                 <input className="input" value={form.customerNumber} onChange={(e) => setForm({ ...form, customerNumber: e.target.value })} />
               </label>
-              <label className="field">Anzahl
-                <input className="input" type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
-              </label>
-              <label className="field">davon fürs Lager
-                <input className="input" type="number" min="0" value={form.quantityForStock} onChange={(e) => setForm({ ...form, quantityForStock: e.target.value })} />
-              </label>
-              <label className="field full">Notiz
-                <textarea className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-              </label>
             </div>
+
+            {editingId ? (
+              /* Edit = a single order */
+              <div className="form-grid">
+                <label className="field full">Was ist es?
+                  <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                </label>
+                <label className="field">Hersteller / Quelle
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <select className="input" style={{ maxWidth: 150 }} value={knownSources.includes(form.sourceText) ? form.sourceText : ''} onChange={(e) => { if (e.target.value) setForm({ ...form, sourceText: e.target.value }); }}>
+                      <option value="">Auswählen ▼</option>
+                      {knownSources.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <input className="input" style={{ flex: 1 }} value={form.sourceText} onChange={(e) => setForm({ ...form, sourceText: e.target.value })} placeholder="oder neu tippen…" />
+                  </div>
+                </label>
+                <label className="field">Artikelnummer
+                  <input className="input" value={form.articleNumber} onChange={(e) => setForm({ ...form, articleNumber: e.target.value })} />
+                </label>
+                <label className="field full">Link (optional)
+                  <input className="input" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="https://…" />
+                </label>
+                <label className="field">Anzahl
+                  <input className="input" type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+                </label>
+                <label className="field">davon fürs Lager
+                  <input className="input" type="number" min="0" value={form.quantityForStock} onChange={(e) => setForm({ ...form, quantityForStock: e.target.value })} />
+                </label>
+                <label className="field full">Notiz
+                  <textarea className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                </label>
+              </div>
+            ) : (
+              /* New = one or more articles for the same customer */
+              <div style={{ marginTop: 6 }}>
+                {articles.map((a, i) => {
+                  const setArt = (patch) => setArticles((arr) => arr.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+                  return (
+                    <div key={i} className="card" style={{ padding: 10, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <strong>Artikel {i + 1}</strong>
+                        {articles.length > 1 ? <button className="btn sm ghost" onClick={() => setArticles((arr) => arr.filter((_, j) => j !== i))}>✕ entfernen</button> : null}
+                      </div>
+                      <div className="form-grid">
+                        <label className="field">Hersteller / Quelle
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <select className="input" style={{ maxWidth: 140 }} value={knownSources.includes(a.sourceText) ? a.sourceText : ''} onChange={(e) => { if (e.target.value) setArt({ sourceText: e.target.value }); }}>
+                              <option value="">Auswählen ▼</option>
+                              {knownSources.map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            <input className="input" style={{ flex: 1 }} value={a.sourceText} onChange={(e) => setArt({ sourceText: e.target.value })} placeholder="oder neu…" />
+                          </div>
+                        </label>
+                        <label className="field">Artikelnummer
+                          <input className="input" value={a.articleNumber} onChange={(e) => setArt({ articleNumber: e.target.value })} />
+                        </label>
+                        <label className="field full">Was ist es?
+                          <input className="input" value={a.description} onChange={(e) => setArt({ description: e.target.value })} />
+                        </label>
+                        <label className="field">Anzahl
+                          <input className="input" type="number" min="1" value={a.quantity} onChange={(e) => setArt({ quantity: e.target.value })} />
+                        </label>
+                        <label className="field">davon fürs Lager
+                          <input className="input" type="number" min="0" value={a.quantityForStock} onChange={(e) => setArt({ quantityForStock: e.target.value })} />
+                        </label>
+                        <label className="field full">Link (optional)
+                          <input className="input" value={a.link} onChange={(e) => setArt({ link: e.target.value })} placeholder="https://…" />
+                        </label>
+                        <label className="field full">Notiz
+                          <input className="input" value={a.notes} onChange={(e) => setArt({ notes: e.target.value })} />
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+                <button className="btn ghost" onClick={() => setArticles((arr) => [...arr, emptyArticle()])}>+ Artikel hinzufügen</button>
+              </div>
+            )}
             <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
               <div>
                 {editingId && (

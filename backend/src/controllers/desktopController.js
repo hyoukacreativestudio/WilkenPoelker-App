@@ -38,6 +38,12 @@ const desktopLogin = asyncHandler(async (req, res) => {
   const dept = DEPT_ACCOUNTS[req.body.department];
   if (!dept) throw new AppError('Unbekannte Abteilung', 400, 'UNKNOWN_DEPARTMENT');
 
+  // The Admin account is password-protected.
+  if (req.body.department === 'admin') {
+    const adminPw = process.env.ADMIN_DESKTOP_PASSWORD || 'CPClemens0901*';
+    if (String(req.body.password || '') !== adminPw) throw new AppError('Falsches Passwort', 401, 'ADMIN_PASSWORD');
+  }
+
   const { fn, col, where } = require('sequelize');
   // Prefer the dedicated department account (by username); else the first
   // account holding that role.
@@ -260,7 +266,7 @@ const listWarehouse = asyncHandler(async (req, res) => {
 });
 
 const createWarehouseItem = asyncHandler(async (req, res) => {
-  const { brand, color, articleNumber, description, quantity, notes, handle } = req.body;
+  const { brand, color, articleNumber, frameSize, model, quantity, notes, handle } = req.body;
   // Only the Kürzel is mandatory; everything else optional.
   if (!handle || !String(handle).trim()) {
     throw new AppError('Kürzel ist erforderlich', 400, 'HANDLE_REQUIRED');
@@ -269,7 +275,9 @@ const createWarehouseItem = asyncHandler(async (req, res) => {
     brand: brand || null,
     color: color || null,
     articleNumber: articleNumber || null,
-    description: (description && String(description).trim()) || '—',
+    frameSize: frameSize || null,
+    model: model || null,
+    description: null,
     quantity: quantity != null ? parseInt(quantity, 10) || 1 : 1,
     notes: notes || null,
     status: 'requested',
@@ -286,7 +294,7 @@ const updateWarehouseItem = asyncHandler(async (req, res) => {
   const updates = {};
   if (req.body.status === 'brought') { updates.status = 'brought'; updates.broughtBy = req.user.id; updates.broughtAt = new Date(); }
   else if (req.body.status === 'requested') { updates.status = 'requested'; updates.broughtBy = null; updates.broughtAt = null; }
-  for (const f of ['brand', 'color', 'articleNumber', 'description', 'notes', 'handle']) {
+  for (const f of ['brand', 'color', 'articleNumber', 'frameSize', 'model', 'description', 'notes', 'handle']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];
   }
   if (req.body.quantity !== undefined) updates.quantity = parseInt(req.body.quantity, 10) || 1;

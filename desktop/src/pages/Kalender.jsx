@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { TYPES } from './Termine.jsx';
@@ -50,7 +51,7 @@ const TYPE_LABEL = Object.fromEntries(TYPES.map((t) => [t.key, t.label]));
 const typeLabel = (t) => TYPE_LABEL[t] || t || 'Termin';
 
 const savedHandle = () => (typeof localStorage !== 'undefined' ? localStorage.getItem('wp_handle') || '' : '');
-const emptyForm = (date = '') => ({ title: '', type: 'repair', date, startTime: '', endTime: '', customerName: '', customerNumber: '', phone: '', description: '', handle: savedHandle() });
+const emptyForm = (date = '') => ({ title: '', type: 'repair', date, startTime: '', endTime: '', customerName: '', customerNumber: '', phone: '', description: '', handle: savedHandle(), assignedHandle: '' });
 const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -159,6 +160,7 @@ export default function Kalender({ user }) {
     _id: a.id, title: a.title || '', type: a.type || 'repair', date: String(a.date || '').slice(0, 10),
     startTime: hm(a.startTime), endTime: hm(a.endTime), customerName: a.customerName || '',
     customerNumber: a.customerNumber || '', phone: a.phone || '', handle: a.handle || savedHandle(),
+    assignedHandle: a.assignedHandle || '', repairNumber: a.repairNumber || '',
   });
   const submitCreate = async () => {
     if (!createForm.handle.trim()) { toast('Bitte dein Kürzel angeben', { type: 'error' }); return; }
@@ -278,7 +280,7 @@ export default function Kalender({ user }) {
               {weekDays.map((d) => {
                 const list = (byDay[iso(d)] || []).filter((a) => !a.startTime);
                 return <div key={iso(d)} style={{ borderLeft: '1px solid var(--dept-soft)', padding: 2 }}>
-                  {list.map((a) => <div key={a.id} onClick={(ev) => { ev.stopPropagation(); readOnly ? setOpenDay(iso(d)) : openEdit(a); }} title={`${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} – ${a.customerName || ''}`} style={{ background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || typeLabel(a.type))}</div>)}
+                  {list.map((a) => <div key={a.id} onClick={(ev) => { ev.stopPropagation(); readOnly ? setOpenDay(iso(d)) : openEdit(a); }} title={`${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} – ${a.customerName || ''}`} style={{ background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : `${a.customerName || a.title || '—'} · ${typeLabel(a.type)}`}</div>)}
                 </div>;
               })}
             </div>
@@ -306,7 +308,8 @@ export default function Kalender({ user }) {
                       return (
                         <div key={a.id} onClick={(ev) => { ev.stopPropagation(); readOnly ? setOpenDay(k) : openEdit(a); }} title={`${hm(a.startTime)} ${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} – ${a.customerName || ''}`}
                           style={{ position: 'absolute', top, left: 2, right: 2, height, background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 5, padding: '2px 5px', fontSize: 11, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.2)', cursor: 'pointer' }}>
-                          <b>{hm(a.startTime)}</b> {a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || typeLabel(a.type))}
+                          <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><b>{hm(a.startTime)}</b> {a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || '—')}</div>
+                          {a.type !== 'urlaub' ? <div style={{ fontSize: 10, opacity: 0.9, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{typeLabel(a.type)}</div> : null}
                         </div>
                       );
                     })}
@@ -344,7 +347,7 @@ export default function Kalender({ user }) {
                             style={isColorCal
                               ? { background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: readOnly ? 'pointer' : 'pointer' }
                               : { fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {a.startTime ? <b>{hm(a.startTime)} </b> : null}{isColorCal && a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || typeLabel(a.type))}{!isColorCal && a.assignedHandle ? ` [${a.assignedHandle}]` : ''}
+                            {a.startTime ? <b>{hm(a.startTime)} </b> : null}{isColorCal && a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || '—')}{isColorCal && a.type !== 'urlaub' ? ` · ${typeLabel(a.type)}` : ''}{!isColorCal && a.assignedHandle ? ` [${a.assignedHandle}]` : ''}
                           </div>
                         ))}
                         {list.length > 7 ? <div className="muted" style={{ fontSize: 11 }}>+{list.length - 7} mehr</div> : null}
@@ -359,7 +362,7 @@ export default function Kalender({ user }) {
 
       {/* Day modal: list appointments, edit time, assign repair-nr + Kürzel (Fahrrad), print */}
       {openDay && (
-        <div className="backdrop" onClick={() => setOpenDay(null)}>
+        <div className="backdrop" {...backdropHandlers(() => setOpenDay(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 720 }}>
             <h2>{openDay.split('-').reverse().join('.')}{limit ? ` · ${(byDay[openDay] || []).length}/${limit}` : ''}</h2>
             {holidays[openDay] ? <div className="badge" style={{ background: '#f8d7da', color: '#a52834', marginBottom: 8 }}>Geschlossen – {holidays[openDay]}</div>
@@ -393,8 +396,8 @@ export default function Kalender({ user }) {
                           <label className="field" style={{ margin: 0 }}>Rep-Nr.
                             <input className="input" style={{ width: 150 }} value={e.repairNumber !== undefined ? e.repairNumber : (a.repairNumber || '')} onChange={(ev) => setEdits((x) => ({ ...x, [a.id]: { ...x[a.id], repairNumber: ev.target.value } }))} />
                           </label>
-                          <label className="field" style={{ margin: 0 }}>Kürzel (bearbeitet)
-                            <input className="input" style={{ width: 120 }} value={e.assignedHandle !== undefined ? e.assignedHandle : (a.assignedHandle || '')} onChange={(ev) => setEdits((x) => ({ ...x, [a.id]: { ...x[a.id], assignedHandle: ev.target.value } }))} />
+                          <label className="field" style={{ margin: 0 }}>Kürzel Reparaturzuteilung
+                            <input className="input" style={{ width: 130 }} value={e.assignedHandle !== undefined ? e.assignedHandle : (a.assignedHandle || '')} onChange={(ev) => setEdits((x) => ({ ...x, [a.id]: { ...x[a.id], assignedHandle: ev.target.value } }))} />
                           </label>
                           <button className="btn sm" onClick={() => saveAssign(a)}>Zuteilen</button>
                         </div>
@@ -417,13 +420,23 @@ export default function Kalender({ user }) {
 
       {/* Create appointment */}
       {createForm && (
-        <div className="backdrop" onClick={() => setCreateForm(null)}>
+        <div className="backdrop" {...backdropHandlers(() => setCreateForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{createForm._id ? 'Termin bearbeiten' : 'Neuer Termin'}</h2>
             <div className="form-grid">
-              <label className="field">Kürzel *
+              <label className="field">{isFahrrad ? 'Kürzel Terminannahme *' : 'Kürzel *'}
                 <input className="input" value={createForm.handle} onChange={(e) => setCreateForm({ ...createForm, handle: e.target.value })} autoFocus />
               </label>
+              {isFahrrad && (
+                <label className="field">Kürzel Reparaturzuteilung
+                  <input className="input" value={createForm.assignedHandle || ''} onChange={(e) => setCreateForm({ ...createForm, assignedHandle: e.target.value })} />
+                </label>
+              )}
+              {isFahrrad && (
+                <label className="field">Rep-Nr.
+                  <input className="input" value={createForm.repairNumber || ''} onChange={(e) => setCreateForm({ ...createForm, repairNumber: e.target.value })} />
+                </label>
+              )}
               <label className="field">Art
                 <select className="input" value={createForm.type} onChange={(e) => setCreateForm({ ...createForm, type: e.target.value })}>
                   {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}

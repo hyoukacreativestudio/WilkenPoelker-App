@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 
@@ -17,6 +18,7 @@ export default function ReparaturenHeute({ user }) {
   const [loading, setLoading] = useState(true);
   const [day, setDay] = useState(iso(new Date()));
   const [who, setWho] = useState('all');            // employee filter
+  const [search, setSearch] = useState('');
   const [form, setForm] = useState(null);           // create-job modal
   const [warnFor, setWarnFor] = useState(null);
   const [warnText, setWarnText] = useState('');
@@ -32,9 +34,13 @@ export default function ReparaturenHeute({ user }) {
   };
   useEffect(() => { load(); const t = setInterval(load, 60000); return () => clearInterval(t); /* eslint-disable-next-line */ }, [day]);
 
-  const list = useMemo(() => (who === 'all' ? jobs : jobs.filter((j) => j.assignedTo === who))
-    .slice().sort((a, b) => (a.done - b.done) || String(a.repairNumber).localeCompare(String(b.repairNumber), undefined, { numeric: true })),
-    [jobs, who]);
+  const list = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return jobs
+      .filter((j) => who === 'all' || j.assignedTo === who)
+      .filter((j) => !q || [j.repairNumber, j.customerName, j.customerNumber, j.phone, j.device, j.note, j.assignedTo, j.warnNote].filter(Boolean).join(' ').toLowerCase().includes(q))
+      .slice().sort((a, b) => (a.done - b.done) || String(a.repairNumber).localeCompare(String(b.repairNumber), undefined, { numeric: true }));
+  }, [jobs, who, search]);
 
   const patch = async (j, body) => { try { await api.patch(`/desktop/repairjobs/${j.id}`, body); load(); } catch (e) { toast(e.message, { type: 'error' }); } };
   const toggleDone = (j) => patch(j, { done: !j.done });
@@ -61,6 +67,7 @@ export default function ReparaturenHeute({ user }) {
       <div className="toolbar no-print">
         <strong>Reparaturen · {day.split('-').reverse().join('.')}</strong>
         <input className="input" type="date" value={day} onChange={(e) => setDay(e.target.value)} style={{ width: 160 }} />
+        <input className="input" placeholder="Suche: Rep-Nr., Kunde, Gerät…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 220 }} />
         <select className="select" value={who} onChange={(e) => setWho(e.target.value)} title="Nach Mitarbeiter filtern">
           <option value="all">Alle Mitarbeiter</option>
           {employees.map((n) => <option key={n} value={n}>{n}</option>)}
@@ -110,7 +117,7 @@ export default function ReparaturenHeute({ user }) {
 
       {/* Warning modal */}
       {warnFor && (
-        <div className="backdrop" onClick={() => setWarnFor(null)}>
+        <div className="backdrop" {...backdropHandlers(() => setWarnFor(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 480 }}>
             <h2>Warnung – wird nicht fertig</h2>
             <div className="muted" style={{ marginBottom: 8 }}>Rep-Nr. {warnFor.repairNumber}{warnFor.customerName ? ` · ${warnFor.customerName}` : ''}</div>
@@ -126,7 +133,7 @@ export default function ReparaturenHeute({ user }) {
 
       {/* Create / edit job (Service) */}
       {form && (
-        <div className="backdrop" onClick={() => setForm(null)}>
+        <div className="backdrop" {...backdropHandlers(() => setForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{form.id ? 'Reparatur bearbeiten' : 'Neue Reparatur'}</h2>
             <div className="form-grid">

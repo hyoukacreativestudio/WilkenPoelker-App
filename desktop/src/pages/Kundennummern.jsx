@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 
@@ -80,7 +81,7 @@ export default function Kundennummern() {
       )}
 
       {detail && (
-        <div className="backdrop" onClick={() => setDetail(null)}>
+        <div className="backdrop" {...backdropHandlers(() => setDetail(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Kundennummer-Anfrage</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '8px 12px', fontSize: 14, marginBottom: 14 }}>

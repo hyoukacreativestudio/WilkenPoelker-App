@@ -48,6 +48,11 @@ const RepairJob = sequelize.define('RepairJob', {
   createdByHandle: {
     type: DataTypes.STRING,
   },
+  // Set when this job was auto-created from a Fahrrad appointment (dedupe key).
+  sourceAppointmentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
 }, {
   tableName: 'repair_jobs',
   underscored: true,

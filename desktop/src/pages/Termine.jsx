@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 
@@ -202,7 +203,7 @@ export default function Termine({ user }) {
 
       {/* Request action modal: propose a date (customer confirms), confirm, or ask */}
       {detail && (
-        <div className="backdrop" onClick={() => setDetail(null)}>
+        <div className="backdrop" {...backdropHandlers(() => setDetail(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Terminanfrage</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '8px 12px', fontSize: 14, marginBottom: 14 }}>
@@ -250,7 +251,7 @@ export default function Termine({ user }) {
       )}
 
       {showForm && (
-        <div className="backdrop" onClick={() => setShowForm(false)}>
+        <div className="backdrop" {...backdropHandlers(() => setShowForm(false))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingId ? 'Termin bearbeiten' : 'Neuer Termin'}</h2>
             <div className="form-grid">

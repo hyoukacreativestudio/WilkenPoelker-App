@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 
 const CAN_WRITE = ['sales_manager', 'admin', 'super_admin'];
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
-const emptyForm = () => ({ brand: '', color: '', articleNumber: '', description: '', quantity: 1, notes: '', handle: savedHandle() });
+const emptyForm = () => ({ brand: '', color: '', articleNumber: '', frameSize: '', model: '', quantity: 1, notes: '', handle: savedHandle() });
 
 export default function Lager({ user }) {
   const toast = useToast();
@@ -45,7 +46,7 @@ export default function Lager({ user }) {
   const openNew = () => { setEditingId(null); setForm(emptyForm()); setShowForm(true); };
   const openEdit = (r) => {
     setEditingId(r.id);
-    setForm({ brand: r.brand || '', color: r.color || '', articleNumber: r.articleNumber || '', description: r.description || '', quantity: r.quantity ?? 1, notes: r.notes || '', handle: r.handle || savedHandle() });
+    setForm({ brand: r.brand || '', color: r.color || '', articleNumber: r.articleNumber || '', frameSize: r.frameSize || '', model: r.model || '', quantity: r.quantity ?? 1, notes: r.notes || '', handle: r.handle || savedHandle() });
     setShowForm(true);
   };
 
@@ -83,7 +84,8 @@ export default function Lager({ user }) {
               <th className="sortable" onClick={() => toggleSort('brand')}>Marke{arrow('brand')}</th>
               <th className="sortable" onClick={() => toggleSort('color')}>Farbe{arrow('color')}</th>
               <th className="sortable" onClick={() => toggleSort('articleNumber')}>Artikel-Nr.{arrow('articleNumber')}</th>
-              <th className="sortable" onClick={() => toggleSort('description')}>Was{arrow('description')}</th>
+              <th className="sortable" onClick={() => toggleSort('model')}>Modell{arrow('model')}</th>
+              <th className="sortable" onClick={() => toggleSort('frameSize')}>Rahmengröße{arrow('frameSize')}</th>
               <th className="right">Anzahl</th>
               <th className="sortable" onClick={() => toggleSort('handle')}>Kürzel{arrow('handle')}</th>
               <th className="sortable" onClick={() => toggleSort('status')}>Status{arrow('status')}</th>
@@ -96,7 +98,8 @@ export default function Lager({ user }) {
                 <td><strong>{r.brand || '—'}</strong></td>
                 <td>{r.color || '—'}</td>
                 <td>{r.articleNumber || '—'}</td>
-                <td>{r.description}{r.notes ? <div className="muted" style={{ fontSize: 12 }}>{r.notes}</div> : null}</td>
+                <td>{r.model || '—'}{r.notes ? <div className="muted" style={{ fontSize: 12 }}>{r.notes}</div> : null}</td>
+                <td>{r.frameSize || '—'}</td>
                 <td className="right">{r.quantity}</td>
                 <td>{r.handle || '—'}</td>
                 <td><span className={`badge ${r.status === 'brought' ? 'brought' : 'open'}`}>{r.status === 'brought' ? 'Gebracht' : 'Offen'}</span></td>
@@ -112,15 +115,18 @@ export default function Lager({ user }) {
       )}
 
       {showForm && (
-        <div className="backdrop" onClick={() => setShowForm(false)}>
+        <div className="backdrop" {...backdropHandlers(() => setShowForm(false))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingId ? 'Lager-Eintrag bearbeiten' : 'Neuer Lager-Eintrag'}</h2>
             <div className="form-grid">
-              <label className="field full">Was ist es?
-                <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} autoFocus />
-              </label>
               <label className="field">Dein Kürzel *
-                <input className="input" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="z. B. MK" />
+                <input className="input" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="z. B. MK" autoFocus />
+              </label>
+              <label className="field">Modell
+                <input className="input" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
+              </label>
+              <label className="field">Rahmengröße
+                <input className="input" value={form.frameSize} onChange={(e) => setForm({ ...form, frameSize: e.target.value })} />
               </label>
               <label className="field">Marke
                 <input className="input" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />

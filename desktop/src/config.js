@@ -48,12 +48,12 @@ export function modulesForRole(role) {
   const all = SEE_ALL.includes(role);
   return [
     { key: 'uebersicht',   label: 'Übersicht',    icon: '🏠', show: true },
-    { key: 'termine',      label: 'Termine',      icon: '📅', show: true },
+    { key: 'termine',      label: 'Termine',      icon: '📅', show: role !== 'warehouse_worker' },
     { key: 'kalender',     label: 'Kalender',     icon: '📆', show: all || role === 'service_manager' || role === 'robby_manager' || role === 'cleaning_manager' || role === 'bike_manager' },
     { key: 'termineheute', label: 'Termine heute', icon: '📋', show: all || role === 'bike_manager' || role === 'service_manager' },
     { key: 'reparaturenheute', label: 'Reparaturen heute', icon: '🔧', show: all || role === 'bike_manager' || role === 'service_manager' },
     { key: 'reparaturen',  label: 'Aufträge',     icon: '🔧', show: all || role === 'service_manager' || role === 'sales_manager' || REPAIR_DEPARTMENT_ROLE[role] != null },
-    { key: 'tickets',      label: 'Tickets',      icon: '💬', show: true },
+    { key: 'tickets',      label: 'Tickets',      icon: '💬', show: role !== 'warehouse_worker' },
     { key: 'robbykunden',  label: 'Robby-Kunden', icon: '🤖', show: all || role === 'robby_manager' },
     { key: 'kundennummern', label: 'Kundennummern', icon: '🔢', show: all || role === 'service_manager' || role === 'sales_manager' },
     { key: 'bestellungen', label: 'Bestellungen', icon: '📦', show: true },

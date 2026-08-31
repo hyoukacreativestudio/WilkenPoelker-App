@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { RepairJob } = require('../models');
+const { RepairJob, Appointment } = require('../models');
 const { asyncHandler } = require('../middlewares/errorHandler');
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 
@@ -21,6 +21,27 @@ const todayISO = () => {
 const listRepairJobs = asyncHandler(async (req, res) => {
   const today = todayISO();
   await RepairJob.update({ date: today }, { where: { done: false, date: { [Op.lt]: today } } });
+
+  // Pull today's Fahrrad appointments into the board (once each, deduped by id).
+  try {
+    const appts = await Appointment.findAll({ where: { department: 'fahrrad', date: today, status: { [Op.ne]: 'cancelled' } } });
+    for (const a of appts) {
+      const exists = await RepairJob.findOne({ where: { sourceAppointmentId: a.id } });
+      if (!exists) {
+        await RepairJob.create({
+          repairNumber: a.repairNumber || '',
+          customerName: a.customerName || null,
+          customerNumber: a.customerNumber || null,
+          phone: a.phone || null,
+          device: a.title || null,
+          assignedTo: null,
+          date: today,
+          note: a.description || 'aus Termin',
+          sourceAppointmentId: a.id,
+        });
+      }
+    }
+  } catch (e) { /* non-blocking */ }
 
   const date = String(req.query.date || today).slice(0, 10);
   const where = { date };

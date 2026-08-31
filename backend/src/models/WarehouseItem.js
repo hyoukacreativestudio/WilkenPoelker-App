@@ -20,8 +20,14 @@ const WarehouseItem = sequelize.define('WarehouseItem', {
     type: DataTypes.STRING,
   },
   description: {
-    type: DataTypes.STRING, // "was es ist"
-    allowNull: false,
+    type: DataTypes.STRING, // legacy "was es ist" — optional now
+    allowNull: true,
+  },
+  frameSize: {
+    type: DataTypes.STRING, // Rahmengröße
+  },
+  model: {
+    type: DataTypes.STRING, // Modell
   },
   quantity: {
     type: DataTypes.INTEGER,

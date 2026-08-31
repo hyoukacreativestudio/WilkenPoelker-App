@@ -84,11 +84,32 @@ export default function Shell({ user, onLogout }) {
   }, [loadNotifs]);
   useEffect(() => { setTaskbarBadge(unread); }, [unread]);
 
+  // Close the notification panel when clicking anywhere outside it.
+  useEffect(() => {
+    if (!notifOpen) return undefined;
+    const onDoc = (e) => { if (!e.target.closest('.notif-panel') && !e.target.closest('[data-notif-bell]')) setNotifOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [notifOpen]);
+
   const markRead = async (n) => {
     if (n.read) return;
     setNotifs((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
     try { await api.put(`/notifications/${n.id}/read`); } catch { loadNotifs(); }
   };
+  // Map a notification to the module to open when it's clicked.
+  const notifTarget = (n) => {
+    const c = `${n.category || ''} ${n.relatedType || ''} ${n.type || ''}`.toLowerCase();
+    let key = 'uebersicht';
+    if (c.includes('appointment') || c.includes('termin')) key = 'termine';
+    else if (c.includes('ticket') || c.includes('chat')) key = 'tickets';
+    else if (c.includes('order') || c.includes('bestell')) key = 'bestellungen';
+    else if (c.includes('warehouse') || c.includes('lager')) key = 'lager';
+    else if (c.includes('customer') || c.includes('kundennummer')) key = 'kundennummern';
+    return modules.some((m) => m.key === key) ? key : 'uebersicht';
+  };
+  const onNotifClick = (n) => { markRead(n); setActive(notifTarget(n)); setNotifOpen(false); };
+
   const markAllRead = async () => {
     setNotifs((prev) => prev.map((x) => ({ ...x, read: true })));
     try { await api.put('/notifications/read-all'); } catch { loadNotifs(); }
@@ -152,7 +173,7 @@ export default function Shell({ user, onLogout }) {
           </div>
           <div className="spacer" />
           <div style={{ position: 'relative', marginRight: 8 }}>
-            <button className="theme-toggle" onClick={() => { setNotifOpen((o) => !o); if (!notifOpen) loadNotifs(); }} title="Benachrichtigungen">
+            <button className="theme-toggle" data-notif-bell onClick={() => { setNotifOpen((o) => !o); if (!notifOpen) loadNotifs(); }} title="Benachrichtigungen">
               🔔{unread > 0 ? <span className="badge" style={{ background: '#E53E3E', color: '#fff', marginLeft: 4 }}>{unread}</span> : null}
             </button>
             {notifOpen && (
@@ -164,7 +185,7 @@ export default function Shell({ user, onLogout }) {
                 <div className="notif-list">
                   {notifs.length === 0 ? <div className="muted" style={{ padding: 14, textAlign: 'center' }}>Keine Benachrichtigungen.</div>
                     : notifs.map((n) => (
-                      <div key={n.id} className={`notif-item ${n.read ? '' : 'unread'}`} onClick={() => markRead(n)}>
+                      <div key={n.id} className={`notif-item ${n.read ? '' : 'unread'}`} style={{ cursor: 'pointer' }} onClick={() => onNotifClick(n)}>
                         <div className="notif-title">{!n.read ? <span className="dot" /> : null}{n.title}</div>
                         <div className="notif-msg">{n.message}</div>
                       </div>
