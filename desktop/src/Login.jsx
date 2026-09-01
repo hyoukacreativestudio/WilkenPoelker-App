@@ -66,7 +66,7 @@ export default function Login({ onLogin }) {
         </div>
 
         {error ? <div className="login-error">{error}</div> : null}
-        <div className="login-hint">Abmelden &amp; Abteilung wechseln ist jederzeit oben links möglich.</div>
+        <div className="login-hint">Abmelden &amp; Abteilung wechseln ist jederzeit unten links möglich.</div>
       </div>
 
       {pwFor && (
