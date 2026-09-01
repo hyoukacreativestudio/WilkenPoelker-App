@@ -277,7 +277,9 @@ const createWarehouseItem = asyncHandler(async (req, res) => {
     articleNumber: articleNumber || null,
     frameSize: frameSize || null,
     model: model || null,
-    description: null,
+    // The legacy description column may still be NOT NULL in the DB, so keep it
+    // non-null with a sensible fallback (everything else stays optional).
+    description: (req.body.description && String(req.body.description).trim()) || model || frameSize || '—',
     quantity: quantity != null ? parseInt(quantity, 10) || 1 : 1,
     notes: notes || null,
     status: 'requested',

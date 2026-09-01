@@ -193,6 +193,16 @@ async function connectDatabase() {
           logger.debug(`ENUM update skipped for ${name}.${value}: ${e.message}`);
         }
       }
+
+      // Legacy columns that used to be NOT NULL but are optional now.
+      const dropNotNull = [
+        { table: 'warehouse_items', column: 'description' },
+      ];
+      for (const { table, column } of dropNotNull) {
+        try {
+          await sequelize.query(`ALTER TABLE "${table}" ALTER COLUMN "${column}" DROP NOT NULL;`);
+        } catch (e) { /* already nullable or table missing */ }
+      }
     }
 
     // Sync models: creates tables if they don't exist
