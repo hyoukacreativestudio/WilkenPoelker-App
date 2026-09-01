@@ -3,6 +3,7 @@ import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { TYPES } from './Termine.jsx';
+import { KUERZEL_COLOR, URLAUB_COLOR, FALLBACK_COLOR, apptColor, contrastText } from '../apptColors.js';
 
 // Calendar of appointments.
 //  • Fahrrad (Service): month view Mo–Do (Fr/Sa/So removed), max 6/day, and you
@@ -28,25 +29,6 @@ const CONFIG = {
 const DEPT_RULES = { fahrrad: { limit: 6, closed: [5, 6, 0] } };
 const isClosedDay = (dept, day) => (DEPT_RULES[dept]?.closed || []).includes(day.getDay());
 
-// Robby/Kärcher calendar: colour by the mechanic's Kürzel (Urlaub always red).
-const KUERZEL_COLOR = {
-  MB: '#F2C200', // Marcel Baumann – gelb
-  RQ: '#F97316', // Rainer Quappe – orange
-  MT: '#9333EA', // Mirco Tammen – lila
-  AR: '#7DD3FC', // Andreas Rohlmann – hellblau
-};
-const URLAUB_COLOR = '#DC2626';
-const FALLBACK_COLOR = '#94A3B8';
-const apptColor = (a) => {
-  if (a.type === 'urlaub') return URLAUB_COLOR;
-  const k = String(a.assignedHandle || a.handle || '').trim().toUpperCase();
-  return KUERZEL_COLOR[k] || FALLBACK_COLOR;
-};
-// Dark text on light chips (yellow / light-blue), white otherwise.
-const contrastText = (hex) => {
-  const h = hex.replace('#', ''); const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
-  return (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? '#1a2330' : '#ffffff';
-};
 const TYPE_LABEL = Object.fromEntries(TYPES.map((t) => [t.key, t.label]));
 const typeLabel = (t) => TYPE_LABEL[t] || t || 'Termin';
 

@@ -8,7 +8,7 @@ const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const BIKE_WORKSHOP = [
   'Patrick Bonn', 'Fabian Benker', 'Max Breiting', 'Mirco Tammen', 'Jan Lakeberg',
   'Manuela Scherzer-Brosch', 'Ivan Yusyumbeli', 'Sven Onken', 'Daniel Meister',
-  'Dominik Przybilski', 'Sönke Haskamp', 'Toni',
+  'Dominik Przybilski', 'Sönke Haskamp', 'Toni', 'Mandy Rülander',
 ];
 
 const todayISO = () => {
@@ -22,9 +22,10 @@ const listRepairJobs = asyncHandler(async (req, res) => {
   const today = todayISO();
   await RepairJob.update({ date: today }, { where: { done: false, date: { [Op.lt]: today } } });
 
-  // Pull today's Fahrrad appointments into the board (once each, deduped by id).
+  // Pull Fahrrad appointments (today AND future) into the board, once each
+  // (deduped by id). Future ones already appear on their own day in advance.
   try {
-    const appts = await Appointment.findAll({ where: { department: 'fahrrad', date: today, status: { [Op.ne]: 'cancelled' } } });
+    const appts = await Appointment.findAll({ where: { department: 'fahrrad', date: { [Op.gte]: today }, status: { [Op.ne]: 'cancelled' } } });
     for (const a of appts) {
       const exists = await RepairJob.findOne({ where: { sourceAppointmentId: a.id } });
       if (!exists) {
@@ -35,7 +36,7 @@ const listRepairJobs = asyncHandler(async (req, res) => {
           phone: a.phone || null,
           device: a.title || null,
           assignedTo: null,
-          date: today,
+          date: String(a.date).slice(0, 10),
           note: a.description || 'aus Termin',
           sourceAppointmentId: a.id,
         });

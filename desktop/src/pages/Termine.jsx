@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { apptColor, contrastText, KUERZEL_COLOR } from '../apptColors.js';
 
 // Appointments created in the app show up here automatically (same backend).
 // Staff can also create their own by hand with a free-text customer.
@@ -185,8 +186,16 @@ export default function Termine({ user }) {
                   {a.phone ? <div className="sub2">☎ {a.phone}</div> : null}
                 </td>
                 <td>{a.title || '—'}{a.createdByStaff ? <span className="badge open" style={{ marginLeft: 6 }}>manuell</span> : null}</td>
-                <td>{typeLabel(a.type)}</td>
-                <td>{a.handle || '—'}</td>
+                <td>
+                  {(KUERZEL_COLOR[String(a.assignedHandle || a.handle || '').trim().toUpperCase()] || a.type === 'urlaub')
+                    ? <span className="badge" style={{ background: apptColor(a), color: contrastText(apptColor(a)) }}>{typeLabel(a.type)}</span>
+                    : typeLabel(a.type)}
+                </td>
+                <td>
+                  {KUERZEL_COLOR[String(a.handle || '').trim().toUpperCase()]
+                    ? <span className="badge" style={{ background: apptColor({ handle: a.handle }), color: contrastText(apptColor({ handle: a.handle })) }}>{a.handle}</span>
+                    : (a.handle || '—')}
+                </td>
                 <td>{isRequest(a) ? <span className="badge open">Anfrage</span> : (STATUS_LABEL[a.status] || a.status || '—')}</td>
                 <td className="right no-print nowrap">
                   {isRequest(a) ? <button className="btn sm" onClick={() => openDetail(a)}>Anfrage</button> : null}
