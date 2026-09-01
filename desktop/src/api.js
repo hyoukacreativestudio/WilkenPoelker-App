@@ -22,6 +22,14 @@ export function setDept(d) {
   else localStorage.removeItem('wp_desktop_dept');
 }
 export function getDept() { return localStorage.getItem('wp_desktop_dept'); }
+// Password-protected departments (Admin) must re-send their password on silent
+// re-login. Stored lightly obfuscated (trusted company PC).
+export function setDeptSecret(pw) {
+  try { if (pw) localStorage.setItem('wp_desktop_pw', btoa(unescape(encodeURIComponent(pw)))); else localStorage.removeItem('wp_desktop_pw'); } catch { /* ignore */ }
+}
+function getDeptSecret() {
+  try { const v = localStorage.getItem('wp_desktop_pw'); return v ? decodeURIComponent(escape(atob(v))) : ''; } catch { return ''; }
+}
 
 function doFetch(path, { method = 'GET', body, headers = {} } = {}) {
   return fetch(`${BASE}${path}`, {
@@ -43,7 +51,7 @@ async function reLogin() {
     const res = await fetch(`${BASE}/desktop/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ department: dept }),
+      body: JSON.stringify({ department: dept, password: getDeptSecret() }),
     });
     if (!res.ok) return false;
     const json = await res.json();

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, setToken, getToken, getDept, setDept, unwrap } from './api.js';
+import { api, setToken, getToken, getDept, setDept, setDeptSecret, unwrap } from './api.js';
 import Login from './Login.jsx';
 import Shell from './Shell.jsx';
 import { ToastProvider } from './toast.jsx';
@@ -33,7 +33,7 @@ function Root() {
     })();
   }, []);
 
-  const handleLogout = () => { setToken(null); setDept(null); setUser(null); };
+  const handleLogout = () => { setToken(null); setDept(null); setDeptSecret(''); setUser(null); };
 
   if (loading) {
     return <div style={{ height: '100vh', display: 'grid', placeItems: 'center', color: '#5b6b5d' }}>Lädt…</div>;

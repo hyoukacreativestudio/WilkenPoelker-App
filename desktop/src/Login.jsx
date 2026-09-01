@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, setToken, setDept, unwrap } from './api.js';
+import { api, setToken, setDept, setDeptSecret, unwrap } from './api.js';
 import { backdropHandlers } from './backdrop.js';
 import { DEPARTMENTS } from './config.js';
 
@@ -22,6 +22,7 @@ export default function Login({ onLogin }) {
       if (!res?.accessToken) throw new Error('Anmeldung fehlgeschlagen');
       setToken(res.accessToken);
       setDept(d.key);
+      setDeptSecret(d.key === 'admin' ? (password || '') : ''); // needed for silent re-login
       onLogin(res.user);
     } catch (err) {
       setError(err.message || 'Anmeldung fehlgeschlagen');
