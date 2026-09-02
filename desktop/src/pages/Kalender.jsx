@@ -280,7 +280,7 @@ export default function Kalender({ user }) {
               <span style={{ width: 12, height: 12, borderRadius: 3, background: KUERZEL_COLOR[k] }} /> {k}{kuerzelName(k) ? ` · ${kuerzelName(k)}` : ''}
             </span>
           ))}
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: URLAUB_COLOR }} /> Urlaub</span>
+          {!isStaffCal && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: URLAUB_COLOR }} /> Urlaub</span>}
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: FALLBACK_COLOR }} /> andere</span>
         </div>
       )}

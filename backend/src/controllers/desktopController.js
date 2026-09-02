@@ -340,6 +340,10 @@ const listAppointments = asyncHandler(async (req, res) => {
     const dept = departmentForRole(req.user.role);
     if (req.user.role === 'delivery_manager') {
       where[Op.or] = [{ department: 'lieferungen' }, { type: 'delivery' }];
+    } else if (req.user.role === 'warehouse_worker') {
+      where.department = 'lager';                       // Lager staff calendar
+    } else if (req.user.role === 'ev_manager') {
+      where.department = { [Op.in]: ['neurad', 'elektro'] }; // Neuradwerkstatt calendar
     } else {
       where.department = dept || '__none__';
     }
