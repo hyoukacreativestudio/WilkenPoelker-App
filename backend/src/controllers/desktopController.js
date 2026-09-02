@@ -502,6 +502,7 @@ const DEPT_TICKET_CATEGORIES = {
   motor_manager: ['motor'],
   service_manager: ['service', 'bike', 'cleaning', 'motor'],
   sales_manager: ['bike'], // Verkauf also sees Fahrrad (bike) tickets
+  ev_manager: ['bike'],    // Neuradwerkstatt handles Fahrrad + Elektro tickets
 };
 // The department key(s) each role owns (matches the ticket's `department` field).
 // A role can own several departments — e.g. Verkauf also handles Fahrrad tickets.
@@ -511,7 +512,7 @@ const ROLE_TICKET_DEPARTMENTS = {
   motor_manager: ['rasenmaeher'],
   robby_manager: ['robby'],
   motor_equipment_manager: ['motorgeraete'],
-  ev_manager: ['elektro'],
+  ev_manager: ['elektro', 'fahrrad'],
   sales_manager: ['verkauf', 'fahrrad'],
   delivery_manager: ['lieferungen'],
 };

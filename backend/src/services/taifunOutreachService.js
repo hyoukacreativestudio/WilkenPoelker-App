@@ -90,8 +90,11 @@ async function listOutreach({ filter = 'open', category = 'all', department = 'a
     if (!o.reachedAt && o.department && byDepartment[o.department] !== undefined) byDepartment[o.department] += 1;
   }
 
-  // Restrict to one department (by title/number prefix) when asked.
-  if (department && department !== 'all') orders = orders.filter((o) => o.department === department);
+  // Restrict to one or more departments (comma-separated) by title/number prefix.
+  if (department && department !== 'all') {
+    const depts = String(department).split(',').map((s) => s.trim()).filter(Boolean);
+    orders = orders.filter((o) => depts.includes(o.department));
+  }
 
   // Group by customer + category
   const groups = new Map();

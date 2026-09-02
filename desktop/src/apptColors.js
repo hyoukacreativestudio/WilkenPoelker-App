@@ -1,11 +1,32 @@
 // Appointment colours by mechanic Kürzel (used in the Robby/Kärcher calendar AND
 // the Termine list). Urlaub is always red; unknown Kürzel fall back to grey.
 export const KUERZEL_COLOR = {
+  // Robby / Kärcher
   MB: '#F2C200', // Marcel Baumann – gelb
   RQ: '#F97316', // Rainer Quappe – orange
   MT: '#9333EA', // Mirco Tammen – lila
   AR: '#7DD3FC', // Andreas Rohlmann – hellblau
+  // Lager (Mitarbeiterkalender)
+  SD: '#DC2626', // rot
+  CD: '#9333EA', // lila
+  HH: '#F2C200', // gelb
+  // Neuradwerkstatt (Mitarbeiterkalender)
+  KD: '#DC2626', // rot
+  DP: '#EC4899', // pink
+  SO: '#16A34A', // grün
+  DM: '#2563EB', // blau
 };
+// Which Kürzel legend to show per calendar department.
+export const LEGEND_BY_DEPT = {
+  robby: ['MB', 'RQ', 'MT', 'AR'],
+  reinigung: ['MB', 'RQ', 'MT', 'AR'],
+  lager: ['SD', 'CD', 'HH'],
+  neurad: ['KD', 'DP', 'SO', 'DM'],
+};
+const KUERZEL_NAME = {
+  MB: 'Marcel Baumann', RQ: 'Rainer Quappe', MT: 'Mirco Tammen', AR: 'Andreas Rohlmann',
+};
+export const kuerzelName = (k) => KUERZEL_NAME[k] || '';
 export const URLAUB_COLOR = '#DC2626';
 export const FALLBACK_COLOR = '#94A3B8';
 

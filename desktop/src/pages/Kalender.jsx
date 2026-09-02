@@ -3,7 +3,7 @@ import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { TYPES } from './Termine.jsx';
-import { KUERZEL_COLOR, URLAUB_COLOR, FALLBACK_COLOR, apptColor, contrastText } from '../apptColors.js';
+import { KUERZEL_COLOR, URLAUB_COLOR, FALLBACK_COLOR, apptColor, contrastText, LEGEND_BY_DEPT, kuerzelName } from '../apptColors.js';
 
 // Calendar of appointments.
 //  • Fahrrad (Service): month view Mo–Do (Fr/Sa/So removed), max 6/day, and you
@@ -15,16 +15,22 @@ const DEPTS = [
   { key: 'rasenmaeher', label: 'Rasenmäher' }, { key: 'service', label: 'Service' },
   { key: 'robby', label: 'Robby' }, { key: 'motorgeraete', label: 'Motorgeräte' },
   { key: 'elektro', label: 'Elektrofahrzeuge' }, { key: 'verkauf', label: 'Verkauf' },
-  { key: 'lieferungen', label: 'Lieferungen' },
+  { key: 'lieferungen', label: 'Lieferungen' }, { key: 'lager', label: 'Lager' },
+  { key: 'neurad', label: 'Neuradwerkstatt' },
 ];
 const CONFIG = {
   service_manager: { dept: 'fahrrad', pick: true },
   bike_manager: { dept: 'fahrrad', readOnly: true },
   robby_manager: { dept: 'robby' },
   cleaning_manager: { dept: 'reinigung' },
+  warehouse_worker: { dept: 'lager' },   // staff vacation/appointment calendar
+  ev_manager: { dept: 'neurad' },        // Neuradwerkstatt staff calendar
   admin: { dept: 'fahrrad', pick: true },
   super_admin: { dept: 'fahrrad', pick: true },
 };
+// Colour-by-Kürzel calendars (week/month + type colours). Others are the plain
+// month calendar.
+const COLOR_CALS = new Set(['robby', 'reinigung', 'lager', 'neurad']);
 // Fahrrad caps at 6/day and is closed Fri/Sat/Sun.
 const DEPT_RULES = { fahrrad: { limit: 6, closed: [5, 6, 0] } };
 const isClosedDay = (dept, day) => (DEPT_RULES[dept]?.closed || []).includes(day.getDay());
@@ -111,7 +117,7 @@ export default function Kalender({ user }) {
   const [dept, setDept] = useState(cfg.dept);
   const readOnly = !!cfg.readOnly;
   const isFahrrad = dept === 'fahrrad';
-  const isColorCal = dept === 'robby' || dept === 'reinigung';
+  const isColorCal = COLOR_CALS.has(dept);
   const limit = DEPT_RULES[dept]?.limit || null;
 
   const [rows, setRows] = useState([]);
@@ -253,11 +259,11 @@ export default function Kalender({ user }) {
         {readOnly ? <span className="muted">nur ansehen</span> : <button className="btn" onClick={() => openCreate(showWeek ? iso(weekStart) : todayIso)}>+ Termin</button>}
       </div>
 
-      {isColorCal && (
+      {isColorCal && (LEGEND_BY_DEPT[dept] || []).length > 0 && (
         <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', margin: '0 0 8px', fontSize: 12 }}>
-          {[['MB', 'Marcel Baumann'], ['RQ', 'Rainer Quappe'], ['MT', 'Mirco Tammen'], ['AR', 'Andreas Rohlmann']].map(([k, name]) => (
+          {(LEGEND_BY_DEPT[dept] || []).map((k) => (
             <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ width: 12, height: 12, borderRadius: 3, background: KUERZEL_COLOR[k] }} /> {k} · {name}
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: KUERZEL_COLOR[k] }} /> {k}{kuerzelName(k) ? ` · ${kuerzelName(k)}` : ''}
             </span>
           ))}
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: URLAUB_COLOR }} /> Urlaub</span>
@@ -453,11 +459,15 @@ export default function Kalender({ user }) {
               <label className="field">Datum
                 <input className="input" type="date" value={createForm.date} onChange={(e) => setCreateForm({ ...createForm, date: e.target.value })} />
               </label>
+              <label className="field" style={{ display: 'flex', alignItems: 'center', gap: 8, flexDirection: 'row', paddingTop: 22 }}>
+                <input type="checkbox" checked={!createForm.startTime && !createForm.endTime && createForm._allDay !== false} onChange={(e) => setCreateForm({ ...createForm, _allDay: e.target.checked, ...(e.target.checked ? { startTime: '', endTime: '' } : {}) })} />
+                Ganzer Tag
+              </label>
               <label className="field">Uhrzeit (optional)
-                <input className="input" type="time" value={createForm.startTime} onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value })} />
+                <input className="input" type="time" value={createForm.startTime} onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value, _allDay: false })} />
               </label>
               <label className="field">Bis (optional)
-                <input className="input" type="time" value={createForm.endTime} onChange={(e) => setCreateForm({ ...createForm, endTime: e.target.value })} />
+                <input className="input" type="time" value={createForm.endTime} onChange={(e) => setCreateForm({ ...createForm, endTime: e.target.value, _allDay: false })} />
               </label>
               <label className="field">Kunde
                 <input className="input" value={createForm.customerName} onChange={(e) => setCreateForm({ ...createForm, customerName: e.target.value })} />

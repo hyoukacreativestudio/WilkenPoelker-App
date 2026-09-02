@@ -9,7 +9,7 @@ export const DEPARTMENTS = [
   { key: 'rasenmaeher',  label: 'Rasenmäher',       role: 'motor_manager',    color: '#48752b', icon: '🌱', email: 'rasenmaeher@wilkenpoelker.de' },
   { key: 'robby',        label: 'Robby',            role: 'robby_manager',    color: '#805AD5', icon: '🤖', email: 'robby@wilkenpoelker.de' },
   { key: 'motorgeraete', label: 'Motorgeräte',      role: 'motor_equipment_manager', color: '#b45309', icon: '⚙️', email: 'motorgeraete@wilkenpoelker.de' },
-  { key: 'elektro',      label: 'Elektrofahrzeuge', role: 'ev_manager',       color: '#0284c7', icon: '⚡', email: 'elektro@wilkenpoelker.de' },
+  { key: 'elektro',      label: 'Neuradwerkstatt',  role: 'ev_manager',       color: '#0284c7', icon: '⚡', email: 'elektro@wilkenpoelker.de' },
   { key: 'verkauf',      label: 'Verkauf',          role: 'sales_manager',    color: '#D69E2E', icon: '🛒', email: 'verkauf@wilkenpoelker.de' },
   { key: 'lieferungen',  label: 'Lieferungen',      role: 'delivery_manager', color: '#be185d', icon: '🚚', email: 'lieferungen@wilkenpoelker.de' },
   { key: 'bestellungen', label: 'Bestellungen',     role: 'orders_manager',   color: '#E53E3E', icon: '📦', email: 'bestellungen@wilkenpoelker.de' },
@@ -28,12 +28,13 @@ const SEE_ALL = ['admin', 'super_admin'];
 // MG→Motorgeräte, EF→Elektrofahrzeuge); each department role sees only its own.
 // Service + admins are NOT listed here → they see every department and can
 // filter/sort by it.
+// A single dept or an array of depts a role is limited to in "Aufträge".
 export const REPAIR_DEPARTMENT_ROLE = {
   bike_manager: 'fahrrad',
   robby_manager: 'robby',
   motor_manager: 'rasenmaeher',
   motor_equipment_manager: 'motorgeraete',
-  ev_manager: 'elektro',
+  ev_manager: ['fahrrad', 'elektro'], // Neuradwerkstatt: new/leasing bikes + e-vehicles
 };
 export const REPAIR_DEPARTMENTS = [
   { key: 'fahrrad', label: 'Fahrrad' },
@@ -49,7 +50,7 @@ export function modulesForRole(role) {
   return [
     { key: 'uebersicht',   label: 'Übersicht',    icon: '🏠', show: true },
     { key: 'termine',      label: 'Termine',      icon: '📅', show: role !== 'warehouse_worker' },
-    { key: 'kalender',     label: 'Kalender',     icon: '📆', show: all || role === 'service_manager' || role === 'robby_manager' || role === 'cleaning_manager' || role === 'bike_manager' },
+    { key: 'kalender',     label: 'Kalender',     icon: '📆', show: all || role === 'service_manager' || role === 'robby_manager' || role === 'cleaning_manager' || role === 'bike_manager' || role === 'warehouse_worker' || role === 'ev_manager' },
     { key: 'termineheute', label: 'Termine heute', icon: '📋', show: all || role === 'bike_manager' || role === 'service_manager' },
     { key: 'reparaturenheute', label: 'Reparaturen heute', icon: '🔧', show: all || role === 'bike_manager' || role === 'service_manager' },
     { key: 'reparaturen',  label: 'Aufträge',     icon: '🔧', show: all || role === 'service_manager' || role === 'sales_manager' || REPAIR_DEPARTMENT_ROLE[role] != null },
@@ -64,7 +65,8 @@ export function modulesForRole(role) {
 
 // Which repair/"Aufträge" categories a role may see. Sales only Neu + Leasing.
 export function auftragCategoriesForRole(role) {
-  if (role === 'sales_manager') return ['neu', 'leasing'];
+  // Sales + Neuradwerkstatt handle new builds & leasing, not repairs.
+  if (role === 'sales_manager' || role === 'ev_manager') return ['neu', 'leasing'];
   return ['reparatur', 'neu', 'leasing'];
 }
 

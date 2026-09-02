@@ -17,10 +17,12 @@ export default function Reparaturen({ user }) {
   const [filter, setFilter] = useState('open');     // open | reached
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState('name');   // name | kdnr | auftrag
-  // Department roles (Fahrrad, Robby, …) are locked to their own repairs; Service
-  // and admins see all and can pick a department here.
-  const lockedDept = REPAIR_DEPARTMENT_ROLE[user.role] || null;
-  const [department, setDepartment] = useState(lockedDept || 'all');
+  // Department roles are locked to their own repairs (one dept or several, e.g.
+  // Neuradwerkstatt = Fahrrad+Elektro); Service and admins see all and pick here.
+  const lockedRaw = REPAIR_DEPARTMENT_ROLE[user.role] || null;
+  const lockedDepts = Array.isArray(lockedRaw) ? lockedRaw : (lockedRaw ? [lockedRaw] : null);
+  const lockedDept = lockedDepts ? lockedDepts.join(',') : null;
+  const [department, setDepartment] = useState('all');
   const [data, setData] = useState({ items: [], counts: { byCategory: {}, byDepartment: {}, open: 0, reached: 0 } });
   const [loading, setLoading] = useState(true);
 
@@ -65,7 +67,7 @@ export default function Reparaturen({ user }) {
         <div className="spacer" />
         <span className="search"><input className="input" placeholder="Name, Telefon, Ort, Nr." value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 220 }} /></span>
         {lockedDept
-          ? <span className="pill" title="Deine Abteilung">{DEPT_LABEL[lockedDept]}</span>
+          ? <span className="pill" title="Deine Abteilung(en)">{lockedDepts.map((d) => DEPT_LABEL[d] || d).join(' + ')}</span>
           : (
             <select className="select" value={department} onChange={(e) => setDepartment(e.target.value)} title="Abteilung">
               <option value="all">Alle Abteilungen</option>
