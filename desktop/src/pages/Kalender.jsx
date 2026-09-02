@@ -172,12 +172,15 @@ export default function Kalender({ user }) {
 
   const byDay = useMemo(() => {
     const map = {};
-    rows.filter((a) => (a.department || '') === dept && a.date && a.status !== 'cancelled').forEach((a) => {
+    // Accounts with a fixed calendar (no picker) are already scoped by the
+    // backend to their own appointments, so show everything they loaded. Only
+    // the department picker (admin/Service) filters client-side by the choice.
+    rows.filter((a) => (!cfg.pick || (a.department || '') === dept) && a.date && a.status !== 'cancelled').forEach((a) => {
       const k = String(a.date).slice(0, 10);
       (map[k] = map[k] || []).push(a);
     });
     return map;
-  }, [rows, dept]);
+  }, [rows, dept, cfg.pick]);
 
   const openCreate = (dateIso, startTime = '') => setCreateForm({ ...emptyForm(dateIso || ''), startTime, type: isStaffCal ? 'other' : 'repair' });
   const openEdit = (a) => setCreateForm({

@@ -396,7 +396,8 @@ const createAppointment = asyncHandler(async (req, res) => {
   // Service manages the Fahrrad (bike) calendar, so its hand-entered
   // appointments default there (not to a separate "service" bucket) — that's
   // the calendar Service and the Fahrrad department both look at.
-  const roleDept = req.user.role === 'service_manager' ? 'fahrrad' : departmentForRole(req.user.role);
+  const CALENDAR_DEPT = { service_manager: 'fahrrad', warehouse_worker: 'lager', ev_manager: 'neurad' };
+  const roleDept = CALENDAR_DEPT[req.user.role] || departmentForRole(req.user.role);
   const department = req.body.department || roleDept || null;
   const appointment = await Appointment.create({
     userId: req.user.id, // staff account owns the hand-entered appointment
