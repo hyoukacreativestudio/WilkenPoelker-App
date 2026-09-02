@@ -65,8 +65,10 @@ export function modulesForRole(role) {
 
 // Which repair/"Aufträge" categories a role may see. Sales only Neu + Leasing.
 export function auftragCategoriesForRole(role) {
-  // Sales + Neuradwerkstatt handle new builds & leasing, not repairs.
-  if (role === 'sales_manager' || role === 'ev_manager') return ['neu', 'leasing'];
+  // Sales handles new builds & leasing only.
+  if (role === 'sales_manager') return ['neu', 'leasing'];
+  // Neuradwerkstatt sees everything for Elektro but no Fahrrad repairs — the
+  // Fahrrad-repair rows are filtered out in the Aufträge page (see Reparaturen).
   return ['reparatur', 'neu', 'leasing'];
 }
 

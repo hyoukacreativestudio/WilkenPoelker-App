@@ -37,6 +37,8 @@ const isClosedDay = (dept, day) => (DEPT_RULES[dept]?.closed || []).includes(day
 
 const TYPE_LABEL = Object.fromEntries(TYPES.map((t) => [t.key, t.label]));
 const typeLabel = (t) => TYPE_LABEL[t] || t || 'Termin';
+// Staff calendars only distinguish Termin vs Urlaub.
+const STAFF_TYPES = [{ key: 'other', label: 'Termin' }, { key: 'urlaub', label: 'Urlaub' }];
 
 const savedHandle = () => (typeof localStorage !== 'undefined' ? localStorage.getItem('wp_handle') || '' : '');
 const emptyForm = (date = '') => ({ title: '', type: 'repair', date, startTime: '', endTime: '', customerName: '', customerNumber: '', phone: '', description: '', handle: savedHandle(), assignedHandle: '' });
@@ -118,6 +120,18 @@ export default function Kalender({ user }) {
   const readOnly = !!cfg.readOnly;
   const isFahrrad = dept === 'fahrrad';
   const isColorCal = COLOR_CALS.has(dept);
+  // Staff calendars (Lager/Neurad): reason is just Urlaub/Termin and Urlaub is
+  // NOT red — everything is coloured by the person's Kürzel.
+  const isStaffCal = dept === 'lager' || dept === 'neurad';
+  const ac = (a) => apptColor(a, !isStaffCal);
+  // Label shown as the "Grund" for a block.
+  const grund = (a) => (a.type === 'urlaub' ? 'Urlaub' : (isStaffCal ? 'Termin' : typeLabel(a.type)));
+  // Main one-line label for a block.
+  const mainLabel = (a) => {
+    if (isStaffCal) return `${a.handle ? `[${a.handle}] ` : ''}${grund(a)}${a.title ? ` · ${a.title}` : ''}`;
+    if (a.type === 'urlaub') return `${a.handle ? `[${a.handle}] ` : ''}Urlaub`;
+    return `${isColorCal && a.handle ? `[${a.handle}] ` : ''}${a.customerName || a.title || '—'}`;
+  };
   const limit = DEPT_RULES[dept]?.limit || null;
 
   const [rows, setRows] = useState([]);
@@ -165,7 +179,7 @@ export default function Kalender({ user }) {
     return map;
   }, [rows, dept]);
 
-  const openCreate = (dateIso, startTime = '') => setCreateForm({ ...emptyForm(dateIso || ''), startTime });
+  const openCreate = (dateIso, startTime = '') => setCreateForm({ ...emptyForm(dateIso || ''), startTime, type: isStaffCal ? 'other' : 'repair' });
   const openEdit = (a) => setCreateForm({
     _id: a.id, title: a.title || '', type: a.type || 'repair', date: String(a.date || '').slice(0, 10),
     startTime: hm(a.startTime), endTime: hm(a.endTime), customerName: a.customerName || '',
@@ -290,7 +304,7 @@ export default function Kalender({ user }) {
               {weekDays.map((d) => {
                 const list = (byDay[iso(d)] || []).filter((a) => !a.startTime);
                 return <div key={iso(d)} style={{ borderLeft: '1px solid var(--dept-soft)', padding: 2 }}>
-                  {list.map((a) => <div key={a.id} onClick={(ev) => { ev.stopPropagation(); readOnly ? setOpenDay(iso(d)) : openEdit(a); }} title={`${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} – ${a.customerName || ''}`} style={{ background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : `${a.customerName || a.title || '—'} · ${typeLabel(a.type)}`}</div>)}
+                  {list.map((a) => <div key={a.id} onClick={(ev) => { ev.stopPropagation(); readOnly ? setOpenDay(iso(d)) : openEdit(a); }} title={`${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} – ${a.customerName || ''}`} style={{ background: ac(a), color: contrastText(ac(a)), borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mainLabel(a)}{!isStaffCal && a.type !== 'urlaub' ? ` · ${typeLabel(a.type)}` : ''}</div>)}
                 </div>;
               })}
             </div>
@@ -321,9 +335,9 @@ export default function Kalender({ user }) {
                       const widthPct = 100 / _cols;
                       return (
                         <div key={a.id} onClick={(ev) => { ev.stopPropagation(); readOnly ? setOpenDay(k) : openEdit(a); }} title={`${hm(a.startTime)} ${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} – ${a.customerName || ''}`}
-                          style={{ position: 'absolute', top, left: `calc(${_col * widthPct}% + 1px)`, width: `calc(${widthPct}% - 2px)`, height, background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 5, padding: '2px 4px', fontSize: 11, lineHeight: 1.15, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.2)', cursor: 'pointer', boxSizing: 'border-box' }}>
-                          <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><b>{hm(a.startTime)}</b> {a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || '—')}</div>
-                          {a.type !== 'urlaub' && height > 30 ? <div style={{ fontSize: 10, opacity: 0.9, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{typeLabel(a.type)}</div> : null}
+                          style={{ position: 'absolute', top, left: `calc(${_col * widthPct}% + 1px)`, width: `calc(${widthPct}% - 2px)`, height, background: ac(a), color: contrastText(ac(a)), borderRadius: 5, padding: '2px 4px', fontSize: 11, lineHeight: 1.15, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.2)', cursor: 'pointer', boxSizing: 'border-box' }}>
+                          <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><b>{hm(a.startTime)}</b> {mainLabel(a)}</div>
+                          {!isStaffCal && a.type !== 'urlaub' && height > 30 ? <div style={{ fontSize: 10, opacity: 0.9, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{typeLabel(a.type)}</div> : null}
                         </div>
                       );
                     })}
@@ -359,9 +373,9 @@ export default function Kalender({ user }) {
                           <div key={a.id} title={`${a.handle ? `[${a.handle}] ` : ''}${typeLabel(a.type)} ${a.customerName || ''}`}
                             onClick={isColorCal && !readOnly ? (ev) => { ev.stopPropagation(); openEdit(a); } : undefined}
                             style={isColorCal
-                              ? { background: apptColor(a), color: contrastText(apptColor(a)), borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: readOnly ? 'pointer' : 'pointer' }
+                              ? { background: ac(a), color: contrastText(ac(a)), borderRadius: 4, padding: '1px 5px', margin: '2px 0', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: readOnly ? 'pointer' : 'pointer' }
                               : { fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {a.startTime ? <b>{hm(a.startTime)} </b> : null}{isColorCal && a.handle ? `[${a.handle}] ` : ''}{a.type === 'urlaub' ? 'Urlaub' : (a.customerName || a.title || '—')}{isColorCal && a.type !== 'urlaub' ? ` · ${typeLabel(a.type)}` : ''}{!isColorCal && a.assignedHandle ? ` [${a.assignedHandle}]` : ''}
+                            {a.startTime ? <b>{hm(a.startTime)} </b> : null}{isColorCal ? mainLabel(a) : (a.customerName || a.title || typeLabel(a.type))}{!isStaffCal && isColorCal && a.type !== 'urlaub' ? ` · ${typeLabel(a.type)}` : ''}{!isColorCal && a.assignedHandle ? ` [${a.assignedHandle}]` : ''}
                           </div>
                         ))}
                         {list.length > 7 ? <div className="muted" style={{ fontSize: 11 }}>+{list.length - 7} mehr</div> : null}
@@ -388,7 +402,7 @@ export default function Kalender({ user }) {
                   return (
                     <div key={a.id} className="card" style={{ padding: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <span style={{ width: 10, height: 10, borderRadius: 5, background: apptColor(a) }} />
+                        <span style={{ width: 10, height: 10, borderRadius: 5, background: ac(a) }} />
                         {readOnly ? <span className="badge" style={{ minWidth: 54 }}>{hm(a.startTime) || '—'}</span> : (
                           <>
                             <input className="input" type="time" style={{ width: 104 }} value={times[a.id] !== undefined ? times[a.id] : hm(a.startTime)} onChange={(ev) => setTimes((t) => ({ ...t, [a.id]: ev.target.value }))} />
@@ -399,7 +413,7 @@ export default function Kalender({ user }) {
                           <strong>{a.customerName || a.title || typeLabel(a.type)}</strong>
                           {a.customerNumber ? <span className="muted"> · Kd {a.customerNumber}</span> : null}
                           {a.workDone ? <span className="badge" style={{ background: '#d3f2df', color: '#1f7a45', marginLeft: 6 }}>✓ erledigt</span> : null}
-                          <div className="muted" style={{ fontSize: 12 }}>{typeLabel(a.type)}{a.title ? ` · ${a.title}` : ''}{a.repairNumber ? ` · Rep ${a.repairNumber}` : ''}{a.phone ? ` · ☎ ${a.phone}` : ''}</div>
+                          <div className="muted" style={{ fontSize: 12 }}>{grund(a)}{a.title ? ` · ${a.title}` : ''}{a.repairNumber ? ` · Rep ${a.repairNumber}` : ''}{a.phone ? ` · ☎ ${a.phone}` : ''}</div>
                           {a.warnNote ? <div style={{ color: '#c53030', fontWeight: 700, fontSize: 12 }}>⚠ {a.warnNote}</div> : null}
                         </div>
                         {!readOnly ? <button className="btn sm ghost" onClick={() => { setOpenDay(null); openEdit(a); }} title="Bearbeiten">✏️</button> : null}
@@ -451,9 +465,9 @@ export default function Kalender({ user }) {
                   <input className="input" value={createForm.repairNumber || ''} onChange={(e) => setCreateForm({ ...createForm, repairNumber: e.target.value })} />
                 </label>
               )}
-              <label className="field">Art
+              <label className="field">{isStaffCal ? 'Grund' : 'Art'}
                 <select className="input" value={createForm.type} onChange={(e) => setCreateForm({ ...createForm, type: e.target.value })}>
-                  {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                  {(isStaffCal ? STAFF_TYPES : TYPES).map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
                 </select>
               </label>
               <label className="field">Datum

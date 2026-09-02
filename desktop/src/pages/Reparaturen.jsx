@@ -48,6 +48,8 @@ export default function Reparaturen({ user }) {
   const firstNr = (g) => (g.orders && g.orders[0] && g.orders[0].nr) || '';
   const items = (data.items || [])
     .filter((g) => statusF === 'all' || (statusF === 'ready' ? groupReady(g) : !groupReady(g)))
+    // Neuradwerkstatt: no Fahrrad repairs (Elektro repairs + new/leasing stay).
+    .filter((g) => !(user.role === 'ev_manager' && category === 'reparatur' && g.department === 'fahrrad'))
     .sort((a, b) => {
       if (sortKey === 'kdnr') return String(a.kdNr || '').localeCompare(String(b.kdNr || ''), undefined, { numeric: true });
       if (sortKey === 'auftrag') return String(firstNr(a)).localeCompare(String(firstNr(b)), undefined, { numeric: true });

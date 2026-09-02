@@ -30,8 +30,10 @@ export const kuerzelName = (k) => KUERZEL_NAME[k] || '';
 export const URLAUB_COLOR = '#DC2626';
 export const FALLBACK_COLOR = '#94A3B8';
 
-export const apptColor = (a) => {
-  if (a.type === 'urlaub') return URLAUB_COLOR;
+// urlaubRed=true → Urlaub is red (Robby/Kärcher). false → colour by Kürzel like
+// everything else (staff calendars where the reason is just Urlaub/Termin).
+export const apptColor = (a, urlaubRed = true) => {
+  if (urlaubRed && a.type === 'urlaub') return URLAUB_COLOR;
   const k = String(a.assignedHandle || a.handle || '').trim().toUpperCase();
   return KUERZEL_COLOR[k] || FALLBACK_COLOR;
 };
