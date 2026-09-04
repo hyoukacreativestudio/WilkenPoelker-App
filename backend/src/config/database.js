@@ -174,6 +174,7 @@ async function connectDatabase() {
         { name: 'enum_appointments_type', value: 'onsite_repair' },
         { name: 'enum_appointments_type', value: 'new_installation' },
         { name: 'enum_appointments_type', value: 'urlaub' },
+        { name: 'enum_warehouse_items_status', value: 'in_progress' },
         // Desktop/company-tool department roles
         { name: 'enum_users_role', value: 'sales_manager' },
         { name: 'enum_users_role', value: 'orders_manager' },

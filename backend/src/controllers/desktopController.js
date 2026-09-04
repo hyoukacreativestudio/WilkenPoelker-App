@@ -295,6 +295,7 @@ const updateWarehouseItem = asyncHandler(async (req, res) => {
   if (!item) throw new NotFoundError('WarehouseItem');
   const updates = {};
   if (req.body.status === 'brought') { updates.status = 'brought'; updates.broughtBy = req.user.id; updates.broughtAt = new Date(); }
+  else if (req.body.status === 'in_progress') { updates.status = 'in_progress'; updates.broughtBy = null; updates.broughtAt = null; }
   else if (req.body.status === 'requested') { updates.status = 'requested'; updates.broughtBy = null; updates.broughtAt = null; }
   for (const f of ['brand', 'color', 'articleNumber', 'frameSize', 'model', 'description', 'notes', 'handle']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];

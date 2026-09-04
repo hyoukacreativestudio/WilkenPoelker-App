@@ -40,6 +40,18 @@ const listRepairJobs = asyncHandler(async (req, res) => {
           note: a.description || 'aus Termin',
           sourceAppointmentId: a.id,
         });
+      } else {
+        // Keep the appointment-derived fields in sync (e.g. a repair number added
+        // to the appointment later). Board fields (assignedTo/done/warnNote) stay.
+        const patch = {};
+        const set = (f, v) => { if ((exists[f] || '') !== (v || '')) patch[f] = v || null; };
+        set('repairNumber', a.repairNumber || '');
+        set('customerName', a.customerName);
+        set('customerNumber', a.customerNumber);
+        set('phone', a.phone);
+        set('device', a.title);
+        set('date', String(a.date).slice(0, 10));
+        if (Object.keys(patch).length) await exists.update(patch);
       }
     }
   } catch (e) { /* non-blocking */ }

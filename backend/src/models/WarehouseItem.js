@@ -34,7 +34,7 @@ const WarehouseItem = sequelize.define('WarehouseItem', {
     defaultValue: 1,
   },
   status: {
-    type: DataTypes.ENUM('requested', 'brought'),
+    type: DataTypes.ENUM('requested', 'in_progress', 'brought'),
     defaultValue: 'requested',
   },
   notes: {

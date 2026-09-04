@@ -60,8 +60,10 @@ export default function Lager({ user }) {
       setShowForm(false); setEditingId(null); setForm(emptyForm()); load();
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
-  const markBrought = async (r) => { try { await api.patch(`/desktop/warehouse/${r.id}`, { status: 'brought' }); load(); } catch (e) { toast(e.message, { type: 'error' }); } };
-  const reopen = async (r) => { try { await api.patch(`/desktop/warehouse/${r.id}`, { status: 'requested' }); load(); } catch (e) { toast(e.message, { type: 'error' }); } };
+  const setItemStatus = async (r, s) => { try { await api.patch(`/desktop/warehouse/${r.id}`, { status: s }); load(); } catch (e) { toast(e.message, { type: 'error' }); } };
+  const markBrought = (r) => setItemStatus(r, 'brought');
+  const markProgress = (r) => setItemStatus(r, 'in_progress');
+  const reopen = (r) => setItemStatus(r, 'requested');
   const del = async (r) => { if (confirm('Eintrag löschen?')) { try { await api.del(`/desktop/warehouse/${r.id}`); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
 
   return (
@@ -70,6 +72,7 @@ export default function Lager({ user }) {
         <span className="muted">Was aus dem Lager nach vorne gebracht werden soll</span>
         <div className="spacer" />
         <span className={`pill tab ${status === 'requested' ? 'active' : ''}`} onClick={() => setStatus('requested')}>Offen</span>
+        <span className={`pill tab ${status === 'in_progress' ? 'active' : ''}`} onClick={() => setStatus('in_progress')}>In Bearbeitung</span>
         <span className={`pill tab ${status === 'brought' ? 'active' : ''}`} onClick={() => setStatus('brought')}>Erledigt</span>
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
         {canWrite && <button className="btn" onClick={openNew}>+ Neuer Eintrag</button>}
@@ -102,9 +105,11 @@ export default function Lager({ user }) {
                 <td>{r.frameSize || '—'}</td>
                 <td className="right">{r.quantity}</td>
                 <td>{r.handle || '—'}</td>
-                <td><span className={`badge ${r.status === 'brought' ? 'brought' : 'open'}`}>{r.status === 'brought' ? 'Gebracht' : 'Offen'}</span></td>
+                <td><span className={`badge ${r.status === 'brought' ? 'brought' : 'open'}`} style={r.status === 'in_progress' ? { background: '#fff6e0', color: '#97650a' } : undefined}>{r.status === 'brought' ? 'Gebracht' : r.status === 'in_progress' ? 'In Bearbeitung' : 'Offen'}</span></td>
                 <td className="right nowrap no-print">
-                  {r.status !== 'brought' ? <button className="btn sm" onClick={() => markBrought(r)}>Gebracht ✓</button> : <button className="btn sm ghost" onClick={() => reopen(r)}>Zurück</button>}
+                  {r.status === 'requested' ? <><button className="btn sm ghost" onClick={() => markProgress(r)}>In Bearbeitung</button>{' '}<button className="btn sm" onClick={() => markBrought(r)}>Gebracht ✓</button></> : null}
+                  {r.status === 'in_progress' ? <><button className="btn sm" onClick={() => markBrought(r)}>Gebracht ✓</button>{' '}<button className="btn sm ghost" onClick={() => reopen(r)}>Zurück</button></> : null}
+                  {r.status === 'brought' ? <button className="btn sm ghost" onClick={() => reopen(r)}>Zurück</button> : null}
                   {canWrite && <>{' '}<button className="btn sm ghost" onClick={() => openEdit(r)}>✏️</button></>}
                   {' '}<button className="btn sm ghost" onClick={() => del(r)}>✕</button>
                 </td>

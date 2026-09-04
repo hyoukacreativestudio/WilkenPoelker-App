@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { modulesForRole, labelForRole, colorForRole, ROLE_INFO } from './config.js';
 import { api, unwrap, pendingCount, flushQueue } from './api.js';
+import { useToast } from './toast.jsx';
 
 // Draw a small red badge with the count and hand it to Electron for the taskbar.
 function setTaskbarBadge(count) {
@@ -69,25 +70,37 @@ export default function Shell({ user, onLogout }) {
   const unread = useMemo(() => notifs.filter((n) => !n.read).length, [notifs]);
 
   // Poll notifications for this account → badge = unread; panel lists them.
+  // A toast pops for newly-arrived unread ones, so they're seen even when AFK.
+  const toast = useToast();
+  const seenRef = React.useRef(null);
   const loadNotifs = React.useCallback(async () => {
     try {
       const res = await api.get('/notifications?limit=30');
       const list = unwrap(res).notifications || [];
+      if (seenRef.current) {
+        const fresh = list.filter((n) => !n.read && !seenRef.current.has(n.id));
+        if (fresh.length === 1) toast(`🔔 ${fresh[0].title}`, { type: 'info', duration: 6000 });
+        else if (fresh.length > 1) toast(`🔔 ${fresh.length} neue Benachrichtigungen`, { type: 'info', duration: 6000 });
+      }
+      seenRef.current = new Set(list.map((n) => n.id));
       setNotifs(list);
     } catch { /* ignore */ }
-  }, []);
+  }, [toast]);
   useEffect(() => {
     let active = true;
-    const t = setInterval(() => { if (active) loadNotifs(); }, 45000);
+    const t = setInterval(() => { if (active) loadNotifs(); }, 20000);
     loadNotifs();
-    return () => { active = false; clearInterval(t); };
+    // Refresh immediately when the window regains focus (came back from AFK).
+    const onFocus = () => { if (active) loadNotifs(); };
+    window.addEventListener('focus', onFocus);
+    return () => { active = false; clearInterval(t); window.removeEventListener('focus', onFocus); };
   }, [loadNotifs]);
   useEffect(() => { setTaskbarBadge(unread); }, [unread]);
 
   // Close the notification panel when clicking anywhere outside it.
   useEffect(() => {
     if (!notifOpen) return undefined;
-    const onDoc = (e) => { if (!e.target.closest('.notif-panel') && !e.target.closest('[data-notif-bell]')) setNotifOpen(false); };
+    const onDoc = (e) => { const el = e.target; if (!el || !el.closest) return; if (!el.closest('.notif-panel') && !el.closest('[data-notif-bell]')) setNotifOpen(false); };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
   }, [notifOpen]);
