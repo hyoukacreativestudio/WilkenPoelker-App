@@ -66,6 +66,21 @@ export default function Bestellungen({ user }) {
     return [...map.values()].sort((a, b) => a.localeCompare(b));
   }, [rows, serverSources]);
 
+  // The FILTER dropdown only offers sources that actually occur in the current
+  // list (dept + status). Writing an order still offers every known source.
+  const orderSources = useMemo(() => {
+    const map = new Map();
+    rows.map((r) => r.sourceText).filter(Boolean).forEach((s) => {
+      const k = String(s).toLowerCase(); if (!map.has(k)) map.set(k, s);
+    });
+    return [...map.values()].sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+  // If the active source filter no longer exists in the list, fall back to "all".
+  useEffect(() => {
+    if (sourceFilter !== 'all' && !orderSources.some((s) => s.toLowerCase() === sourceFilter.toLowerCase())) setSourceFilter('all');
+    /* eslint-disable-next-line */
+  }, [orderSources]);
+
   const loadSourceList = async () => {
     try {
       const d = unwrap(await api.get('/desktop/orders/sources'));
@@ -180,7 +195,7 @@ export default function Bestellungen({ user }) {
         <div className="spacer" />
         <select className="select" value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} title="Nach Quelle filtern">
           <option value="all">Alle Quellen</option>
-          {knownSources.map((s) => <option key={s} value={s}>{s}</option>)}
+          {orderSources.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <span className={`pill tab ${status === 'open' ? 'active' : ''}`} onClick={() => setStatus('open')}>Offen</span>
         <span className={`pill tab ${status === 'ordered' ? 'active' : ''}`} onClick={() => setStatus('ordered')}>Erledigt</span>

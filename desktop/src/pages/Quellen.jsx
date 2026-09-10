@@ -47,7 +47,7 @@ export default function Quellen() {
         <div className="empty"><div className="big">🏷️</div>Noch keine Quellen.</div>
       ) : (
         <>
-          <div className="table-wrap"><table>
+          <div className="table-wrap" style={{ maxHeight: '60vh', overflowY: 'auto' }}><table>
             <thead><tr><th style={{ width: 40 }}></th><th>Quelle</th><th className="right">Bestellungen</th><th></th></tr></thead>
             <tbody>
               {rows.map((r) => (

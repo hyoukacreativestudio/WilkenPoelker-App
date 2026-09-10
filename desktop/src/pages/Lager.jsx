@@ -10,7 +10,12 @@ const emptyForm = () => ({ brand: '', color: '', articleNumber: '', frameSize: '
 export default function Lager({ user }) {
   const toast = useToast();
   const canWrite = CAN_WRITE.includes(user.role);
-  const [status, setStatus] = useState('requested');
+  // Default tab, but honour a deep-link from the dashboard (e.g. the
+  // "In Bearbeitung" card sets wp_lager_tab before navigating here).
+  const [status, setStatus] = useState(() => {
+    try { const t = localStorage.getItem('wp_lager_tab'); if (t) { localStorage.removeItem('wp_lager_tab'); return t; } } catch { /* ignore */ }
+    return 'requested';
+  });
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState({ key: 'createdAt', dir: 'desc' });

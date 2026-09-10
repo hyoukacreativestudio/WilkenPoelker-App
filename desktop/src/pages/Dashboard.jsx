@@ -18,6 +18,7 @@ export default function Dashboard({ user, go, modules }) {
       await Promise.all([
         has('bestellungen') && tryGet('orders', async () => (unwrap(await api.get('/desktop/orders?status=open')).orders || []).length),
         has('lager') && tryGet('lager', async () => (unwrap(await api.get('/desktop/warehouse?status=requested')).items || []).length),
+        has('lager') && tryGet('lagerProg', async () => (unwrap(await api.get('/desktop/warehouse?status=in_progress')).items || []).length),
         has('reparaturen') && tryGet('rep', async () => unwrap(await api.get('/repairs/outreach?filter=open&scope=no_account')).counts?.open ?? 0),
         has('tickets') && tryGet('tickets', async () => { const r = unwrap(await api.get('/service/tickets/all?status=open')); return (r.tickets || r.items || []).length; }),
         has('termine') && tryGet('termine', async () => { const r = unwrap(await api.get('/appointments')); const list = r.appointments || r.items || (Array.isArray(r) ? r : []); const today = new Date().toISOString().slice(0, 10); return list.filter((a) => (a.date || '').slice(0, 10) === today).length; }),
@@ -34,6 +35,7 @@ export default function Dashboard({ user, go, modules }) {
     has('tickets')      && { key: 'tickets',      icon: '💬', label: 'Offene Tickets',       n: c.tickets, hint: 'Zu bearbeiten', bg: '#f0ecff', fg: '#7c3aed' },
     has('bestellungen') && { key: 'bestellungen', icon: '📦', label: 'Offene Bestellungen',  n: c.orders,  hint: 'Noch nicht bestellt', bg: '#fdeaea', fg: '#dc2626' },
     has('lager')        && { key: 'lager',        icon: '🏬', label: 'Lager offen',          n: c.lager,   hint: 'Nach vorne bringen', bg: '#eef1f4', fg: '#475569' },
+    has('lager')        && { key: 'lagerprog',    icon: '🛠️', label: 'In Bearbeitung',        n: c.lagerProg, hint: 'Gerade in Arbeit', bg: '#fff6e0', fg: '#97650a', nav: 'lager', tab: 'in_progress' },
   ].filter(Boolean);
 
   return (
@@ -45,7 +47,7 @@ export default function Dashboard({ user, go, modules }) {
       ) : (
         <div className="grid-cards">
           {cards.map((card, i) => (
-            <div key={card.key} className="stat" style={{ animationDelay: `${i * 40}ms` }} onClick={() => go(card.key)}>
+            <div key={card.key} className="stat" style={{ animationDelay: `${i * 40}ms` }} onClick={() => { if (card.tab) { try { localStorage.setItem('wp_lager_tab', card.tab); } catch { /* ignore */ } } go(card.nav || card.key); }}>
               <div className="top">
                 <div className="ic" style={{ background: card.bg, color: card.fg }}>{card.icon}</div>
                 <span className="muted" style={{ fontSize: 20 }}>›</span>

@@ -110,6 +110,7 @@ export default function Reparaturen({ user }) {
                   <div key={o.nr} className="muted" style={{ fontSize: 13 }}>
                     <span className={`badge ${READY.includes(o.appStatus) ? 'brought' : 'open'}`} style={{ fontSize: 11, marginRight: 6 }}>{READY.includes(o.appStatus) ? 'Abholbereit' : 'In Arbeit'}</span>
                     {o.info || `Auftrag ${o.nr}`}{o.appStatusLabel ? ` · ${o.appStatusLabel}` : ''}
+                    {o.info && o.nr ? <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 6 }}>· Nr. {o.nr}</span> : null}
                   </div>
                 ))}</td>
                 <td className="right no-print">
