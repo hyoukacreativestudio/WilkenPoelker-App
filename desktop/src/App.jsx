@@ -3,11 +3,13 @@ import { api, setToken, getToken, getDept, setDept, setDeptSecret, unwrap } from
 import Login from './Login.jsx';
 import Shell from './Shell.jsx';
 import { ToastProvider } from './toast.jsx';
+import ContextMenu from './contextmenu.jsx';
 
 export default function App() {
   return (
     <ToastProvider>
       <Root />
+      <ContextMenu />
     </ToastProvider>
   );
 }

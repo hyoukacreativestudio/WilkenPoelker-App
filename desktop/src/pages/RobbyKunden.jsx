@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
@@ -30,9 +30,44 @@ export default function RobbyKunden() {
   };
   useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); /* eslint-disable-next-line */ }, [search]);
 
-  const openNew = () => { setEditingId(null); setForm(emptyForm()); setShowForm(true); };
+  // PLZ ⇄ Ort autofill: typing one looks up the other (debounced, via backend).
+  // Only fills the other field when it's empty or still holds a previous
+  // autofill value, so manual entries are never overwritten.
+  const geoTimer = useRef(null);
+  const lastAuto = useRef({ zip: '', city: '' });
+  useEffect(() => () => clearTimeout(geoTimer.current), []);
+  const scheduleGeo = (kind, value) => {
+    clearTimeout(geoTimer.current);
+    const v = String(value || '').trim();
+    geoTimer.current = setTimeout(async () => {
+      try {
+        if (kind === 'zip') {
+          if (!/^\d{5}$/.test(v)) return;
+          const d = unwrap(await api.get(`/desktop/geo?zip=${encodeURIComponent(v)}`));
+          if (!d.city) return;
+          setForm((f) => {
+            if (String(f.zip).trim() !== v) return f; // input changed since request
+            if (f.city.trim() && f.city !== lastAuto.current.city) return f; // keep manual value
+            lastAuto.current.city = d.city; return { ...f, city: d.city };
+          });
+        } else {
+          if (v.length < 3) return;
+          const d = unwrap(await api.get(`/desktop/geo?city=${encodeURIComponent(v)}`));
+          if (!d.zip) return;
+          setForm((f) => {
+            if (f.city.trim().toLowerCase() !== v.toLowerCase()) return f;
+            if (f.zip.trim() && f.zip !== lastAuto.current.zip) return f; // keep manual value
+            lastAuto.current.zip = d.zip; return { ...f, zip: d.zip };
+          });
+        }
+      } catch { /* ignore – autofill is best-effort */ }
+    }, 450);
+  };
+
+  const openNew = () => { setEditingId(null); lastAuto.current = { zip: '', city: '' }; setForm(emptyForm()); setShowForm(true); };
   const openEdit = (r) => {
     setEditingId(r.id);
+    lastAuto.current = { zip: '', city: '' };
     setForm({ name: r.name || '', customerNumber: r.customerNumber || '', street: r.street || '', zip: r.zip || '', city: r.city || '', phone: r.phone || '', device: r.device || '', pin: r.pin || '', purchaseDate: r.purchaseDate ? String(r.purchaseDate).slice(0, 10) : '', notes: r.notes || '', handle: savedHandle() });
     setShowForm(true);
   };
@@ -141,10 +176,10 @@ export default function RobbyKunden() {
                 <input className="input" value={form.street} onChange={(e) => setForm({ ...form, street: e.target.value })} />
               </label>
               <label className="field">PLZ
-                <input className="input" value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} />
+                <input className="input" value={form.zip} onChange={(e) => { const v = e.target.value; setForm((f) => ({ ...f, zip: v })); scheduleGeo('zip', v); }} />
               </label>
               <label className="field">Ort
-                <input className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+                <input className="input" value={form.city} onChange={(e) => { const v = e.target.value; setForm((f) => ({ ...f, city: v })); scheduleGeo('city', v); }} />
               </label>
               <label className="field">Telefon
                 <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />

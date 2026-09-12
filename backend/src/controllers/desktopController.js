@@ -682,8 +682,65 @@ const deleteRobbyCustomer = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { deleted: true } });
 });
 
+// ── Geo helper: PLZ ⇄ Ort autofill ──────────────────────────────────────
+// Proxy to the public OpenPLZ API (openplzapi.org) so it works in the browser
+// too (no CORS) and can be cached. On any failure we simply return no match, so
+// autofill stays silent and never blocks typing.
+const https = require('https');
+const geoCache = new Map();
+function httpsGetJson(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { Accept: 'application/json', 'User-Agent': 'wilkenpoelker-desktop' } }, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) { res.resume(); return reject(new Error(`HTTP ${res.statusCode}`)); }
+      let data = '';
+      res.on('data', (c) => { data += c; if (data.length > 1e6) req.destroy(); });
+      res.on('end', () => { try { resolve(JSON.parse(data)); } catch (e) { reject(e); } });
+    });
+    req.on('error', reject);
+    req.setTimeout(4000, () => { req.destroy(); reject(new Error('timeout')); });
+  });
+}
+const lookupGeo = asyncHandler(async (req, res) => {
+  const zip = String(req.query.zip || '').trim();
+  const city = String(req.query.city || '').trim();
+
+  if (zip) {
+    if (!/^\d{5}$/.test(zip)) return res.json({ success: true, data: { city: null } });
+    const key = `z:${zip}`;
+    if (!geoCache.has(key)) {
+      let out = { city: null };
+      try {
+        const arr = await httpsGetJson(`https://openplzapi.org/de/Localities?postalCode=${encodeURIComponent(zip)}`);
+        const names = [...new Set((arr || []).map((x) => x.name).filter(Boolean))];
+        if (names.length === 1) out = { city: names[0] }; // unique → fill; ambiguous PLZ stays blank
+      } catch (e) { /* offline / API error → no autofill */ }
+      geoCache.set(key, out);
+    }
+    return res.json({ success: true, data: geoCache.get(key) });
+  }
+
+  if (city) {
+    const key = `c:${city.toLowerCase()}`;
+    if (!geoCache.has(key)) {
+      let out = { zip: null };
+      try {
+        const arr = await httpsGetJson(`https://openplzapi.org/de/Localities?name=${encodeURIComponent(city)}`);
+        const exact = (arr || []).filter((x) => String(x.name).toLowerCase() === city.toLowerCase());
+        const pool = exact.length ? exact : (arr || []);
+        const zips = [...new Set(pool.map((x) => x.postalCode).filter(Boolean))];
+        if (zips.length === 1) out = { zip: zips[0] }; // unique town → fill; big cities (many PLZ) stay blank
+      } catch (e) { /* no autofill */ }
+      geoCache.set(key, out);
+    }
+    return res.json({ success: true, data: geoCache.get(key) });
+  }
+
+  return res.json({ success: true, data: {} });
+});
+
 module.exports = {
   desktopLogin,
+  lookupGeo,
   listRobbyCustomers, createRobbyCustomer, updateRobbyCustomer, deleteRobbyCustomer,
   listOrders, createOrder, updateOrder, deleteOrder, setOrderProblem, purgeDoneOrders,
   listOrderSources, mergeOrderSources,

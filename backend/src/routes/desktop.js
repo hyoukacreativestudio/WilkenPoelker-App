@@ -40,6 +40,9 @@ router.post('/appointments/:id/propose', authenticate, authorize(...STAFF), desk
 router.post('/appointments/:id/confirm', authenticate, authorize(...STAFF), desktop.confirmAppointmentDesktop);
 router.post('/appointments/:id/question', authenticate, authorize(...STAFF), desktop.askAppointmentQuestion);
 
+// ── Geo autofill (PLZ ⇄ Ort) ──
+router.get('/geo', authenticate, authorize(...STAFF), desktop.lookupGeo);
+
 // ── Robby customer list ──
 const ROBBY = ['admin', 'super_admin', 'robby_manager'];
 router.get('/robby-customers', authenticate, authorize(...ROBBY), desktop.listRobbyCustomers);
