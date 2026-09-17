@@ -10,6 +10,7 @@ import { useToast } from '../toast.jsx';
 const MANAGER = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
 const CHECKOFF = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
 const deptLabel = (key) => ORDER_DEPARTMENTS.find((d) => d.key === key)?.label || key;
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('de-DE') : '—');
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
 const emptyForm = () => ({ sourceText: 'Shop', link: '', articleNumber: '', description: '', customerName: '', customerNumber: '', quantity: 1, quantityForStock: 0, notes: '', handle: savedHandle() });
 // One article line for the multi-article create form (shared customer/Kürzel).
@@ -228,6 +229,7 @@ export default function Bestellungen({ user }) {
               <th className="sortable right" onClick={() => toggleSort('quantity')}>Anzahl{arrow('quantity')}</th>
               <th className="right">Lager</th>
               <th className="sortable" onClick={() => toggleSort('handle')}>Kürzel{arrow('handle')}</th>
+              <th className="sortable nowrap" onClick={() => toggleSort('createdAt')}>Datum{arrow('createdAt')}</th>
               <th className="no-print"></th>
             </tr>
           </thead>
@@ -246,6 +248,7 @@ export default function Bestellungen({ user }) {
                 <td className="right">{r.quantity}</td>
                 <td className="right">{r.quantityForStock || 0}</td>
                 <td>{r.handle || '—'}</td>
+                <td className="nowrap">{fmtDate(r.createdAt)}</td>
                 <td className="right nowrap no-print" onClick={(e) => e.stopPropagation()}>
                   {isManager && (r.status !== 'ordered'
                     ? <button className="btn sm" onClick={() => check(r, true)}>Erledigt ✓</button>
@@ -277,6 +280,7 @@ export default function Bestellungen({ user }) {
               <span className="muted">Für wen</span><span>{detail.customerName || '—'}{detail.customerNumber ? ` (Kd ${detail.customerNumber})` : ''}</span>
               <span className="muted">Anzahl</span><span>{detail.quantity}{detail.quantityForStock ? ` · davon fürs Lager: ${detail.quantityForStock}` : ''}</span>
               <span className="muted">Kürzel</span><span>{detail.handle || '—'}</span>
+              <span className="muted">Datum</span><span>{fmtDate(detail.createdAt)}</span>
               {detail.notes ? <><span className="muted">Notiz</span><span>{detail.notes}</span></> : null}
               {detail.link ? <><span className="muted">Link</span><span><a href={detail.link} target="_blank" rel="noreferrer">{detail.link}</a></span></> : null}
             </div>
@@ -320,6 +324,7 @@ export default function Bestellungen({ user }) {
         <div className="backdrop" {...backdropHandlers(() => setShowForm(false))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingId ? 'Bestellung bearbeiten' : `Neue Bestellung${isManager && dept !== 'all' ? ` – ${deptLabel(dept)}` : ''}`}</h2>
+            {!editingId && <div className="muted" style={{ marginTop: -8, marginBottom: 14, fontSize: 13 }}>📅 Datum: <strong>{fmtDate(new Date())}</strong> – wird automatisch gespeichert</div>}
             {/* Shared: Kürzel + customer (used for every article) */}
             <div className="form-grid">
               <label className="field">Dein Kürzel *
