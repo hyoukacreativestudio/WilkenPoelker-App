@@ -114,7 +114,18 @@ app.use('/api/desktop', desktopRoutes);
 
 // Serve the desktop tool (built web app) so every company PC just opens
 // <server>/pc in a browser — no install, no Node, no CORS (same origin as /api).
-app.use('/pc', express.static(path.resolve(__dirname, '../../desktop/dist')));
+// index.html must never be cached (so a new deploy is picked up immediately);
+// the hashed asset files may be cached forever (their name changes each build).
+app.use('/pc', express.static(path.resolve(__dirname, '../../desktop/dist'), {
+  etag: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else if (/[\\/]assets[\\/]/.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  },
+}));
 
 // App version check — the mobile app calls this on launch and shows an update
 // popup when the installed version is older than `latest`. Configure per release
