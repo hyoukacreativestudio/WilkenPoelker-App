@@ -132,7 +132,9 @@ textarea.input { min-height: 66px; resize: vertical; }
 .badge.dot::before { content:""; width:7px; height:7px; border-radius:50%; background: currentColor; display:inline-block; }
 
 /* ── Tables ── */
-.table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+/* Horizontal scroll when the table is wider than the window, so no column is
+   ever cut off regardless of how the window is resized. */
+.table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13.8px; vertical-align: top; }
 th { background: var(--th-bg); color: var(--text-2); font-weight: 650; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
@@ -163,10 +165,15 @@ tr.done td { opacity: .5; }
 
 /* ── Modal ── */
 .backdrop { position: fixed; inset: 0; background: rgba(16,30,20,.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; animation: fadeUp .12s both; }
-.modal { background: var(--card); border-radius: 18px; padding: 24px; width: 560px; max-width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); animation: fadeUp .16s both; }
+.modal { background: var(--card); border-radius: 18px; padding: 24px; width: 560px; max-width: 100%; max-height: 90vh; overflow: auto; box-shadow: var(--shadow-lg); animation: fadeUp .16s both; }
 .modal h2 { margin: 0 0 18px; font-size: 19px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form-grid .full { grid-column: 1 / -1; }
+/* Let form fields shrink inside a narrow modal instead of overflowing (the
+   default input min-width would otherwise push content past the modal edge). */
+.form-grid .field { min-width: 0; }
+.form-grid .input, .form-grid .select { min-width: 0; max-width: 100%; }
+@media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
 /* ── Toast ── */
