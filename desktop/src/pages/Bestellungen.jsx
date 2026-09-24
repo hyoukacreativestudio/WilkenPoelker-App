@@ -14,7 +14,7 @@ const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('de-DE') : '—');
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
 const emptyForm = () => ({ sourceText: 'Shop', link: '', articleNumber: '', refNumber: '', description: '', customerName: '', customerNumber: '', quantity: 1, quantityForStock: 0, notes: '', handle: savedHandle() });
 // One article line for the multi-article create form (shared customer/Kürzel).
-const emptyArticle = () => ({ sourceText: 'Shop', articleNumber: '', refNumber: '', description: '', quantity: 1, quantityForStock: 0, link: '', notes: '' });
+const emptyArticle = () => ({ sourceText: 'Shop', articleNumber: '', description: '', quantity: 1, quantityForStock: 0, link: '', notes: '' });
 
 // Remembered order sources for the quick-pick dropdown (case-insensitive, per PC)
 const SOURCES_KEY = 'wp_sources';
@@ -152,7 +152,7 @@ export default function Bestellungen({ user }) {
         if (arts.length === 0) { toast('Bitte mindestens einen Artikel angeben', { type: 'error' }); setBusy(false); return; }
         for (const a of arts) {
           const payload = {
-            sourceText: a.sourceText, articleNumber: a.articleNumber, refNumber: a.refNumber, description: a.description,
+            sourceText: a.sourceText, articleNumber: a.articleNumber, refNumber: form.refNumber, description: a.description,
             quantity: a.quantity, quantityForStock: a.quantityForStock, link: a.link, notes: a.notes,
             customerName: form.customerName, customerNumber: form.customerNumber, handle: form.handle.trim(),
           };
@@ -241,11 +241,10 @@ export default function Bestellungen({ user }) {
                 <td>{r.articleNumber || '—'}</td>
                 <td>
                   <strong>{r.description}</strong>
-                  {r.refNumber ? <div className="muted" style={{ fontSize: 12 }}>Rep/Verk-Nr.: {r.refNumber}</div> : null}
                   {r.problemNote ? <div style={{ color: '#c53030', fontWeight: 800 }}>⚠ {r.problemNote}{r.problemBy ? ` (${r.problemBy})` : ''}</div> : null}
                   {r.notes ? <div className="muted">{r.notes}</div> : null}
                 </td>
-                <td>{r.customerName || '—'}{r.customerNumber ? <div className="muted">Kd {r.customerNumber}</div> : null}</td>
+                <td>{r.customerName || '—'}{r.customerNumber ? <div className="muted">Kd {r.customerNumber}</div> : null}{r.refNumber ? <div className="muted" style={{ fontSize: 12 }}>Rep/Verk {r.refNumber}</div> : null}</td>
                 <td className="right">{r.quantity}</td>
                 <td className="right">{r.quantityForStock || 0}</td>
                 <td>{r.handle || '—'}</td>
@@ -277,9 +276,9 @@ export default function Bestellungen({ user }) {
               {isManager && <><span className="muted">Abteilung</span><span>{deptLabel(detail.department)}</span></>}
               <span className="muted">Quelle</span><span>{detail.sourceText || 'Shop'}</span>
               <span className="muted">Artikel-Nr.</span><span>{detail.articleNumber || '—'}</span>
-              <span className="muted">Rep-/Verk-Nr.</span><span>{detail.refNumber || '—'}</span>
               <span className="muted">Was</span><span><strong>{detail.description}</strong></span>
               <span className="muted">Für wen</span><span>{detail.customerName || '—'}{detail.customerNumber ? ` (Kd ${detail.customerNumber})` : ''}</span>
+              <span className="muted">Rep-/Verk-Nr.</span><span>{detail.refNumber || '—'}</span>
               <span className="muted">Anzahl</span><span>{detail.quantity}{detail.quantityForStock ? ` · davon fürs Lager: ${detail.quantityForStock}` : ''}</span>
               <span className="muted">Kürzel</span><span>{detail.handle || '—'}</span>
               <span className="muted">Datum</span><span>{fmtDate(detail.createdAt)}</span>
@@ -338,6 +337,9 @@ export default function Bestellungen({ user }) {
               <label className="field">Kundennummer
                 <input className="input" value={form.customerNumber} onChange={(e) => setForm({ ...form, customerNumber: e.target.value })} />
               </label>
+              <label className="field">Reparatur-/Verkaufsnr.
+                <input className="input" value={form.refNumber} onChange={(e) => setForm({ ...form, refNumber: e.target.value })} />
+              </label>
             </div>
 
             {editingId ? (
@@ -357,9 +359,6 @@ export default function Bestellungen({ user }) {
                 </label>
                 <label className="field">Artikelnummer
                   <input className="input" value={form.articleNumber} onChange={(e) => setForm({ ...form, articleNumber: e.target.value })} />
-                </label>
-                <label className="field">Reparatur-/Verkaufsnr.
-                  <input className="input" value={form.refNumber} onChange={(e) => setForm({ ...form, refNumber: e.target.value })} />
                 </label>
                 <label className="field full">Link (optional)
                   <input className="input" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="https://…" />
@@ -397,9 +396,6 @@ export default function Bestellungen({ user }) {
                         </label>
                         <label className="field">Artikelnummer
                           <input className="input" value={a.articleNumber} onChange={(e) => setArt({ articleNumber: e.target.value })} />
-                        </label>
-                        <label className="field">Reparatur-/Verkaufsnr.
-                          <input className="input" value={a.refNumber} onChange={(e) => setArt({ refNumber: e.target.value })} />
                         </label>
                         <label className="field full">Was ist es?
                           <input className="input" value={a.description} onChange={(e) => setArt({ description: e.target.value })} />
