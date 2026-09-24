@@ -114,7 +114,7 @@ const listOrders = asyncHandler(async (req, res) => {
 });
 
 const createOrder = asyncHandler(async (req, res) => {
-  const { sourceText, link, articleNumber, description, customerName, customerNumber, quantity, quantityForStock, notes, handle } = req.body;
+  const { sourceText, link, articleNumber, refNumber, description, customerName, customerNumber, quantity, quantityForStock, notes, handle } = req.body;
   // Only the Kürzel is mandatory (shared login → who wrote it). Everything else
   // may be left blank; description falls back to a dash.
   if (!handle || !String(handle).trim()) {
@@ -130,6 +130,7 @@ const createOrder = asyncHandler(async (req, res) => {
     sourceText: (sourceText && String(sourceText).trim()) || 'Shop',
     link: link || null,
     articleNumber: articleNumber || null,
+    refNumber: refNumber || null,
     description: (description && String(description).trim()) || '—',
     customerName: customerName || null,
     customerNumber: customerNumber || null,
@@ -162,7 +163,7 @@ const updateOrder = asyncHandler(async (req, res) => {
     if (status === 'ordered') { updates.orderedBy = req.user.id; updates.orderedAt = new Date(); }
     else if (status === 'open') { updates.orderedBy = null; updates.orderedAt = null; }
   }
-  for (const f of ['articleNumber', 'description', 'customerName', 'customerNumber', 'link', 'sourceText', 'notes', 'handle']) {
+  for (const f of ['articleNumber', 'refNumber', 'description', 'customerName', 'customerNumber', 'link', 'sourceText', 'notes', 'handle']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];
   }
   if (req.body.quantity !== undefined) updates.quantity = parseInt(req.body.quantity, 10) || 1;

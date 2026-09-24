@@ -135,7 +135,7 @@ textarea.input { min-height: 66px; resize: vertical; }
 /* Horizontal scroll when the table is wider than the window, so no column is
    ever cut off regardless of how the window is resized. */
 .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: auto; }
-table { width: 100%; border-collapse: collapse; }
+table { width: 100%; min-width: max-content; border-collapse: collapse; }
 th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13.8px; vertical-align: top; }
 th { background: var(--th-bg); color: var(--text-2); font-weight: 650; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
 th.sortable { cursor: pointer; user-select: none; }

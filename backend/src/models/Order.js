@@ -34,6 +34,10 @@ const Order = sequelize.define('Order', {
   articleNumber: {
     type: DataTypes.STRING,
   },
+  // Optional Reparatur-/Verkaufsnummer this order belongs to.
+  refNumber: {
+    type: DataTypes.STRING,
+  },
   description: {
     type: DataTypes.STRING, // "was es ist"
     allowNull: false,
