@@ -74,7 +74,13 @@ export default function PostCard({ post, onLike, onComment, onShare, onPress, on
               ]}
             >
               <Text style={{ color: theme.colors.primary, fontWeight: '700', fontSize: 15 }}>
-                {getInitials(author?.username)}
+                {/* Same source as the name shown next to it (was the username, so
+                    "Max Wilken" showed "A" from "admin"). */}
+                {getInitials(
+                  author?.firstName && author?.lastName
+                    ? `${author.firstName} ${author.lastName}`
+                    : author?.username
+                )}
               </Text>
             </View>
           )}

@@ -61,7 +61,9 @@
       "friday": "Friday",
       "saturday": "Saturday",
       "sunday": "Sunday"
-    }
+    },
+    "notice": "Notice",
+    "permission": "Permission Required"
   },
   "navigation": {
     "feed": "Feed",
@@ -121,7 +123,7 @@
       "contact": "Contact & Directions",
       "openingHours": "Opening Hours",
       "closed": "Closed",
-      "winterNote": "Winter opening hours (Nov 1 \u2013 Feb 1)"
+      "winterNote": "Winter opening hours (Nov 1 – Feb 1)"
     },
     "qmf": {
       "title": "QMF-Certified Dealer",
@@ -243,6 +245,7 @@
     "biometricLogin": "Log in with biometrics",
     "pinLogin": "Log in with PIN",
     "passwordStrength": "Password strength",
+    "passwordEmpty": "Enter a password",
     "weak": "Weak",
     "fair": "Fair",
     "good": "Good",
@@ -294,7 +297,8 @@
     "postCreatedSuccess": "Post was created successfully.",
     "postEditedSuccess": "Post was edited successfully.",
     "postDeletedSuccess": "Post was deleted successfully.",
-    "commentAddedSuccess": "Comment was posted successfully."
+    "commentAddedSuccess": "Comment was posted successfully.",
+    "readMore": "more"
   },
   "openingHours": {
     "open": "Open now",
@@ -302,7 +306,7 @@
     "monFri": "Mon - Fri",
     "sat": "Sat",
     "and": "and",
-    "winterHours": "Winter hours (Nov 1 \u2013 Feb 1)"
+    "winterHours": "Winter hours (Nov 1 – Feb 1)"
   },
   "service": {
     "title": "Service",
@@ -337,7 +341,18 @@
     "delivered": "Delivered",
     "read": "Read",
     "noTickets": "No requests yet",
-    "faq": "Frequently asked questions",
+    "faq": {
+      "bikeServiceQuestion": "How often should my bike be serviced?",
+      "bikeServiceAnswer": "We recommend an annual service or after approx. 2,000 km. More frequently with intensive use.",
+      "repairTimeQuestion": "How long does a repair take?",
+      "repairTimeAnswer": "Minor repairs are often completed the same day. Larger jobs usually take 2-5 working days.",
+      "warrantyQuestion": "What warranty is there on repairs?",
+      "warrantyAnswer": "We provide a 6-month warranty on our repair work. Installed spare parts are covered by the manufacturer's warranty.",
+      "openingHoursQuestion": "When are you open?",
+      "openingHoursAnswer": "Monday to Friday 8am–1pm and 2pm–6pm, Saturday 9am–1pm. In winter (Nov 1–Feb 1) we close at 5pm on weekdays.",
+      "costQuestion": "How much does a service cost?",
+      "costAnswer": "A standard service starts from 49 EUR incl. VAT. The exact price depends on an on-site assessment."
+    },
     "priceList": "Price list",
     "ourTeam": "Our service team",
     "openingHours": "Opening hours",
@@ -348,8 +363,8 @@
     "mondayFriday": "Monday - Friday",
     "saturday": "Saturday",
     "sunday": "Sunday",
-    "winterHours": "Winter opening hours (Nov 1 \u2013 Feb 1)",
-    "standardHours": "Standard opening hours (Feb 2 \u2013 Oct 31)",
+    "winterHours": "Winter opening hours (Nov 1 – Feb 1)",
+    "standardHours": "Standard opening hours (Feb 2 – Oct 31)",
     "assignedTo": "Assigned to",
     "confirmAppointment": "Confirm appointment",
     "notifications": "You will receive a notification once we have processed your request.",
@@ -383,19 +398,7 @@
     "phone": "Phone",
     "email": "Email",
     "address": "Address",
-    "closed": "Closed",
-    "faq": {
-      "bikeServiceQuestion": "How often should my bike be serviced?",
-      "bikeServiceAnswer": "We recommend an annual service or after approx. 2,000 km. More frequently with intensive use.",
-      "repairTimeQuestion": "How long does a repair take?",
-      "repairTimeAnswer": "Minor repairs are often completed the same day. Larger jobs usually take 2-5 working days.",
-      "warrantyQuestion": "What warranty is there on repairs?",
-      "warrantyAnswer": "We provide a 6-month warranty on our repair work. Installed spare parts are covered by the manufacturer's warranty.",
-      "openingHoursQuestion": "When are you open?",
-      "openingHoursAnswer": "Monday to Friday 8am\u20131pm and 2pm\u20136pm, Saturday 9am\u20131pm. In winter (Nov 1\u2013Feb 1) we close at 5pm on weekdays.",
-      "costQuestion": "How much does a service cost?",
-      "costAnswer": "A standard service starts from 49 EUR incl. VAT. The exact price depends on an on-site assessment."
-    }
+    "closed": "Closed"
   },
   "ticket": {
     "type": {
@@ -417,7 +420,10 @@
       "inProgress": "In Progress",
       "waiting": "Waiting for Customer",
       "resolved": "Resolved",
-      "closed": "Closed"
+      "closed": "Closed",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
     }
   },
   "products": {
@@ -960,7 +966,37 @@
     "confirmDelete": "Really delete this FAQ?",
     "noFAQs": "No FAQs available",
     "saved": "FAQ saved",
-    "saveError": "Could not save FAQ"
+    "saveError": "Could not save FAQ",
+    "activated": "FAQ activated",
+    "active": "Active",
+    "addFaq": "Add FAQ",
+    "allCategories": "All",
+    "answerLabel": "Answer",
+    "answerPlaceholder": "Enter the answer...",
+    "answerRequired": "Answer is required",
+    "categoryLabel": "Category",
+    "createButton": "Create FAQ",
+    "createError": "Failed to create",
+    "createSuccess": "FAQ created",
+    "deactivated": "FAQ deactivated",
+    "deleteConfirm": "Do you really want to delete this FAQ?",
+    "deleteError": "Failed to delete",
+    "deleteSuccess": "FAQ deleted",
+    "deleteTitle": "Delete FAQ",
+    "editFaq": "Edit FAQ",
+    "fetchError": "Failed to load FAQs",
+    "inactive": "Inactive",
+    "manageFaqs": "Manage FAQs",
+    "noFaqs": "No FAQs yet",
+    "noFaqsSubtitle": "Create your first FAQ",
+    "order": "Order",
+    "orderLabel": "Order (0 = default)",
+    "questionLabel": "Question",
+    "questionPlaceholder": "Enter the question...",
+    "questionRequired": "Question is required",
+    "toggleError": "Failed to toggle",
+    "updateError": "Failed to update",
+    "updateSuccess": "FAQ updated"
   },
   "aiChat": {
     "headerTitle": "AI Assistant",
@@ -1147,7 +1183,8 @@
     "requiredField": "This field is required.",
     "somethingWentWrong": "Something went wrong. Please try again.",
     "pageNotFound": "Page not found",
-    "pageNotFoundMessage": "The requested page does not exist."
+    "pageNotFoundMessage": "The requested page does not exist.",
+    "generic": "Something went wrong. Please try again."
   },
   "createTicket": {
     "selectTitle": "Select subject",
@@ -1222,7 +1259,8 @@
     "ticketForwarded": "This ticket has been forwarded.",
     "chatClosed": "This chat has ended.",
     "staff": "Staff",
-    "waitingForStaff": "Waiting for staff"
+    "waitingForStaff": "Waiting for staff",
+    "typeMessage": "Type a message..."
   },
   "customerProfile": {
     "title": "Customer Profile",
@@ -1342,5 +1380,15 @@
     "closed": "Closed",
     "todayHoliday": "Today: {{name}}",
     "todaySpecialHours": "Today special hours: {{hours}}"
+  },
+  "datePicker": {
+    "select": "Select..."
+  },
+  "imagePicker": {
+    "maxReached": "Maximum number of images reached",
+    "permissionMessage": "Please grant access to your photo library"
+  },
+  "permissions": {
+    "mediaLibrary": "Please allow access to your photos to attach images."
   }
 }

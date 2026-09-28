@@ -13,13 +13,16 @@ export default function PasswordStrength({ password, style }) {
   const strength = validators.getPasswordStrength(password);
 
   const getLabelText = (label) => {
+    // Keys live under "auth" (auth.passwordStrength is a plain string there, not
+    // a namespace) — the old "passwordStrength.*" paths never resolved, so the
+    // English fallbacks showed in the German UI.
     const labels = {
-      empty: t('passwordStrength.empty', 'Enter a password'),
-      weak: t('passwordStrength.weak', 'Weak'),
-      fair: t('passwordStrength.fair', 'Fair'),
-      good: t('passwordStrength.good', 'Good'),
-      strong: t('passwordStrength.strong', 'Strong'),
-      veryStrong: t('passwordStrength.veryStrong', 'Very Strong'),
+      empty: t('auth.passwordEmpty', 'Enter a password'),
+      weak: t('auth.weak', 'Weak'),
+      fair: t('auth.fair', 'Fair'),
+      good: t('auth.good', 'Good'),
+      strong: t('auth.strong', 'Strong'),
+      veryStrong: t('auth.veryStrong', 'Very Strong'),
     };
     return labels[label] || label;
   };

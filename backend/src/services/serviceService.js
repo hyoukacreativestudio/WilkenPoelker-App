@@ -249,10 +249,13 @@ async function getActiveChats(userId, models) {
 
   const tickets = await Ticket.findAll({
     where: {
-      status: { [Op.in]: ['in_progress', 'confirmed'] },
       [Op.or]: [
-        { userId },
-        { assignedTo: userId },
+        // The customer's own requests — including ones nobody has picked up yet.
+        // Without 'open', a freshly created ticket vanished from the app until
+        // staff answered: the customer could neither see its status nor add info.
+        { userId, status: { [Op.in]: ['open', 'in_progress', 'confirmed'] } },
+        // Staff: chats assigned to them that are underway.
+        { assignedTo: userId, status: { [Op.in]: ['in_progress', 'confirmed'] } },
       ],
     },
     include: [

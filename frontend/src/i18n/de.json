@@ -61,7 +61,9 @@
       "friday": "Freitag",
       "saturday": "Samstag",
       "sunday": "Sonntag"
-    }
+    },
+    "notice": "Hinweis",
+    "permission": "Berechtigung erforderlich"
   },
   "navigation": {
     "feed": "Feed",
@@ -121,7 +123,7 @@
       "contact": "Kontakt & Anfahrt",
       "openingHours": "Öffnungszeiten",
       "closed": "Geschlossen",
-      "winterNote": "Winteröffnungszeiten (01.11. \u2013 01.02.)"
+      "winterNote": "Winteröffnungszeiten (01.11. – 01.02.)"
     },
     "qmf": {
       "title": "QMF-zertifizierter Fachhändler",
@@ -243,6 +245,7 @@
     "biometricLogin": "Mit Biometrie anmelden",
     "pinLogin": "Mit PIN anmelden",
     "passwordStrength": "Passwortstärke",
+    "passwordEmpty": "Passwort eingeben",
     "weak": "Schwach",
     "fair": "Ausreichend",
     "good": "Gut",
@@ -294,7 +297,8 @@
     "postCreatedSuccess": "Beitrag wurde erfolgreich erstellt.",
     "postEditedSuccess": "Beitrag wurde erfolgreich bearbeitet.",
     "postDeletedSuccess": "Beitrag wurde erfolgreich gelöscht.",
-    "commentAddedSuccess": "Kommentar wurde erfolgreich gesendet."
+    "commentAddedSuccess": "Kommentar wurde erfolgreich gesendet.",
+    "readMore": "mehr"
   },
   "openingHours": {
     "open": "Jetzt geöffnet",
@@ -302,7 +306,7 @@
     "monFri": "Mo - Fr",
     "sat": "Sa",
     "and": "und",
-    "winterHours": "Winteröffnungszeiten (01.11. \u2013 01.02.)"
+    "winterHours": "Winteröffnungszeiten (01.11. – 01.02.)"
   },
   "service": {
     "title": "Service",
@@ -337,7 +341,18 @@
     "delivered": "Zugestellt",
     "read": "Gelesen",
     "noTickets": "Keine Anfragen vorhanden",
-    "faq": "Häufig gestellte Fragen",
+    "faq": {
+      "bikeServiceQuestion": "Wie oft sollte mein Fahrrad zur Inspektion?",
+      "bikeServiceAnswer": "Wir empfehlen eine jährliche Inspektion oder nach ca. 2.000 km. Bei intensiver Nutzung auch häufiger.",
+      "repairTimeQuestion": "Wie lange dauert eine Reparatur?",
+      "repairTimeAnswer": "Kleinere Reparaturen erledigen wir oft am selben Tag. Größere Arbeiten dauern in der Regel 2-5 Werktage.",
+      "warrantyQuestion": "Welche Garantie gibt es auf Reparaturen?",
+      "warrantyAnswer": "Auf unsere Reparaturarbeiten geben wir 6 Monate Garantie. Auf eingebaute Ersatzteile gilt die jeweilige Herstellergarantie.",
+      "openingHoursQuestion": "Wann haben Sie geöffnet?",
+      "openingHoursAnswer": "Montag bis Freitag 08:00–13:00 und 14:00–18:00 Uhr, Samstag 09:00–13:00 Uhr. Im Winter (01.11.–01.02.) schließen wir unter der Woche bereits um 17:00 Uhr.",
+      "costQuestion": "Was kostet eine Inspektion?",
+      "costAnswer": "Eine Standard-Inspektion kostet ab 49,- Euro inkl. MwSt. Den genauen Preis erfahren Sie nach einer Einschätzung vor Ort."
+    },
     "priceList": "Preisliste",
     "ourTeam": "Unser Service-Team",
     "openingHours": "Öffnungszeiten",
@@ -348,8 +363,8 @@
     "mondayFriday": "Montag - Freitag",
     "saturday": "Samstag",
     "sunday": "Sonntag",
-    "winterHours": "Winteröffnungszeiten (01.11. \u2013 01.02.)",
-    "standardHours": "Standardöffnungszeiten (02.02. \u2013 31.10.)",
+    "winterHours": "Winteröffnungszeiten (01.11. – 01.02.)",
+    "standardHours": "Standardöffnungszeiten (02.02. – 31.10.)",
     "assignedTo": "Zugewiesen an",
     "confirmAppointment": "Termin bestätigen",
     "notifications": "Sie bekommen eine Benachrichtigung, sobald wir Ihre Anfrage bearbeitet haben.",
@@ -383,19 +398,7 @@
     "phone": "Telefon",
     "email": "E-Mail",
     "address": "Adresse",
-    "closed": "Geschlossen",
-    "faq": {
-      "bikeServiceQuestion": "Wie oft sollte mein Fahrrad zur Inspektion?",
-      "bikeServiceAnswer": "Wir empfehlen eine jährliche Inspektion oder nach ca. 2.000 km. Bei intensiver Nutzung auch häufiger.",
-      "repairTimeQuestion": "Wie lange dauert eine Reparatur?",
-      "repairTimeAnswer": "Kleinere Reparaturen erledigen wir oft am selben Tag. Größere Arbeiten dauern in der Regel 2-5 Werktage.",
-      "warrantyQuestion": "Welche Garantie gibt es auf Reparaturen?",
-      "warrantyAnswer": "Auf unsere Reparaturarbeiten geben wir 6 Monate Garantie. Auf eingebaute Ersatzteile gilt die jeweilige Herstellergarantie.",
-      "openingHoursQuestion": "Wann haben Sie geöffnet?",
-      "openingHoursAnswer": "Montag bis Freitag 08:00\u201313:00 und 14:00\u201318:00 Uhr, Samstag 09:00\u201313:00 Uhr. Im Winter (01.11.\u201301.02.) schließen wir unter der Woche bereits um 17:00 Uhr.",
-      "costQuestion": "Was kostet eine Inspektion?",
-      "costAnswer": "Eine Standard-Inspektion kostet ab 49,- Euro inkl. MwSt. Den genauen Preis erfahren Sie nach einer Einschätzung vor Ort."
-    }
+    "closed": "Geschlossen"
   },
   "ticket": {
     "type": {
@@ -417,7 +420,10 @@
       "inProgress": "In Bearbeitung",
       "waiting": "Warten auf Kunde",
       "resolved": "Gelöst",
-      "closed": "Geschlossen"
+      "closed": "Geschlossen",
+      "confirmed": "Bestätigt",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert"
     }
   },
   "products": {
@@ -952,15 +958,45 @@
   "faq": {
     "editMode": "FAQs bearbeiten",
     "editing": "Bearbeitung aktiv",
-    "addFAQ": "FAQ hinzuf\u00fcgen",
+    "addFAQ": "FAQ hinzufügen",
     "editFAQ": "FAQ bearbeiten",
-    "deleteFAQ": "FAQ l\u00f6schen",
+    "deleteFAQ": "FAQ löschen",
     "question": "Frage",
     "answer": "Antwort",
-    "confirmDelete": "Diese FAQ wirklich l\u00f6schen?",
+    "confirmDelete": "Diese FAQ wirklich löschen?",
     "noFAQs": "Keine FAQs vorhanden",
     "saved": "FAQ gespeichert",
-    "saveError": "FAQ konnte nicht gespeichert werden"
+    "saveError": "FAQ konnte nicht gespeichert werden",
+    "activated": "FAQ aktiviert",
+    "active": "Aktiv",
+    "addFaq": "FAQ hinzufügen",
+    "allCategories": "Alle",
+    "answerLabel": "Antwort",
+    "answerPlaceholder": "Geben Sie die Antwort ein…",
+    "answerRequired": "Antwort ist erforderlich",
+    "categoryLabel": "Kategorie",
+    "createButton": "FAQ erstellen",
+    "createError": "Fehler beim Erstellen",
+    "createSuccess": "FAQ erstellt",
+    "deactivated": "FAQ deaktiviert",
+    "deleteConfirm": "Möchten Sie diese FAQ wirklich löschen?",
+    "deleteError": "Fehler beim Löschen",
+    "deleteSuccess": "FAQ gelöscht",
+    "deleteTitle": "FAQ löschen",
+    "editFaq": "FAQ bearbeiten",
+    "fetchError": "Fehler beim Laden der FAQs",
+    "inactive": "Inaktiv",
+    "manageFaqs": "FAQ-Verwaltung",
+    "noFaqs": "Keine FAQs vorhanden",
+    "noFaqsSubtitle": "Erstellen Sie Ihre erste FAQ",
+    "order": "Reihenfolge",
+    "orderLabel": "Reihenfolge (0 = Standard)",
+    "questionLabel": "Frage",
+    "questionPlaceholder": "Geben Sie die Frage ein…",
+    "questionRequired": "Frage ist erforderlich",
+    "toggleError": "Fehler beim Umschalten",
+    "updateError": "Fehler beim Aktualisieren",
+    "updateSuccess": "FAQ aktualisiert"
   },
   "aiChat": {
     "headerTitle": "KI-Assistent",
@@ -1133,7 +1169,8 @@
     "requiredField": "Dieses Feld ist erforderlich.",
     "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
     "pageNotFound": "Seite nicht gefunden",
-    "pageNotFoundMessage": "Die angeforderte Seite existiert nicht."
+    "pageNotFoundMessage": "Die angeforderte Seite existiert nicht.",
+    "generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
   },
   "createTicket": {
     "selectTitle": "Betreff auswählen",
@@ -1208,7 +1245,8 @@
     "ticketForwarded": "Dieses Ticket wurde weitergeleitet.",
     "chatClosed": "Dieser Chat wurde beendet.",
     "staff": "Mitarbeiter",
-    "waitingForStaff": "Wartet auf Mitarbeiter"
+    "waitingForStaff": "Wartet auf Mitarbeiter",
+    "typeMessage": "Nachricht schreiben…"
   },
   "customerProfile": {
     "title": "Kundenprofil",
@@ -1328,5 +1366,15 @@
     "closed": "Geschlossen",
     "todayHoliday": "Heute: {{name}}",
     "todaySpecialHours": "Heute Sonderöffnungszeiten: {{hours}}"
+  },
+  "datePicker": {
+    "select": "Auswählen…"
+  },
+  "imagePicker": {
+    "maxReached": "Maximale Anzahl an Bildern erreicht",
+    "permissionMessage": "Bitte erlaube den Zugriff auf deine Fotos."
+  },
+  "permissions": {
+    "mediaLibrary": "Bitte erlaube den Zugriff auf deine Fotos, um Bilder anzuhängen."
   }
 }
