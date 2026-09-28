@@ -54,27 +54,26 @@ async function sendToAll(notification) {
 
 /**
  * Register a device token for push notifications.
- * Refuses to overwrite a token already owned by another user (hijack defense).
+ *
+ * A push token is a per-device secret that only the app on that device can
+ * obtain, and the caller is authenticated — so the device now belongs to the
+ * account that is logged in on it. If another account still owns the token
+ * (shared phone, forced logout that never unbound it), move it over. Refusing
+ * with 409 (the old behaviour) kept sending the PREVIOUS user's notifications
+ * to whoever now holds the phone, and blocked the new user's pushes entirely.
  */
 async function registerToken(userId, token, platform) {
   const existing = await FCMToken.findOne({ where: { token } });
 
   if (existing) {
     if (existing.userId && existing.userId !== userId) {
-      // Token already registered to another user — likely shared device or hijack attempt.
-      // Mark old binding as inactive instead of re-binding silently.
-      logger.warn('FCM token registration rejected: token already owned by another user', {
-        attemptingUserId: userId,
-        currentOwnerId: existing.userId,
+      logger.info('Push token moved to the account now logged in on this device', {
+        newUserId: userId,
+        previousUserId: existing.userId,
       });
-      throw new (require('../middlewares/errorHandler').AppError)(
-        'Dieses Geraet ist bereits einem anderen Konto zugeordnet. Bitte zuerst dort abmelden.',
-        409,
-        'FCM_TOKEN_OWNED_BY_OTHER'
-      );
     }
     await existing.update({ userId, platform, isActive: true });
-    logger.info('Push token reactivated', { userId, platform });
+    logger.info('Push token (re)activated', { userId, platform });
     return existing;
   }
 

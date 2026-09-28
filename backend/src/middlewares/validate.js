@@ -72,6 +72,15 @@ const validators = {
     query('cursor').optional().isUUID().withMessage('Invalid cursor'),
   ],
 
+  // Staff-only lists the app loads in one go (calendar: limit 500, admin user
+  // list: limit 1000). With the 100 cap these returned 400 and the screens
+  // silently showed nothing.
+  paginationLarge: [
+    query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be 1-1000'),
+    query('cursor').optional().isUUID().withMessage('Invalid cursor'),
+  ],
+
   uuid: (paramName = 'id') =>
     param(paramName).isUUID().withMessage(`Invalid ${paramName} format`),
 };

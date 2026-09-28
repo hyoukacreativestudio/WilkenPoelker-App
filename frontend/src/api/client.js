@@ -49,19 +49,44 @@ const apiClient = axios.create({
   },
 });
 
-let isRefreshing = false;
-let failedQueue = [];
+// Single-flight token refresh, shared by the axios interceptor below AND the
+// fetch-based upload helper. The backend rotates refresh tokens and treats a
+// second use of the same one as reuse (→ logout), so two parallel refreshes
+// would sign the user out. Everyone awaits the same in-flight promise.
+let refreshPromise = null;
+export function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshToken = await storage.getItem('refreshToken');
+      if (!refreshToken) throw new Error('No refresh token');
+      try {
+        const { data } = await axios.post(`${BASE_URL}/auth/refresh-token`, { refreshToken });
+        const newAccessToken = data.data.accessToken;
+        await storage.setItem('accessToken', newAccessToken);
+        await storage.setItem('refreshToken', data.data.refreshToken);
+        return newAccessToken;
+      } catch (err) {
+        // Only end the session when the server actually rejected the refresh —
+        // a flaky connection must not log the user out.
+        if (err?.response) {
+          await storage.deleteItem('accessToken');
+          await storage.deleteItem('refreshToken');
+          await storage.deleteItem('user');
+          // Notify AuthContext so the UI resets to the login screen
+          emitAuthEvent(AUTH_EVENT_LOGOUT, { reason: 'refresh_failed' });
+        }
+        throw err;
+      }
+    })().finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach((promise) => {
-    if (error) {
-      promise.reject(error);
-    } else {
-      promise.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
+// Let the upload helper refresh through the same single flight.
+try {
+  const { setUploadRefresher } = require('../utils/fetchUpload');
+  setUploadRefresher(refreshAccessToken);
+} catch {}
 
 // Request interceptor — attach auth token & handle FormData.
 // Wrapped defensively because on Android release builds an unhandled throw in
@@ -138,50 +163,19 @@ apiClient.interceptors.response.use(
 
     if (
       error.response?.status === 401 &&
+      originalRequest &&
       !originalRequest._retry &&
       !isAuthCall
     ) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return apiClient(originalRequest);
-        });
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
-
       try {
-        const refreshToken = await storage.getItem('refreshToken');
-        if (!refreshToken) throw new Error('No refresh token');
-
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh-token`, {
-          refreshToken,
-        });
-
-        const newAccessToken = data.data.accessToken;
-        const newRefreshToken = data.data.refreshToken;
-
-        await storage.setItem('accessToken', newAccessToken);
-        await storage.setItem('refreshToken', newRefreshToken);
-
+        // Concurrent 401s all await the same refresh (see refreshAccessToken).
+        const newAccessToken = await refreshAccessToken();
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        processQueue(null, newAccessToken);
-
         return apiClient(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
-        // Clear tokens - force re-login
-        await storage.deleteItem('accessToken');
-        await storage.deleteItem('refreshToken');
-        await storage.deleteItem('user');
-        // Notify AuthContext so the UI resets to the login screen
-        emitAuthEvent(AUTH_EVENT_LOGOUT, { reason: 'refresh_failed' });
+        // refreshAccessToken already cleared the session if the server said no.
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 
@@ -241,5 +235,8 @@ apiClient.interceptors.response.use(
 );
 
 export { BASE_URL };
-export const getServerUrl = () => BASE_URL.replace('/api', '');
+// Strip only the trailing "/api". A plain .replace('/api','') hit the first
+// match inside "https://api.wilkenpoelker.de/api" and produced
+// "https:/.wilkenpoelker.de/api" — breaking the chat socket and /uploads images.
+export const getServerUrl = () => BASE_URL.replace(/\/api\/?$/, '');
 export default apiClient;

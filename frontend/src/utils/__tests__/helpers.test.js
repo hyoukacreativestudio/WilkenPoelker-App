@@ -41,12 +41,15 @@ describe('getInitials', () => {
 
 describe('groupByDate', () => {
   it('groups items into today, yesterday, thisWeek, older', () => {
+    // groupByDate buckets by calendar day, so build noon timestamps N days
+    // back — "25 hours ago" would be two calendar days back just after midnight.
     const now = new Date();
+    const daysAgo = (n) => new Date(now.getFullYear(), now.getMonth(), now.getDate() - n, 12).toISOString();
     const items = [
       { id: 1, createdAt: now.toISOString() },
-      { id: 2, createdAt: new Date(now - 25 * 60 * 60 * 1000).toISOString() },
-      { id: 3, createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString() },
-      { id: 4, createdAt: new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: 2, createdAt: daysAgo(1) },
+      { id: 3, createdAt: daysAgo(3) },
+      { id: 4, createdAt: daysAgo(30) },
     ];
 
     const groups = groupByDate(items);

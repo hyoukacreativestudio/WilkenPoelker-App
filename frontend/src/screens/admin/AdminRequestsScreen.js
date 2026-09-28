@@ -328,7 +328,7 @@ export default function AdminRequestsScreen({ navigation }) {
       showAlert(t('common.success'), t('adminRequests.approved'));
       fetchRequests(activeTab);
     } catch (err) {
-      const msg = err.response?.data?.message || t('errors.somethingWentWrong');
+      const msg = (!err?.isNetworkError && err?.message) || t('errors.somethingWentWrong');
       showAlert(t('common.error'), msg);
     }
   }, [fetchRequests, activeTab, t]);

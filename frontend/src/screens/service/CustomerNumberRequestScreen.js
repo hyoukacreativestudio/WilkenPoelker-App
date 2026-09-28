@@ -82,7 +82,7 @@ export default function CustomerNumberRequestScreen({ navigation }) {
       showToast({ type: 'success', message: t('customerNumber.requestSent') });
       navigation.goBack();
     } catch (err) {
-      const msg = err.response?.data?.message || t('errors.somethingWentWrong');
+      const msg = (!err?.isNetworkError && err?.message) || t('errors.somethingWentWrong');
       showToast({ type: 'error', message: msg });
     } finally {
       setLoading(false);

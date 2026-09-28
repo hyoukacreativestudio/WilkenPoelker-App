@@ -1,4 +1,8 @@
 const { Op } = require('sequelize');
+// Still needed for registerFcmToken/removeFcmToken below. Dropping this import
+// (commit e231e19) made every token registration fail with a ReferenceError →
+// HTTP 500, so no newly installed/logged-in device received any push.
+const pushService = require('./pushService');
 const { NotFoundError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
 

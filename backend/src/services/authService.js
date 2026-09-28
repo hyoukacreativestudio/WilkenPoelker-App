@@ -205,14 +205,28 @@ async function registerUser(data, User, taifunDb) {
   };
 }
 
+// Case-insensitive email match that also accepts the form registration stores.
+// Registration runs express-validator's normalizeEmail(), which strips Gmail
+// dots and "+tags" ("max.muster@gmail.com" is stored as "maxmuster@gmail.com"),
+// while login compared the address as typed — so those users got "Invalid
+// credentials". Accounts created elsewhere (admin/desktop) may be stored
+// un-normalised, so we match either form.
+function emailWhere(email) {
+  const { fn, col, where, Op } = require('sequelize');
+  const lower = String(email || '').trim().toLowerCase();
+  let normalized = lower;
+  try { normalized = require('validator').normalizeEmail(lower) || lower; } catch { /* keep lower */ }
+  const candidates = [...new Set([lower, normalized])];
+  return where(fn('lower', col('email')), { [Op.in]: candidates });
+}
+
 async function loginUser(data, User) {
   const { email, password, customerNumber, rememberMe } = data;
 
   // Find user by email (case-insensitive) or customer number
   let whereClause;
   if (email.includes('@')) {
-    const { fn, col, where } = require('sequelize');
-    whereClause = where(fn('lower', col('email')), String(email).trim().toLowerCase());
+    whereClause = emailWhere(email);
   } else {
     whereClause = { customerNumber: email };
   }
@@ -322,9 +336,8 @@ async function forgotPassword(email, User) {
   // Case-insensitive lookup: on Postgres a plain { email } match is
   // case-sensitive, so a differently-cased address silently found no user and
   // no reset mail was sent (verification mail worked because SMTP is fine).
-  const { fn, col, where } = require('sequelize');
   const needle = String(email || '').trim().toLowerCase();
-  const user = await User.findOne({ where: where(fn('lower', col('email')), needle) });
+  const user = await User.findOne({ where: emailWhere(email) });
 
   // Don't reveal if email exists
   if (!user) {

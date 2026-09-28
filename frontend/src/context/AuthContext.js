@@ -85,6 +85,8 @@ export function AuthProvider({ children }) {
         await notificationsApi.removeFcmToken(storedToken).catch(() => {});
         await storage.deleteItem('expoPushToken');
       }
+      // The server no longer has the token → force re-registration on next login.
+      await storage.deleteItem('pushRegisteredFor');
     } catch {}
 
     try {

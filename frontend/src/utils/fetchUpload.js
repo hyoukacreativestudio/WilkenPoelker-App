@@ -11,7 +11,12 @@ import { emitAuthEvent, AUTH_EVENT_LOGOUT } from './authEvents';
 let BASE_URL = null;
 export function setUploadBaseUrl(url) { BASE_URL = url; }
 
-async function doFetch(method, path, formData) {
+// The axios client registers its single-flight token refresh here (injected
+// rather than imported, to avoid a circular import with api/client.js).
+let refresher = null;
+export function setUploadRefresher(fn) { refresher = fn; }
+
+async function doFetch(method, path, formData, retried = false) {
   if (!BASE_URL) {
     throw { message: 'Upload base URL not set', code: 'CONFIG', status: 0, isNetworkError: false };
   }
@@ -68,8 +73,17 @@ async function doFetch(method, path, formData) {
       details: json?.error?.details || null,
       isNetworkError: false,
     };
+    // Expired access token (15 min): refresh once through the shared single
+    // flight and retry. Previously any 401 here logged the user out — e.g. the
+    // first chat message after a quiet spell (chat always sends FormData).
+    if (res.status === 401 && !retried && refresher) {
+      let refreshed = false;
+      try { await refresher(); refreshed = true; } catch { /* session already cleared if rejected */ }
+      if (refreshed) return doFetch(method, path, formData, true);
+      throw normalized;
+    }
     if (res.status === 401) {
-      // Match the axios interceptor's behaviour so the UI resets to login
+      // Still unauthorised after a fresh token (or no refresher) — reset to login
       emitAuthEvent(AUTH_EVENT_LOGOUT, { reason: 'upload_401' });
     }
     captureError(new Error(`Upload ${method} ${path} failed: ${normalized.message}`), {

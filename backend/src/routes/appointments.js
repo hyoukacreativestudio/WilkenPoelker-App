@@ -59,7 +59,7 @@ router.get(
   authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.SERVICE_MANAGER, ROLES.ROBBY_MANAGER),
   validate([
     query('type').optional().isIn(VALID_TYPES).withMessage('Invalid type'),
-    ...validators.pagination,
+    ...validators.paginationLarge,
   ]),
   appointmentController.getOngoingAppointments
 );

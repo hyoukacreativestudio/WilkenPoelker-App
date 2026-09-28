@@ -39,7 +39,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
       showToast({ type: 'success', message: t('auth.passwordChanged') });
       navigation.navigate('Login');
     } catch (err) {
-      const msg = err.response?.data?.message || t('errors.somethingWentWrong');
+      const msg = (!err?.isNetworkError && err?.message) || t('errors.somethingWentWrong');
       showToast({ type: 'error', message: msg });
     } finally {
       setLoading(false);

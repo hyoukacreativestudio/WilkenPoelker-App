@@ -1,7 +1,6 @@
 const { Op } = require('sequelize');
 const { Repair, TaifunOrder, User, Notification } = require('../models');
 const logger = require('../utils/logger');
-const pushService = require('./pushService');
 const { appStatusToRepair } = require('./taifunStatusMap');
 
 // Notify the customer that their repair status changed. In-app notification +
@@ -28,14 +27,9 @@ async function notifyStatusChange(repair, mapping, deviceName) {
   } catch (err) {
     logger.warn('Taifun repair notification failed', { repairId: repair.id, error: err.message });
   }
-
-  pushService
-    .sendToUser(repair.userId, {
-      title,
-      body,
-      data: { type: 'repair_status', repairId: repair.id },
-    })
-    .catch(() => {});
+  // No explicit push here: Notification's afterCreate hook already sends one
+  // (with the deepLink). The extra sendToUser made customers get every Taifun
+  // status change twice.
 }
 
 // Turns Taifun work orders into app-visible Repair records.

@@ -11,7 +11,9 @@ export const NotificationContext = createContext(null);
 // Configure default notification behavior with sound
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    // shouldShowAlert is deprecated in expo-notifications 0.32 (SDK 54).
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -22,7 +24,8 @@ Notifications.setNotificationHandler({
 const POLL_INTERVAL = 60000; // 60 seconds
 
 export function NotificationProvider({ children }) {
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
+  const userId = user?.id || null;
   const [unreadCount, setUnreadCount] = useState(0);
   const [expoPushToken, setExpoPushToken] = useState(null);
   const notificationListener = useRef();
@@ -117,7 +120,7 @@ export function NotificationProvider({ children }) {
 
     // Push notifications are not supported on web
     if (Platform.OS !== 'web') {
-      registerForPushNotifications();
+      registerForPushNotifications(userId);
 
       // Listen for incoming notifications
       notificationListener.current = Notifications.addNotificationReceivedListener(() => {
@@ -149,17 +152,26 @@ export function NotificationProvider({ children }) {
         pollInterval.current = null;
       }
       subscription?.remove();
-      if (notificationListener.current && typeof Notifications.removeNotificationSubscription === 'function') {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-      if (responseListener.current && typeof Notifications.removeNotificationSubscription === 'function') {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
+      // removeNotificationSubscription() no longer exists in expo-notifications
+      // 0.32 — subscriptions remove themselves. Without this, listeners piled
+      // up on every login and each tap navigated/refetched several times.
+      notificationListener.current?.remove?.();
+      responseListener.current?.remove?.();
+      notificationListener.current = null;
+      responseListener.current = null;
     };
-  }, [isAuthenticated, fetchUnreadCount]);
+  }, [isAuthenticated, userId, fetchUnreadCount]);
 
-  const registerForPushNotifications = async () => {
+  const registerForPushNotifications = async (forUserId) => {
     try {
+      // Android: create the channels BEFORE asking for permission. On Android
+      // 13+ the POST_NOTIFICATIONS prompt may not appear while the app has no
+      // channel, so the old order (channels only after a granted permission)
+      // could leave new installs without a push token at all.
+      if (Platform.OS === 'android') {
+        await createAndroidChannels();
+      }
+
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
@@ -181,51 +193,53 @@ export function NotificationProvider({ children }) {
       );
       const token = tokenData.data;
       setExpoPushToken(token);
-
-      // Skip re-registration if the token hasn't changed since last launch —
-      // avoids hammering the backend's FCM register endpoint on every cold start.
-      const lastRegistered = await storage.getItem('expoPushToken').catch(() => null);
+      // Kept so logout can remove this token from the backend.
       await storage.setItem('expoPushToken', token).catch(() => {});
 
-      if (lastRegistered !== token) {
+      // Skip only if THIS token is already registered for THIS user. The marker
+      // is written after the server accepted it, so a failed attempt retries on
+      // the next launch, and a different account on the same phone registers.
+      const regKey = `${token}|${forUserId || ''}`;
+      const lastRegistered = await storage.getItem('pushRegisteredFor').catch(() => null);
+      if (lastRegistered !== regKey) {
         try {
           await notificationsApi.registerFcmToken(token, Platform.OS);
+          await storage.setItem('pushRegisteredFor', regKey).catch(() => {});
         } catch (err) {
-          if (__DEV__) console.warn('FCM register failed:', err?.message);
+          if (__DEV__) console.warn('Push token register failed:', err?.message);
         }
       }
+    } catch (err) {
+      if (__DEV__) console.warn('Push setup failed:', err?.message);
+    }
+  };
 
-      // Android notification channels with sound
-      if (Platform.OS === 'android') {
-        // Default channel with sound
-        await Notifications.setNotificationChannelAsync('default', {
-          name: 'WilkenPoelker',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          sound: 'default',
-          enableVibrate: true,
-          showBadge: true,
-        });
-
-        // Repair updates channel
-        await Notifications.setNotificationChannelAsync('repairs', {
-          name: 'Reparatur-Updates',
-          description: 'Benachrichtigungen zu Reparaturstatus',
-          importance: Notifications.AndroidImportance.HIGH,
-          vibrationPattern: [0, 250, 250, 250],
-          sound: 'default',
-          enableVibrate: true,
-        });
-
-        // Appointment channel
-        await Notifications.setNotificationChannelAsync('appointments', {
-          name: 'Termine',
-          description: 'Terminerinnerungen und Vorschläge',
-          importance: Notifications.AndroidImportance.HIGH,
-          sound: 'default',
-          enableVibrate: true,
-        });
-      }
+  // Android notification channels (with sound). Idempotent — safe every launch.
+  const createAndroidChannels = async () => {
+    try {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'WilkenPoelker',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        sound: 'default',
+        enableVibrate: true,
+        showBadge: true,
+      });
+      await Notifications.setNotificationChannelAsync('repairs', {
+        name: 'Reparatur-Updates',
+        description: 'Benachrichtigungen zu Reparaturstatus',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        sound: 'default',
+        enableVibrate: true,
+      });
+      await Notifications.setNotificationChannelAsync('appointments', {
+        name: 'Termine',
+        description: 'Terminerinnerungen und Vorschläge',
+        importance: Notifications.AndroidImportance.HIGH,
+        sound: 'default',
+        enableVibrate: true,
+      });
     } catch {}
   };
 

@@ -23,6 +23,14 @@ export function navigateFromNotification(deepLink) {
         navigationRef.navigate('Service', { screen: 'Chat', params: { ticketId: parts[2] } });
       } else if (parts[0] === 'service' && parts[1] === 'ticket' && parts[2]) {
         navigationRef.navigate('Service', { screen: 'TicketDetail', params: { ticketId: parts[2] } });
+      } else if (parts[0] === 'service' && parts[1] === 'tickets' && parts[2]) {
+        // What the backend actually sends: /service/tickets/<id>[/chat|/rate].
+        // Rating happens on the ticket detail screen.
+        if (parts[3] === 'chat') {
+          navigationRef.navigate('Service', { screen: 'Chat', params: { ticketId: parts[2] } });
+        } else {
+          navigationRef.navigate('Service', { screen: 'TicketDetail', params: { ticketId: parts[2] } });
+        }
       } else if (parts[0] === 'feed' && parts[1] === 'post' && parts[2]) {
         navigationRef.navigate('Feed', { screen: 'PostDetail', params: { postId: parts[2] } });
       } else if (parts[0] === 'admin' && parts[1] === 'customer-requests') {

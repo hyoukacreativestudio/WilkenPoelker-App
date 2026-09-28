@@ -85,7 +85,8 @@
           "organization": "wilken-poelker",
           "project": "wilkenpoelker-frontend"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "apiBaseUrl": "https://api.wilkenpoelker.de/api",

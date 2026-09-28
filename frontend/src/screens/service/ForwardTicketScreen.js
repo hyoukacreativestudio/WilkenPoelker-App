@@ -71,7 +71,7 @@ export default function ForwardTicketScreen({ route, navigation }) {
               showToast({ type: 'success', message: t('serviceAdmin.forwardSuccess') });
               navigation.goBack();
             } catch (err) {
-              const msg = err.response?.data?.message || t('serviceAdmin.forwardError');
+              const msg = (!err?.isNetworkError && err?.message) || t('serviceAdmin.forwardError');
               showToast({ type: 'error', message: msg });
             } finally {
               setForwarding(false);

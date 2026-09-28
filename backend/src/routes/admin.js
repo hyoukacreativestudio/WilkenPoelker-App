@@ -16,7 +16,7 @@ router.get(
   '/users',
   isAdmin,
   validate([
-    ...validators.pagination,
+    ...validators.paginationLarge,
     query('search').optional().isString().trim(),
     query('role')
       .optional()
