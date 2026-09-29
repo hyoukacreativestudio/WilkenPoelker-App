@@ -24,6 +24,8 @@ import Card from '../../components/ui/Card';
 import Chip from '../../components/ui/Chip';
 import Divider from '../../components/ui/Divider';
 import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
 import { useToast } from '../../components/ui/Toast';
 
 const THEME_MODES = ['light', 'dark', 'system'];
@@ -101,33 +103,37 @@ export default function SettingsScreen() {
           text: t('settings.deleteConfirm'),
           style: 'destructive',
           onPress: () => {
-            // Second confirmation with password prompt
-            Alert.prompt
-              ? Alert.prompt(
-                  t('settings.deleteDataTitle'),
-                  t('settings.enterPasswordToDelete'),
-                  async (password) => {
-                    if (!password) return;
-                    try {
-                      await authApi.deleteAccount(password);
-                      showToast({ type: 'success', message: t('settings.deleteDataRequestedMessage') });
-                      await logout();
-                    } catch (err) {
-                      showToast({ type: 'error', message: err.message || t('errors.generic') });
-                    }
-                  },
-                  'secure-text'
-                )
-              : // Android fallback (no Alert.prompt)
-                Alert.alert(
-                  t('settings.deleteDataTitle'),
-                  t('settings.deleteAccountContactSupport'),
-                  [{ text: t('common.ok') }]
-                );
+            // Second step: password confirmation in our own modal (works on
+            // Android too - Alert.prompt only exists on iOS).
+            setDeletePassword('');
+            setDeleteError('');
+            setDeleteModalVisible(true);
           },
         },
       ]
     );
+  };
+
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDeleteAccount = async () => {
+    if (!deletePassword || deleting) return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await authApi.deleteAccount(deletePassword);
+      setDeleteModalVisible(false);
+      showToast({ type: 'success', message: t('settings.deleteDataRequestedMessage') });
+      await logout();
+    } catch (err) {
+      // Wrong password stays in the dialog so the user can retry.
+      setDeleteError((!err?.isNetworkError && err?.message) || t('errors.generic'));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const [exporting, setExporting] = useState(false);
@@ -481,6 +487,45 @@ export default function SettingsScreen() {
           </Card>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={deleteModalVisible}
+        onClose={() => !deleting && setDeleteModalVisible(false)}
+        title={t('settings.deleteDataTitle')}
+      >
+        <View style={{ padding: theme.spacing.md }}>
+          <Text style={[theme.typography.styles.body, { color: theme.colors.text, marginBottom: theme.spacing.md }]}>
+            {t('settings.enterPasswordToDelete')}
+          </Text>
+          <Input
+            label={t('auth.password')}
+            value={deletePassword}
+            onChangeText={(v) => { setDeletePassword(v); setDeleteError(''); }}
+            secureTextEntry
+            autoCapitalize="none"
+            returnKeyType="done"
+            onSubmitEditing={confirmDeleteAccount}
+            error={deleteError || undefined}
+          />
+          <View style={{ height: theme.spacing.md }} />
+          <Button
+            title={t('settings.deleteConfirm')}
+            variant="danger"
+            onPress={confirmDeleteAccount}
+            disabled={!deletePassword}
+            loading={deleting}
+            fullWidth
+          />
+          <View style={{ height: theme.spacing.sm }} />
+          <Button
+            title={t('common.cancel')}
+            variant="secondary"
+            onPress={() => setDeleteModalVisible(false)}
+            disabled={deleting}
+            fullWidth
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

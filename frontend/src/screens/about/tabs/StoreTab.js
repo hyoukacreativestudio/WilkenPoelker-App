@@ -67,8 +67,8 @@ const DEFAULT_SERVICES = [
 ];
 
 const DEFAULT_HIGHLIGHTS = [
-  { icon: 'ruler-square', text: '\u00dcber 1.500 m\u00b2 Verkaufsfl\u00e4che' },
-  { icon: 'map-marker-radius', text: '2.000 m\u00b2 Teststrecke im Au\u00dfenbereich' },
+  { icon: 'ruler-square', text: '2.000 m\u00b2 Verkaufsfl\u00e4che' },
+  { icon: 'map-marker-radius', text: '2.500 m\u00b2 Teststrecke im Au\u00dfenbereich' },
   { icon: 'tag-multiple', text: 'Umfangreiches Markensortiment' },
 ];
 

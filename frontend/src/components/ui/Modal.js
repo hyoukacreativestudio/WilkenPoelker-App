@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -36,9 +35,9 @@ export default function Modal({
           padding: theme.spacing.lg,
         }}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+        {/* 'padding' on Android too: with edge-to-edge (SDK 54) the window is not
+            resized for the keyboard, so 'height' left buttons hidden behind it. */}
+        <KeyboardAvoidingView behavior="padding">
           <View
             style={{
               backgroundColor: theme.colors.background,
@@ -89,6 +88,7 @@ export default function Modal({
               style={{ paddingHorizontal: theme.spacing.md }}
               contentContainerStyle={{ paddingVertical: theme.spacing.md }}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
               {children}
             </ScrollView>

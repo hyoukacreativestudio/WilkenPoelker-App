@@ -11,64 +11,22 @@ import { useTheme } from '../../hooks/useTheme';
 import AccordionSection from '../../components/shared/AccordionSection';
 
 export default function DatenschutzScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
 
   const s = styles(theme);
 
-  const sections = [
-    {
-      key: 'controller',
-      title: t('legal.datenschutz.section1Title'),
-      content: t('legal.datenschutz.section1Content'),
-      defaultOpen: true,
-    },
-    {
-      key: 'collection',
-      title: t('legal.datenschutz.section2Title'),
-      content: t('legal.datenschutz.section2Content'),
-    },
-    {
-      key: 'cookies',
-      title: t('legal.datenschutz.section3Title'),
-      content: t('legal.datenschutz.section3Content'),
-    },
-    {
-      key: 'marketing',
-      title: t('legal.datenschutz.section4Title'),
-      content: t('legal.datenschutz.section4Content'),
-    },
-    {
-      key: 'rights',
-      title: t('legal.datenschutz.section5Title'),
-      content: t('legal.datenschutz.section5Content'),
-    },
-    {
-      key: 'authority',
-      title: t('legal.datenschutz.section6Title'),
-      content: t('legal.datenschutz.section6Content'),
-    },
-    {
-      key: 'services',
-      title: t('legal.datenschutz.section7Title'),
-      content: t('legal.datenschutz.section7Content'),
-    },
-    {
-      key: 'retention',
-      title: t('legal.datenschutz.section8Title'),
-      content: t('legal.datenschutz.section8Content'),
-    },
-    {
-      key: 'contact',
-      title: t('legal.datenschutz.section9Title'),
-      content: t('legal.datenschutz.section9Content'),
-    },
-    {
-      key: 'mobileApp',
-      title: t('legal.datenschutz.section10Title'),
-      content: t('legal.datenschutz.section10Content'),
-    },
-  ];
+  // Sections come from i18n (legal.datenschutz.section<N>Title/Content), so the
+  // policy text can grow without touching this screen.
+  const sections = [];
+  for (let i = 1; i <= 30 && i18n.exists(`legal.datenschutz.section${i}Title`); i += 1) {
+    sections.push({
+      key: `section${i}`,
+      title: t(`legal.datenschutz.section${i}Title`),
+      content: t(`legal.datenschutz.section${i}Content`),
+      defaultOpen: i === 1,
+    });
+  }
 
   return (
     <SafeAreaView style={s.container}>

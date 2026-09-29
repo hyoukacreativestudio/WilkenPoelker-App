@@ -373,6 +373,19 @@ cron.schedule('*/5 * * * *', async () => {
   }
 });
 
+// Delete AI chat histories after 90 days (promised in the app's privacy policy).
+cron.schedule('45 3 * * *', async () => {
+  try {
+    const { Op } = require('sequelize');
+    const { AISession } = require('./models');
+    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const deleted = await AISession.destroy({ where: { updatedAt: { [Op.lt]: cutoff } } });
+    if (deleted > 0) logger.info('Cron: deleted AI chat sessions older than 90 days', { deleted });
+  } catch (err) {
+    logger.error('Cron: AI chat retention failed', { error: err.message });
+  }
+});
+
 // Hard-delete acknowledged repairs 2 days after the customer confirmed pickup
 // (after that window the Taifun order + our repair record go).
 cron.schedule('30 3 * * *', async () => {

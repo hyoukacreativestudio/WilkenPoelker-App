@@ -2,6 +2,17 @@ const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 const notificationService = require('./notificationService');
 
+// The server runs in UTC, appointments are stored in German local time.
+// Returns { date: 'YYYY-MM-DD', minutes: minutes since midnight } in Europe/Berlin.
+function berlinNow(d = new Date()) {
+  const [date, time] = d.toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).split(' ');
+  const [h, m] = time.split(':').map(Number);
+  return { date, minutes: h * 60 + m };
+}
+
+// "Tomorrow" reminders are not pushed in the middle of the night.
+const DAY_BEFORE_REMINDER_FROM = 9 * 60; // 09:00
+
 /**
  * Send appointment reminders for upcoming appointments.
  * - 24h reminder: sent once, the day before the appointment
@@ -9,33 +20,20 @@ const notificationService = require('./notificationService');
  */
 async function sendAppointmentReminders() {
   try {
-    const { Appointment, Notification, User } = require('../models');
+    const { Appointment, Notification } = require('../models');
 
     const now = new Date();
-    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const in1h = new Date(now.getTime() + 60 * 60 * 1000);
-
-    // Format dates for DATEONLY comparison
-    const todayStr = now.toISOString().split('T')[0];
-    const tomorrowStr = in24h.toISOString().split('T')[0];
-
-    // Current time in HH:MM format
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const { date: todayStr, minutes: currentMinutes } = berlinNow(now);
+    const { date: tomorrowStr } = berlinNow(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
     // ── 24h Reminders ──────────────────────────────
     // Find appointments tomorrow that haven't received a 24h reminder
-    const appointments24h = await Appointment.findAll({
+    const appointments24h = currentMinutes < DAY_BEFORE_REMINDER_FROM ? [] : await Appointment.findAll({
       where: {
         date: tomorrowStr,
         status: { [Op.in]: ['confirmed', 'pending'] },
         reminderSent24h: false,
       },
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'firstName', 'lastName'],
-      }],
     });
 
     for (const appointment of appointments24h) {
@@ -74,11 +72,6 @@ async function sendAppointmentReminders() {
         reminderSent1h: false,
         startTime: { [Op.not]: null },
       },
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'firstName', 'lastName'],
-      }],
     });
 
     for (const appointment of appointments1h) {
@@ -86,7 +79,6 @@ async function sendAppointmentReminders() {
         // Parse appointment time
         const [apptHour, apptMinute] = appointment.startTime.split(':').map(Number);
         const apptMinutes = apptHour * 60 + apptMinute;
-        const currentMinutes = currentHour * 60 + currentMinute;
         const diffMinutes = apptMinutes - currentMinutes;
 
         // Send reminder if appointment is 30-90 minutes away
@@ -122,4 +114,4 @@ async function sendAppointmentReminders() {
   }
 }
 
-module.exports = { sendAppointmentReminders };
+module.exports = { sendAppointmentReminders, berlinNow };

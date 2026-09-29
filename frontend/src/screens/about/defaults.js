@@ -170,8 +170,8 @@ export const DEFAULTS = {
       email: 'info@wilkenpoelker.de',
     },
     highlights: [
-      { icon: 'ruler-square', text: 'Über 1.500 m² Verkaufsfläche' },
-      { icon: 'bike', text: '2.000 m² Outdoor-Teststrecke' },
+      { icon: 'ruler-square', text: '2.000 m² Verkaufsfläche' },
+      { icon: 'bike', text: '2.500 m² Outdoor-Teststrecke' },
       { icon: 'tag-multiple', text: 'Umfangreiche Markenauswahl' },
     ],
   },

@@ -66,7 +66,8 @@ export function captureError(error, context = {}) {
 export function setUser(user) {
   if (!SENTRY_DSN) return;
   if (user) {
-    Sentry.setUser({ id: user.id, email: user.email, username: user.username });
+    // Pseudonymous ID only - no e-mail/username in the error tracker (data minimisation).
+    Sentry.setUser({ id: user.id });
   } else {
     Sentry.setUser(null);
   }

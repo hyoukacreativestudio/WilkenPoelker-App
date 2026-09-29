@@ -11,7 +11,9 @@ import {
   ActivityIndicator,
   Animated,
   Image,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +21,8 @@ import { useTheme } from '../../hooks/useTheme';
 import { aiApi } from '../../api/ai';
 import { useToast } from '../../components/ui/Toast';
 import { createStablePreviewUri, getDisplayUri } from '../../utils/imageHelpers';
+
+const AI_CONSENT_KEY = '@ai_chat_consent';
 
 const CATEGORY_ICONS = {
   bike: 'bicycle',
@@ -59,6 +63,29 @@ export default function ServiceAiChatScreen({ route, navigation }) {
     }
   }, [messages]);
 
+  const ensureAiConsent = useCallback(async () => {
+    try {
+      if ((await AsyncStorage.getItem(AI_CONSENT_KEY)) === 'granted') return true;
+    } catch {}
+    return new Promise((resolve) => {
+      Alert.alert(
+        t('aiChat.consentTitle'),
+        t('aiChat.consentMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+          {
+            text: t('aiChat.consentAccept'),
+            onPress: async () => {
+              await AsyncStorage.setItem(AI_CONSENT_KEY, 'granted').catch(() => {});
+              resolve(true);
+            },
+          },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) }
+      );
+    });
+  }, [t]);
+
   const hideTutorial = useCallback(() => {
     Animated.timing(tutorialOpacity, {
       toValue: 0,
@@ -96,6 +123,9 @@ export default function ServiceAiChatScreen({ route, navigation }) {
   const handleSend = useCallback(async () => {
     const trimmed = inputText.trim();
     if ((!trimmed && selectedImages.length === 0) || sending) return;
+
+    // Messages (and photos) go to OpenAI in the USA - ask for consent once.
+    if (!(await ensureAiConsent())) return;
 
     // Hide tutorial on first message
     if (showTutorial) hideTutorial();
@@ -154,7 +184,7 @@ export default function ServiceAiChatScreen({ route, navigation }) {
     } finally {
       setSending(false);
     }
-  }, [inputText, selectedImages, sending, category, sessionId, showTutorial, hideTutorial, t, showToast]);
+  }, [inputText, selectedImages, sending, category, sessionId, showTutorial, hideTutorial, ensureAiConsent, t, showToast]);
 
   const handleEscalate = useCallback(async () => {
     if (!sessionId) return;
