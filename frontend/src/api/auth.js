@@ -3,7 +3,8 @@ import apiClient from './client';
 export const authApi = {
   login: (data) => apiClient.post('/auth/login', data),
   register: (data) => apiClient.post('/auth/register', data),
-  logout: () => apiClient.post('/auth/logout'),
+  // Sending the refresh token ends only this device's session on the server.
+  logout: (refreshToken) => apiClient.post('/auth/logout', refreshToken ? { refreshToken } : {}),
   refreshToken: (refreshToken) => apiClient.post('/auth/refresh-token', { refreshToken }),
   forgotPassword: (email) => apiClient.post('/auth/forgot-password', { email }),
   resetPassword: (token, password) => apiClient.post('/auth/reset-password', { token, password }),

@@ -90,7 +90,8 @@ export function AuthProvider({ children }) {
     } catch {}
 
     try {
-      await authApi.logout();
+      const refreshToken = await storage.getItem('refreshToken').catch(() => null);
+      await authApi.logout(refreshToken);
     } catch {
       // Ignore errors during logout
     }

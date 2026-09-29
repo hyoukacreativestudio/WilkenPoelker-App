@@ -15,6 +15,7 @@ const StaffRating = require('./StaffRating');
 const Appointment = require('./Appointment');
 const Repair = require('./Repair');
 const FCMToken = require('./FCMToken');
+const RefreshToken = require('./RefreshToken');
 const AuditLog = require('./AuditLog');
 const AISession = require('./AISession');
 const AIUsage = require('./AIUsage');
@@ -134,6 +135,10 @@ Repair.belongsTo(User, { foreignKey: 'technicianId', as: 'technician' });
 User.hasMany(FCMToken, { foreignKey: 'userId', as: 'fcmTokens' });
 FCMToken.belongsTo(User, { foreignKey: 'userId' });
 
+// User -> RefreshTokens (one session per device/login)
+User.hasMany(RefreshToken, { foreignKey: 'userId', as: 'refreshTokens', onDelete: 'CASCADE' });
+RefreshToken.belongsTo(User, { foreignKey: 'userId' });
+
 // User -> AuditLogs (one-to-many)
 User.hasMany(AuditLog, { foreignKey: 'userId', as: 'auditLogs' });
 AuditLog.belongsTo(User, { foreignKey: 'userId', as: 'actor' });
@@ -198,6 +203,7 @@ module.exports = {
   Appointment,
   Repair,
   FCMToken,
+  RefreshToken,
   AuditLog,
   AISession,
   AIUsage,

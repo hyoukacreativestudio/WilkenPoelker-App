@@ -107,8 +107,39 @@ function generateRefreshToken(user, rememberMe = false) {
   return jwt.sign(
     { id: user.id, type: 'refresh' },
     config.jwt.refreshSecret,
-    { expiresIn: rememberMe ? '30d' : config.jwt.refreshExpiresIn }
+    {
+      expiresIn: rememberMe ? '30d' : config.jwt.refreshExpiresIn,
+      // Unique id: without it two tokens issued in the same second are
+      // byte-identical (same payload + exp) and would collide in refresh_tokens.
+      jwtid: require('crypto').randomUUID(),
+    }
   );
+}
+
+// ── Refresh-token sessions: one per device/login (see models/RefreshToken) ──
+async function issueSession(user, rememberMe = false, family = null) {
+  const { RefreshToken } = require('../models');
+  const token = generateRefreshToken(user, rememberMe);
+  const { exp } = jwt.decode(token);
+  await RefreshToken.create({
+    userId: user.id,
+    tokenHash: hashToken(token),
+    family: family || require('crypto').randomUUID(),
+    rememberMe: !!rememberMe,
+    expiresAt: new Date(exp * 1000),
+  });
+  return token;
+}
+
+// End every session of a user (password reset/change, deactivation, legacy logout).
+async function revokeAllSessions(userId) {
+  const { RefreshToken } = require('../models');
+  await RefreshToken.update({ revokedAt: new Date() }, { where: { userId, revokedAt: null } });
+}
+
+async function pruneExpiredSessions(userId) {
+  const { RefreshToken } = require('../models');
+  await RefreshToken.destroy({ where: { userId, expiresAt: { [Op.lt]: new Date() } } });
 }
 
 async function registerUser(data, User, taifunDb) {
@@ -262,12 +293,12 @@ async function loginUser(data, User) {
     try { await tryAutoAssignCustomerNumber(user); } catch (e) { /* never block login */ }
   }
 
-  // Generate tokens (rememberMe extends refresh token to 30 days)
+  // Generate tokens (rememberMe extends refresh token to 30 days). Each login
+  // is its own session, so logging in on another device no longer ends this one.
   const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user, rememberMe);
+  const refreshToken = await issueSession(user, !!rememberMe);
+  pruneExpiredSessions(user.id).catch(() => {});
 
-  // Store hashed refresh token
-  user.refreshToken = hashToken(refreshToken);
   user.lastLogin = new Date();
   await user.save();
 
@@ -301,21 +332,48 @@ async function refreshTokens(refreshToken, User) {
     throw new AppError('User not found or deactivated', 401, 'USER_NOT_FOUND');
   }
 
-  // Verify stored refresh token hash matches
+  const { RefreshToken } = require('../models');
   const tokenHash = hashToken(refreshToken);
-  if (user.refreshToken !== tokenHash) {
-    // Token reuse detected - invalidate all sessions
+  const row = await RefreshToken.findOne({ where: { tokenHash } });
+
+  let rememberMe = false;
+  let family = null;
+  if (row) {
+    if (row.userId !== user.id) {
+      throw new AppError('Invalid or expired refresh token', 401, 'INVALID_REFRESH_TOKEN');
+    }
+    if (row.expiresAt < new Date()) {
+      throw new AppError('Invalid or expired refresh token', 401, 'INVALID_REFRESH_TOKEN');
+    }
+    // Atomic compare-and-set: only one request may rotate a given token. A token
+    // that was already rotated (or revoked) coming back = reuse (e.g. stolen) →
+    // end THAT session only; the user's other devices stay logged in.
+    const [rotated] = await RefreshToken.update(
+      { revokedAt: new Date() },
+      { where: { id: row.id, revokedAt: null } }
+    );
+    if (rotated !== 1) {
+      await RefreshToken.update({ revokedAt: new Date() }, { where: { family: row.family, revokedAt: null } });
+      logger.warn('Refresh token reuse detected — session revoked', { userId: user.id });
+      throw new AppError('Refresh token has been revoked', 401, 'TOKEN_REVOKED');
+    }
+    rememberMe = row.rememberMe;
+    family = row.family;
+  } else if (user.refreshToken && user.refreshToken === tokenHash) {
+    // Session from before per-device sessions existed (users.refresh_token):
+    // adopt it once so nobody is logged out by the upgrade. A lifetime over
+    // 8 days means it was issued with rememberMe (30d).
+    rememberMe = decoded.exp - decoded.iat > 8 * 86400;
     user.refreshToken = null;
     await user.save();
+  } else {
     throw new AppError('Refresh token has been revoked', 401, 'TOKEN_REVOKED');
   }
 
-  // Rotate tokens
+  // Rotate tokens — same session, same rememberMe (it used to fall back to 7d).
   const newAccessToken = generateAccessToken(user);
-  const newRefreshToken = generateRefreshToken(user);
-
-  user.refreshToken = hashToken(newRefreshToken);
-  await user.save();
+  const newRefreshToken = await issueSession(user, rememberMe, family);
+  pruneExpiredSessions(user.id).catch(() => {});
 
   return {
     accessToken: newAccessToken,
@@ -324,7 +382,18 @@ async function refreshTokens(refreshToken, User) {
   };
 }
 
-async function logoutUser(userId, User) {
+async function logoutUser(userId, User, refreshToken) {
+  const { RefreshToken } = require('../models');
+  const row = refreshToken
+    ? await RefreshToken.findOne({ where: { tokenHash: hashToken(refreshToken), userId } })
+    : null;
+  if (row) {
+    // End only this device's session.
+    await RefreshToken.update({ revokedAt: new Date() }, { where: { family: row.family, revokedAt: null } });
+    return;
+  }
+  // Older app versions send no token: log out everywhere (previous behaviour).
+  await revokeAllSessions(userId);
   const user = await User.findByPk(userId);
   if (user) {
     user.refreshToken = null;
@@ -377,6 +446,7 @@ async function resetPassword(token, newPassword, User) {
   user.passwordResetExpires = null;
   user.refreshToken = null; // Invalidate all sessions
   await user.save();
+  await revokeAllSessions(user.id);
 
   logger.info('Password reset completed', { userId: user.id });
 }
@@ -424,6 +494,7 @@ async function deleteUserCascade(user, models) {
     await Like.destroy(opts);
     await Favorite.destroy(opts);
     await FCMToken.destroy(opts);
+    if (models.RefreshToken) await models.RefreshToken.destroy(opts);
     await ServiceRating.destroy(opts);
     await ProductReview.destroy(opts);
     await StaffRating.destroy(opts);
@@ -481,6 +552,7 @@ module.exports = {
   loginUser,
   refreshTokens,
   logoutUser,
+  revokeAllSessions,
   forgotPassword,
   resetPassword,
   verifyEmail,

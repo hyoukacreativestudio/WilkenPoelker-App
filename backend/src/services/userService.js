@@ -87,6 +87,7 @@ async function changePassword(userId, { currentPassword, newPassword }, User) {
     password: hashedPassword,
     refreshToken: null, // Invalidate all sessions
   });
+  await require('./authService').revokeAllSessions(userId);
 
   logger.info('Password changed', { userId });
 }
@@ -233,6 +234,7 @@ async function deactivateUser(targetId, adminUser, { User, AuditLog }, req) {
   }
 
   await target.update({ isActive: false, refreshToken: null });
+  await require('./authService').revokeAllSessions(target.id);
 
   // Audit log
   await AuditLog.create({

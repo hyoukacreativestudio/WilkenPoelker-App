@@ -31,10 +31,12 @@ const register = asyncHandler(async (req, res) => {
 });
 
 const login = asyncHandler(async (req, res) => {
-  const { email, password, customerNumber } = req.body;
+  const { email, password, customerNumber, rememberMe } = req.body;
 
+  // rememberMe was sent by the app but never passed on, so "Angemeldet
+  // bleiben" had no effect (always the 7-day refresh token).
   const result = await authService.loginUser(
-    { email, password, customerNumber },
+    { email, password, customerNumber, rememberMe: rememberMe === true || rememberMe === 'true' },
     db.User
   );
 
@@ -49,7 +51,9 @@ const login = asyncHandler(async (req, res) => {
 });
 
 const logout = asyncHandler(async (req, res) => {
-  await authService.logoutUser(req.user.id, db.User);
+  // With the device's refresh token only this session ends; without it
+  // (older app versions) all sessions end, as before.
+  await authService.logoutUser(req.user.id, db.User, req.body?.refreshToken);
 
   res.json({
     success: true,
