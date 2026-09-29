@@ -112,6 +112,9 @@ app.use('/api/customer-number', customerNumberRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/desktop', desktopRoutes);
 
+// Public privacy policy of the app (URL for App Store / Google Play).
+app.use(['/datenschutz', '/privacy'], require('./routes/legal'));
+
 // Serve the desktop tool (built web app) so every company PC just opens
 // <server>/pc in a browser — no install, no Node, no CORS (same origin as /api).
 // index.html must never be cached (so a new deploy is picked up immediately);
