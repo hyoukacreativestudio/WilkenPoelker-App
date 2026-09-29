@@ -128,7 +128,7 @@ const confirmAppointment = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Termin erfolgreich bestaetigt',
+    message: 'Termin erfolgreich bestätigt',
     data: appointment,
   });
 });
@@ -171,7 +171,7 @@ const respondToProposal = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: accept ? 'Termin bestaetigt' : 'Terminvorschlag abgelehnt',
+    message: accept ? 'Termin bestätigt' : 'Terminvorschlag abgelehnt',
     data: appointment,
   });
 });
@@ -216,7 +216,7 @@ const askQuestion = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Rueckfrage gesendet',
+    message: 'Rückfrage gesendet',
     data: appointment,
   });
 });

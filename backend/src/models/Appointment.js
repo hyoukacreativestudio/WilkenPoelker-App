@@ -44,9 +44,7 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.JSON,
     defaultValue: {
       name: 'WilkenPoelker',
-      address: 'Musterstra\u00dfe 1, 49000 Osnabr\u00fcck',
-      lat: 52.2799,
-      lng: 8.0472,
+      address: 'Langholter Stra\u00dfe 43, 26842 Ostrhauderfehn',
     },
   },
   assignedTo: {

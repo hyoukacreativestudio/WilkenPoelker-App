@@ -140,6 +140,9 @@ export function NotificationProvider({ children }) {
           navigateFromNotification({ type: data.type, id: data.appointmentId });
         } else if (data?.type && data?.ticketId) {
           navigateFromNotification({ type: data.type, id: data.ticketId });
+        } else if (data?.relatedType && data?.relatedId) {
+          // Most backend notifications (e.g. appointments) only carry relatedType/relatedId.
+          navigateFromNotification({ type: data.relatedType, id: data.relatedId });
         }
         // Refresh unread count after tap
         fetchUnreadCount();

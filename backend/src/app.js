@@ -462,7 +462,8 @@ cron.schedule('59 23 * * 0', async () => {
     const Repair = require('./models/Repair');
     const [count] = await Repair.update(
       { archivedAt: new Date() },
-      { where: { status: 'ready', acknowledgedAt: { [Op.ne]: null }, archivedAt: null } }
+      // Acknowledging a pickup moves the repair to 'completed' (older rows may still say 'ready').
+      { where: { status: { [Op.in]: ['ready', 'completed'] }, acknowledgedAt: { [Op.ne]: null }, archivedAt: null } }
     );
     if (count > 0) {
       logger.info(`Cron: Archived ${count} acknowledged repairs`);

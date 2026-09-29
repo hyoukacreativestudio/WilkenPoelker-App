@@ -23,19 +23,19 @@ function isTopicAllowed(message) {
 
 const TOPIC_GUARD = `
 WICHTIG: Du darfst NUR Fragen beantworten, die sich auf folgende Fachbereiche beziehen:
-- Fahrraeder, E-Bikes, Pedelecs, Fahrrad-Zubehoer, Fahrrad-Leasing und Fahrrad-Reparaturen
-- Reinigungsgeraete (Hochdruckreiniger, Staubsauger, Dampfreiniger, Fenstersauger etc.)
-- Motorgeraete (Motorsaegen, Rasenmaeher, Heckenscheren, Laubblaeser, Maehroboter, Freischneider etc.)
-- Allgemeine Fragen zu WilkenPoelker (Oeffnungszeiten, Standort, Services, Termine)
+- Fahrräder, E-Bikes, Pedelecs, Fahrrad-Zubehoer, Fahrrad-Leasing und Fahrrad-Reparaturen
+- Reinigungsgeräte (Hochdruckreiniger, Staubsauger, Dampfreiniger, Fenstersauger etc.)
+- Motorgeräte (Motorsaegen, Rasenmaeher, Heckenscheren, Laubblaeser, Maehroboter, Freischneider etc.)
+- Allgemeine Fragen zu WilkenPoelker (Öffnungszeiten, Standort, Services, Termine)
 
 Wenn eine Frage NICHT zu diesen Themen gehoert, antworte freundlich:
-"Das liegt leider ausserhalb meines Fachbereichs. Ich kann Ihnen bei Fragen zu Fahrraedern, Reinigungsgeraeten und Motorgeraeten weiterhelfen. Wie kann ich Ihnen in diesen Bereichen behilflich sein?"
+"Das liegt leider außerhalb meines Fachbereichs. Ich kann Ihnen bei Fragen zu Fahrrädern, Reinigungsgeräten und Motorgeräten weiterhelfen. Wie kann ich Ihnen in diesen Bereichen behilflich sein?"
 
 Erfinde KEINE Informationen. Wenn du dir bei Preisen oder Verfuegbarkeiten unsicher bist, verweise auf den direkten Kontakt mit dem Geschaeft.`;
 
 const REPAIR_HINT = `
 WERKZEUG-REGEL: Wenn der Kunde ein Problem beschreibt, das Spezialwerkzeug, Fachwissen oder eine Werkstatt erfordert, empfiehl ihm eine Reparatur bei WilkenPoelker. Sage z.B.:
-"Dafuer wuerde ich Ihnen empfehlen, Ihr Geraet bei uns in der Werkstatt vorbeizubringen. Moechten Sie einen Abholungstermin vereinbaren?"
+"Dafür würde ich Ihnen empfehlen, Ihr Gerät bei uns in der Werkstatt vorbeizubringen. Möchten Sie einen Abholungstermin vereinbaren?"
 Wenn der Kunde zustimmt, antworte mit dem exakten Satz: "[TERMIN_EMPFEHLUNG] Ich leite Sie zur Terminvereinbarung weiter."
 
 GESPRAECHSSTRUKTUR: Fuehre den Kunden durch folgende Schritte:
@@ -46,7 +46,7 @@ GESPRAECHSSTRUKTUR: Fuehre den Kunden durch folgende Schritte:
 
 // System prompts per category (German)
 const SYSTEM_PROMPTS = {
-  bike: `Du bist ein freundlicher und kompetenter Experte fuer Fahrraeder, E-Bikes und Fahrrad-Leasing bei WilkenPoelker in Ostrhauderfehn.
+  bike: `Du bist ein freundlicher und kompetenter Experte für Fahrräder, E-Bikes und Fahrrad-Leasing bei WilkenPoelker in Ostrhauderfehn.
 Du hilfst Kunden bei Fragen zu:
 - Fahrradmodellen (Citybikes, Trekkingbikes, Mountainbikes, Rennraeder, Kinderfahrraeder)
 - E-Bike-Systemen (Bosch, Shimano Steps, Brose, Yamaha — Motoren, Akkus, Displays, Software-Updates)
@@ -59,7 +59,7 @@ Falls du bei einer Frage nicht weiterhelfen kannst, sage: "Ich verbinde Sie mit 
 ${TOPIC_GUARD}
 ${REPAIR_HINT}`,
 
-  cleaning: `Du bist ein freundlicher und kompetenter Experte fuer Reinigungsgeraete bei WilkenPoelker in Ostrhauderfehn.
+  cleaning: `Du bist ein freundlicher und kompetenter Experte für Reinigungsgeräte bei WilkenPoelker in Ostrhauderfehn.
 Du hilfst Kunden bei Fragen zu:
 - Hochdruckreinigern (Kaercher, Nilfisk, Stihl — Duesen, Schlaeauche, Pumpen, Zubehoer)
 - Staubsaugern und Nass-/Trockensaugern
@@ -72,7 +72,7 @@ Falls du bei einer Frage nicht weiterhelfen kannst, sage: "Ich verbinde Sie mit 
 ${TOPIC_GUARD}
 ${REPAIR_HINT}`,
 
-  motor: `Du bist ein freundlicher und kompetenter Experte fuer Motorgeraete bei WilkenPoelker in Ostrhauderfehn.
+  motor: `Du bist ein freundlicher und kompetenter Experte für Motorgeräte bei WilkenPoelker in Ostrhauderfehn.
 Du hilfst Kunden bei Fragen zu:
 - Rasenmaeher (Benzin, Elektro, Akku, Maehroboter)
 - Motorsaegen und Kettensaegen (Stihl, Husqvarna — Kette, Schwert, Vergaser)
@@ -86,8 +86,8 @@ Falls du bei einer Frage nicht weiterhelfen kannst, sage: "Ich verbinde Sie mit 
 ${TOPIC_GUARD}
 ${REPAIR_HINT}`,
 
-  general: `Du bist ein freundlicher Assistent von WilkenPoelker, einem Fachgeschaeft fuer Fahrraeder, Reinigungsgeraete und Motorgeraete in Ostrhauderfehn.
-Du hilfst Kunden bei allgemeinen Fragen zu Oeffnungszeiten, Standort, Services und Produkten.
+  general: `Du bist ein freundlicher Assistent von WilkenPoelker, einem Fachgeschäft für Fahrräder, Reinigungsgeräte und Motorgeräte in Ostrhauderfehn.
+Du hilfst Kunden bei allgemeinen Fragen zu Öffnungszeiten, Standort, Services und Produkten.
 Antworte immer freundlich und in maximal 3-4 Saetzen.
 Falls du bei einer Frage nicht weiterhelfen kannst, sage: "Ich verbinde Sie mit einem Mitarbeiter."
 ${TOPIC_GUARD}
@@ -100,7 +100,7 @@ ${REPAIR_HINT}`,
 async function chat(userId, { category, message, sessionId, images = [] }) {
   // Validate category
   if (!SYSTEM_PROMPTS[category]) {
-    throw new AppError('Ungueltige Kategorie', 400, 'INVALID_CATEGORY');
+    throw new AppError('Ungültige Kategorie', 400, 'INVALID_CATEGORY');
   }
 
   let session;
@@ -131,7 +131,7 @@ async function chat(userId, { category, message, sessionId, images = [] }) {
   const isFirstMessage = !session.messages || session.messages.length === 0;
   if (isFirstMessage && !isTopicAllowed(message)) {
     // For first messages that are clearly off-topic, respond immediately without calling the API
-    const offTopicReply = 'Das liegt leider ausserhalb meines Fachbereichs. Ich kann Ihnen bei Fragen zu Fahrraedern, Reinigungsgeraeten und Motorgeraeten weiterhelfen. Wie kann ich Ihnen in diesen Bereichen behilflich sein?';
+    const offTopicReply = 'Das liegt leider außerhalb meines Fachbereichs. Ich kann Ihnen bei Fragen zu Fahrrädern, Reinigungsgeräten und Motorgeräten weiterhelfen. Wie kann ich Ihnen in diesen Bereichen behilflich sein?';
     const messages = [
       { role: 'user', content: message, timestamp: new Date().toISOString() },
       { role: 'assistant', content: offTopicReply, timestamp: new Date().toISOString() },
@@ -253,14 +253,14 @@ function getMockResponse(category, message) {
   const lowerMessage = message.toLowerCase();
 
   if (lowerMessage.includes('preis') || lowerMessage.includes('kosten')) {
-    return 'Fuer genaue Preisauskuenfte wuerde ich Sie gerne mit einem Mitarbeiter verbinden. Ich verbinde Sie mit einem Mitarbeiter.';
+    return 'Für genaue Preisauskuenfte würde ich Sie gerne mit einem Mitarbeiter verbinden. Ich verbinde Sie mit einem Mitarbeiter.';
   }
 
   const mockResponses = {
-    bike: 'Vielen Dank fuer Ihre Frage zu Fahrraedern! Wir haben eine grosse Auswahl an Fahrraedern und E-Bikes. Besuchen Sie uns gerne in unserem Geschaeft fuer eine persoenliche Beratung.',
-    cleaning: 'Vielen Dank fuer Ihre Frage zu Reinigungsgeraeten! Wir fuehren Hochdruckreiniger, Staubsauger und vieles mehr. Kommen Sie gerne vorbei fuer eine Vorfuehrung.',
-    motor: 'Vielen Dank fuer Ihre Frage zu Motorgeraeten! Wir beraten Sie gerne zu Rasenmaeher, Motorsaegen und weiterem. Besuchen Sie uns im Geschaeft.',
-    general: 'Vielen Dank fuer Ihre Nachricht! Wir helfen Ihnen gerne weiter. Unsere Oeffnungszeiten finden Sie auf unserer Webseite oder in der App.',
+    bike: 'Vielen Dank für Ihre Frage zu Fahrrädern! Wir haben eine grosse Auswahl an Fahrrädern und E-Bikes. Besuchen Sie uns gerne in unserem Geschaeft für eine persoenliche Beratung.',
+    cleaning: 'Vielen Dank für Ihre Frage zu Reinigungsgeräten! Wir fuehren Hochdruckreiniger, Staubsauger und vieles mehr. Kommen Sie gerne vorbei für eine Vorfuehrung.',
+    motor: 'Vielen Dank für Ihre Frage zu Motorgeräten! Wir beraten Sie gerne zu Rasenmaeher, Motorsaegen und weiterem. Besuchen Sie uns im Geschaeft.',
+    general: 'Vielen Dank für Ihre Nachricht! Wir helfen Ihnen gerne weiter. Unsere Öffnungszeiten finden Sie auf unserer Webseite oder in der App.',
   };
 
   return mockResponses[category] || mockResponses.general;

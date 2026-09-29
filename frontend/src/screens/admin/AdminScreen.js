@@ -26,6 +26,7 @@ import Chip from '../../components/ui/Chip';
 import Divider from '../../components/ui/Divider';
 import SearchBar from '../../components/ui/SearchBar';
 import { getInitials } from '../../utils/helpers';
+import { formatDateTime } from '../../utils/formatters';
 import { useToast } from '../../components/ui/Toast';
 
 const ALL_ROLES = [
@@ -404,8 +405,7 @@ export default function AdminScreen() {
 
   const formatTimestamp = (ts) => {
     if (!ts) return '';
-    const date = new Date(ts);
-    return date.toLocaleString();
+    return formatDateTime(ts);
   };
 
   const getRoleBadgeColor = (role) => {

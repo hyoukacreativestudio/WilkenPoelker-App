@@ -21,7 +21,7 @@ router.get(
     query('role')
       .optional()
       .isIn(['super_admin', 'admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker', 'delivery_manager', 'motor_equipment_manager', 'ev_manager', 'customer'])
-      .withMessage('Ungueltige Rolle'),
+      .withMessage('Ungültige Rolle'),
     query('status')
       .optional()
       .isIn(['active', 'inactive'])
@@ -37,9 +37,9 @@ router.get(
   validate([
     ...validators.pagination,
     query('action').optional().isString().trim(),
-    query('userId').optional().isUUID().withMessage('Ungueltige User-ID'),
-    query('from').optional().isISO8601().withMessage('Ungueltiges Von-Datum'),
-    query('to').optional().isISO8601().withMessage('Ungueltiges Bis-Datum'),
+    query('userId').optional().isUUID().withMessage('Ungültige User-ID'),
+    query('from').optional().isISO8601().withMessage('Ungültiges Von-Datum'),
+    query('to').optional().isISO8601().withMessage('Ungültiges Bis-Datum'),
   ]),
   adminController.getAuditLog
 );
@@ -54,11 +54,11 @@ router.post(
     body('type')
       .optional()
       .isIn(['repair_status', 'repair_ready', 'appointment_reminder', 'chat_message', 'feed_post', 'offer', 'system'])
-      .withMessage('Ungueltiger Benachrichtigungstyp'),
+      .withMessage('Ungültiger Benachrichtigungstyp'),
     body('role')
       .optional()
       .isIn(['super_admin', 'admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker', 'delivery_manager', 'motor_equipment_manager', 'ev_manager', 'customer'])
-      .withMessage('Ungueltige Zielgruppe'),
+      .withMessage('Ungültige Zielgruppe'),
     body('roles')
       .optional()
       .isArray()
@@ -66,7 +66,7 @@ router.post(
     body('roles.*')
       .optional()
       .isIn(['super_admin', 'admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker', 'delivery_manager', 'motor_equipment_manager', 'ev_manager', 'customer'])
-      .withMessage('Ungueltige Rolle im Array'),
+      .withMessage('Ungültige Rolle im Array'),
   ]),
   adminController.sendBroadcast
 );

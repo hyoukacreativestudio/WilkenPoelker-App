@@ -75,7 +75,7 @@ const updateOpeningHours = asyncHandler(async (req, res) => {
         throw new AppError('Jede Periode muss open und close enthalten', 400, 'INVALID_PERIOD');
       }
       if (!/^\d{2}:\d{2}$/.test(period.open) || !/^\d{2}:\d{2}$/.test(period.close)) {
-        throw new AppError('Zeiten muessen im Format HH:MM sein', 400, 'INVALID_TIME_FORMAT');
+        throw new AppError('Zeiten müssen im Format HH:MM sein', 400, 'INVALID_TIME_FORMAT');
       }
     }
   }
@@ -98,7 +98,7 @@ const updateOpeningHours = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Oeffnungszeiten erfolgreich aktualisiert',
+    message: 'Öffnungszeiten erfolgreich aktualisiert',
     data: record,
   });
 });
@@ -113,7 +113,7 @@ const addHoliday = asyncHandler(async (req, res) => {
   // Check for duplicate
   const existing = await Holiday.findOne({ where: { date } });
   if (existing) {
-    throw new AppError('Fuer dieses Datum existiert bereits ein Feiertag', 409, 'DUPLICATE_HOLIDAY');
+    throw new AppError('Für dieses Datum existiert bereits ein Feiertag', 409, 'DUPLICATE_HOLIDAY');
   }
 
   const holiday = await Holiday.create({
@@ -128,7 +128,7 @@ const addHoliday = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Feiertag erfolgreich hinzugefuegt',
+    message: 'Feiertag erfolgreich hinzugefügt',
     data: holiday,
   });
 });

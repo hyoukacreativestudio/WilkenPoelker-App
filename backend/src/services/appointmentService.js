@@ -4,6 +4,25 @@ const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const { isWithinOpeningHours, isWeekday } = require('../utils/openingHours');
 const logger = require('../utils/logger');
 
+// German labels for appointment types (used in staff notifications).
+const TYPE_LABELS = {
+  delivery: 'Lieferung',
+  inspection: 'Inspektion',
+  repair: 'Reparatur',
+  property_viewing: 'Grundstücksbesichtigung',
+  onsite_repair: 'Vor-Ort-Reparatur',
+  new_installation: 'Neuinstallation',
+  urlaub: 'Urlaub',
+  other: 'Sonstiges',
+};
+
+// 2026-10-02 / 2026-10-02T10:00:00Z -> 02.10.2026 ; 10:00:00 -> 10:00
+const fmtDate = (d) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || ''));
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : String(d || '');
+};
+const fmtTime = (t) => String(t || '').slice(0, 5);
+
 /**
  * Get paginated appointments for a user with optional filters.
  */
@@ -233,7 +252,7 @@ async function registerAppointment(appointmentId, staffUserId) {
   }
 
   if (appointment.status !== 'confirmed') {
-    throw new AppError('Nur bestaetigte Termine koennen als eingetragen markiert werden', 400, 'INVALID_STATUS');
+    throw new AppError('Nur bestätigte Termine können als eingetragen markiert werden', 400, 'INVALID_STATUS');
   }
 
   if (appointment.registeredBy) {
@@ -270,8 +289,8 @@ async function askQuestion(appointmentId, staffUserId, question) {
 
     await Notification.create({
       userId: appointment.userId,
-      title: 'Rueckfrage zu Ihrem Termin',
-      message: `${staffName} hat eine Rueckfrage zu "${appointment.title}": ${question}`,
+      title: 'Rückfrage zu Ihrem Termin',
+      message: `${staffName} hat eine Rückfrage zu "${appointment.title}": ${question}`,
       type: 'appointment_reminder',
       category: 'appointment',
       relatedId: appointment.id,
@@ -296,11 +315,11 @@ async function answerQuestion(appointmentId, userId, answer) {
   }
 
   if (appointment.userId !== userId) {
-    throw new AppError('Sie koennen nur auf eigene Termine antworten', 403, 'FORBIDDEN');
+    throw new AppError('Sie können nur auf eigene Termine antworten', 403, 'FORBIDDEN');
   }
 
   if (!appointment.staffQuestion) {
-    throw new AppError('Es gibt keine Rueckfrage zu beantworten', 400, 'NO_QUESTION');
+    throw new AppError('Es gibt keine Rückfrage zu beantworten', 400, 'NO_QUESTION');
   }
 
   appointment.customerNote = answer;
@@ -315,8 +334,8 @@ async function answerQuestion(appointmentId, userId, answer) {
 
       await Notification.create({
         userId: notifyUserId,
-        title: 'Antwort auf Ihre Rueckfrage',
-        message: `${customerName} hat auf Ihre Rueckfrage zu "${appointment.title}" geantwortet: ${answer}`,
+        title: 'Antwort auf Ihre Rückfrage',
+        message: `${customerName} hat auf Ihre Rückfrage zu "${appointment.title}" geantwortet: ${answer}`,
         type: 'appointment_reminder',
         category: 'appointment',
         relatedId: appointment.id,
@@ -344,7 +363,7 @@ async function createAppointment(userId, data, isAdminUser = false) {
   if (date && startTime) {
     if (!isAdminUser && !isWeekday(date)) {
       throw new AppError(
-        'Termine koennen nur an Werktagen (Mo-Fr) gebucht werden',
+        'Termine können nur an Werktagen (Mo-Fr) gebucht werden',
         400,
         'WEEKDAY_ONLY'
       );
@@ -368,7 +387,7 @@ async function createAppointment(userId, data, isAdminUser = false) {
 
     const appointmentDate = new Date(`${date}T${startTime}`);
     if (appointmentDate < new Date()) {
-      throw new AppError('Termine koennen nicht in der Vergangenheit gebucht werden', 400, 'DATE_IN_PAST');
+      throw new AppError('Termine können nicht in der Vergangenheit gebucht werden', 400, 'DATE_IN_PAST');
     }
   }
 
@@ -415,7 +434,7 @@ async function createAppointment(userId, data, isAdminUser = false) {
         await Notification.create({
           userId: staff.id,
           title: 'Neue Terminanfrage',
-          message: `${customerName} hat eine Terminanfrage eingereicht: "${title}" (${type})`,
+          message: `${customerName} hat eine Terminanfrage eingereicht: "${title}" (${TYPE_LABELS[type] || type})`,
           type: 'appointment_reminder',
           category: 'appointment',
           relatedId: appointment.id,
@@ -446,7 +465,7 @@ async function proposeTime(appointmentId, adminUserId, { date, proposedText }) {
 
   if (appointment.status !== 'pending') {
     throw new AppError(
-      'Terminvorschlag kann nur fuer ausstehende Anfragen gemacht werden',
+      'Terminvorschlag kann nur für ausstehende Anfragen gemacht werden',
       400,
       'INVALID_STATUS'
     );
@@ -454,12 +473,12 @@ async function proposeTime(appointmentId, adminUserId, { date, proposedText }) {
 
   // Validate proposed date (weekday + not in the past)
   if (!isWeekday(date)) {
-    throw new AppError('Termine koennen nur an Werktagen (Mo-Fr) gebucht werden', 400, 'WEEKDAY_ONLY');
+    throw new AppError('Termine können nur an Werktagen (Mo-Fr) gebucht werden', 400, 'WEEKDAY_ONLY');
   }
 
   const today = new Date().toISOString().split('T')[0];
   if (date < today) {
-    throw new AppError('Termine koennen nicht in der Vergangenheit vorgeschlagen werden', 400, 'DATE_IN_PAST');
+    throw new AppError('Termine können nicht in der Vergangenheit vorgeschlagen werden', 400, 'DATE_IN_PAST');
   }
 
   appointment.date = date;
@@ -474,7 +493,7 @@ async function proposeTime(appointmentId, adminUserId, { date, proposedText }) {
   await Notification.create({
     userId: appointment.userId,
     title: 'Terminvorschlag erhalten',
-    message: `Fuer Ihre Anfrage "${appointment.title}" wurde der ${date} vorgeschlagen: ${proposedText}`,
+    message: `Für Ihre Anfrage "${appointment.title}" wurde der ${fmtDate(date)} vorgeschlagen: ${proposedText}`,
     type: 'appointment_reminder',
     category: 'appointment',
     relatedId: appointment.id,
@@ -497,7 +516,7 @@ async function respondToProposal(appointmentId, userId, { accept, message }) {
   }
 
   if (appointment.userId !== userId) {
-    throw new AppError('Sie koennen nur auf eigene Terminvorschlaege antworten', 403, 'FORBIDDEN');
+    throw new AppError('Sie können nur auf eigene Terminvorschläge antworten', 403, 'FORBIDDEN');
   }
 
   if (appointment.status !== 'proposed') {
@@ -514,7 +533,7 @@ async function respondToProposal(appointmentId, userId, { accept, message }) {
       await Notification.create({
         userId: appointment.assignedTo,
         title: 'Terminvorschlag angenommen',
-        message: `Der Kunde hat den Termin "${appointment.title}" am ${appointment.date} bestaetigt.${appointment.customerNote ? ` Kundennotiz: ${appointment.customerNote}` : ''}`,
+        message: `Der Kunde hat den Termin "${appointment.title}" am ${fmtDate(appointment.date)} bestätigt.${appointment.customerNote ? ` Kundennotiz: ${appointment.customerNote}` : ''}`,
         type: 'appointment_reminder',
         category: 'appointment',
         relatedId: appointment.id,
@@ -537,7 +556,7 @@ async function respondToProposal(appointmentId, userId, { accept, message }) {
       await Notification.create({
         userId: appointment.assignedTo,
         title: 'Terminvorschlag abgelehnt',
-        message: `Der Kunde hat den Vorschlag fuer "${appointment.title}" abgelehnt.${message ? ` Nachricht: ${message}` : ''}`,
+        message: `Der Kunde hat den Vorschlag für "${appointment.title}" abgelehnt.${message ? ` Nachricht: ${message}` : ''}`,
         type: 'appointment_reminder',
         category: 'appointment',
         relatedId: appointment.id,
@@ -615,18 +634,18 @@ async function rescheduleAppointment(appointmentId, userId, newData, isAdminUser
   }
 
   if (existing.userId !== userId) {
-    throw new AppError('Sie koennen nur eigene Termine umbuchen', 403, 'FORBIDDEN');
+    throw new AppError('Sie können nur eigene Termine umbuchen', 403, 'FORBIDDEN');
   }
 
   if (existing.status === 'cancelled') {
-    throw new AppError('Stornierte Termine koennen nicht umgebucht werden', 400, 'ALREADY_CANCELLED');
+    throw new AppError('Stornierte Termine können nicht umgebucht werden', 400, 'ALREADY_CANCELLED');
   }
 
   const { date, startTime, endTime } = newData;
 
   // Same validations as create
   if (!isAdminUser && !isWeekday(date)) {
-    throw new AppError('Termine koennen nur an Werktagen (Mo-Fr) gebucht werden', 400, 'WEEKDAY_ONLY');
+    throw new AppError('Termine können nur an Werktagen (Mo-Fr) gebucht werden', 400, 'WEEKDAY_ONLY');
   }
 
   const openingCheck = await isWithinOpeningHours(date, startTime);
@@ -658,7 +677,7 @@ async function rescheduleAppointment(appointmentId, userId, newData, isAdminUser
     await Notification.create({
       userId: existing.assignedTo,
       title: 'Termin umgebucht',
-      message: `Der Termin "${existing.title}" wurde auf ${date} um ${startTime} umgebucht.`,
+      message: `Der Termin "${existing.title}" wurde auf ${fmtDate(date)} um ${fmtTime(startTime)} Uhr umgebucht.`,
       type: 'appointment_reminder',
       category: 'appointment',
       relatedId: newAppointment.id,
@@ -686,7 +705,7 @@ async function cancelAppointment(appointmentId, userId, cancelReason) {
   }
 
   if (appointment.userId !== userId) {
-    throw new AppError('Sie koennen nur eigene Termine stornieren', 403, 'FORBIDDEN');
+    throw new AppError('Sie können nur eigene Termine stornieren', 403, 'FORBIDDEN');
   }
 
   if (appointment.status === 'cancelled') {
@@ -703,7 +722,7 @@ async function cancelAppointment(appointmentId, userId, cancelReason) {
     await Notification.create({
       userId: appointment.assignedTo,
       title: 'Termin storniert',
-      message: `Der Termin "${appointment.title}" am ${appointment.date} wurde vom Kunden storniert.${cancelReason ? ` Grund: ${cancelReason}` : ''}`,
+      message: `Der Termin "${appointment.title}" am ${fmtDate(appointment.date)} wurde vom Kunden storniert.${cancelReason ? ` Grund: ${cancelReason}` : ''}`,
       type: 'appointment_reminder',
       category: 'appointment',
       relatedId: appointment.id,
@@ -728,7 +747,7 @@ async function confirmAppointment(appointmentId, confirmedBy) {
 
   if (appointment.status !== 'pending' && appointment.status !== 'proposed') {
     throw new AppError(
-      `Termin kann nicht bestaetigt werden (aktueller Status: ${appointment.status})`,
+      `Termin kann nicht bestätigt werden (aktueller Status: ${appointment.status})`,
       400,
       'INVALID_STATUS'
     );
@@ -741,8 +760,8 @@ async function confirmAppointment(appointmentId, confirmedBy) {
   // Notify customer
   await Notification.create({
     userId: appointment.userId,
-    title: 'Termin bestaetigt',
-    message: `Ihr Termin "${appointment.title}" am ${appointment.date} um ${appointment.startTime} wurde bestaetigt.`,
+    title: 'Termin bestätigt',
+    message: `Ihr Termin "${appointment.title}" am ${fmtDate(appointment.date)} um ${fmtTime(appointment.startTime)} Uhr wurde bestätigt.`,
     type: 'appointment_reminder',
     category: 'appointment',
     relatedId: appointment.id,

@@ -292,7 +292,7 @@ async function isWithinOpeningHours(dateStr, timeStr) {
   const periodsStr = dayHours.periods.map(p => `${p.open}-${p.close}`).join(', ');
   return {
     valid: false,
-    reason: `Uhrzeit liegt ausserhalb der Oeffnungszeiten (${periodsStr})`,
+    reason: `Uhrzeit liegt außerhalb der Öffnungszeiten (${periodsStr})`,
   };
 }
 

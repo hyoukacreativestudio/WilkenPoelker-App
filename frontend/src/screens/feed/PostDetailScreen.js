@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
@@ -33,6 +34,7 @@ export default function PostDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -309,7 +311,7 @@ export default function PostDetailScreen({ route, navigation }) {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {/* Custom Header with Back Button */}
-      <View style={s.headerBar}>
+      <View style={[s.headerBar, { paddingTop: insets.top + theme.spacing.sm + 2 }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
@@ -319,7 +321,7 @@ export default function PostDetailScreen({ route, navigation }) {
           <MaterialCommunityIcons name="arrow-left" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={[theme.typography.styles.h5, { color: theme.colors.text, flex: 1 }]} numberOfLines={1}>
-          {t('feed.post', 'Beitrag')}
+          {t('feed.postTitle', 'Beitrag')}
         </Text>
       </View>
 

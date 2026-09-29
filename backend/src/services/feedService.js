@@ -217,7 +217,7 @@ async function toggleLike(postId, userId, { Post, Like }) {
 /**
  * Add a comment to a post.
  */
-async function addComment(postId, userId, { content, parentId }, { Post, Comment }) {
+async function addComment(postId, userId, { content, parentId }, { Post, Comment, User }) {
   const post = await Post.findByPk(postId);
   if (!post) {
     throw new NotFoundError('Post');
@@ -242,6 +242,12 @@ async function addComment(postId, userId, { content, parentId }, { Post, Comment
 
   logger.info('Comment added', { postId, commentId: comment.id, userId });
 
+  // Return it like listComments does, so the app can show name + avatar right away.
+  if (User) {
+    return Comment.findByPk(comment.id, {
+      include: [{ model: User, as: 'author', attributes: ['id', 'username', 'profilePicture', 'firstName', 'lastName'] }],
+    });
+  }
   return comment;
 }
 

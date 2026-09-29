@@ -18,10 +18,13 @@ import { serviceApi } from '../../api/service';
 import { getServerUrl } from '../../api/client';
 import Button from '../../components/ui/Button';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
-import { formatRelativeTime } from '../../utils/formatters';
+import { formatRelativeTime, formatDate } from '../../utils/formatters';
 import { useToast } from '../../components/ui/Toast';
 
-const STATUS_ORDER = ['open', 'in_progress', 'waiting', 'resolved', 'closed'];
+// Real ticket statuses from the backend. confirmed (appointment agreed) counts as
+// "in progress"; completed/cancelled end the ticket like closed.
+const STATUS_ORDER = ['open', 'in_progress', 'closed'];
+const STATUS_STEP = { open: 0, in_progress: 1, confirmed: 1, completed: 2, cancelled: 2, closed: 2 };
 
 export default function TicketDetailScreen({ route, navigation }) {
   const { ticketId } = route.params;
@@ -71,10 +74,12 @@ export default function TicketDetailScreen({ route, navigation }) {
         return { color: theme.colors.info, label: t('ticket.status.open'), icon: 'circle-outline' };
       case 'in_progress':
         return { color: theme.colors.warning, label: t('ticket.status.inProgress'), icon: 'progress-clock' };
-      case 'waiting':
-        return { color: '#F97316', label: t('ticket.status.waiting'), icon: 'clock-outline' };
-      case 'resolved':
-        return { color: theme.colors.success, label: t('ticket.status.resolved'), icon: 'check-circle-outline' };
+      case 'confirmed':
+        return { color: theme.colors.success, label: t('ticket.status.confirmed'), icon: 'calendar-check' };
+      case 'completed':
+        return { color: theme.colors.success, label: t('ticket.status.completed'), icon: 'check-circle-outline' };
+      case 'cancelled':
+        return { color: theme.colors.textSecondary, label: t('ticket.status.cancelled'), icon: 'cancel' };
       case 'closed':
         return { color: theme.colors.textSecondary, label: t('ticket.status.closed'), icon: 'close-circle-outline' };
       default:
@@ -109,7 +114,7 @@ export default function TicketDetailScreen({ route, navigation }) {
 
   const getCurrentStatusIndex = () => {
     if (!ticket) return -1;
-    return STATUS_ORDER.indexOf(ticket.status);
+    return STATUS_STEP[ticket.status] ?? -1;
   };
 
   const handleOpenChat = () => {
@@ -202,7 +207,7 @@ export default function TicketDetailScreen({ route, navigation }) {
             </Text>
           </View>
           <Text style={[theme.typography.styles.body, { color: theme.colors.text }]}>
-            {new Date(ticket.createdAt).toLocaleDateString()}
+            {formatDate(ticket.createdAt)}
           </Text>
         </View>
       </View>
@@ -290,7 +295,8 @@ export default function TicketDetailScreen({ route, navigation }) {
       <View style={s.card}>
         <Text style={s.cardTitle}>{t('service.statusTimeline')}</Text>
         {STATUS_ORDER.map((statusStep, index) => {
-          const stepConfig = getStatusConfig(statusStep);
+          // Show the actual status on the current step (e.g. "Bestätigt" instead of "In Bearbeitung").
+          const stepConfig = getStatusConfig(index === currentStatusIndex ? ticket.status : statusStep);
           const isCompleted = index <= currentStatusIndex;
           const isCurrent = index === currentStatusIndex;
           const isLast = index === STATUS_ORDER.length - 1;

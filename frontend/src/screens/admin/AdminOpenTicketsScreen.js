@@ -162,7 +162,9 @@ export default function AdminOpenTicketsScreen({ navigation }) {
   const fetchTickets = useCallback(async () => {
     try {
       const res = await serviceApi.getAdminTickets({ tab: 'open', limit: 50 });
-      setTickets(res.data?.tickets || res.data || []);
+      // Response body is { success, data: { tickets } }
+      const list = res.data?.data?.tickets || res.data?.tickets;
+      setTickets(Array.isArray(list) ? list : []);
     } catch (err) {
       // Error handled silently - UI shows empty state
     }

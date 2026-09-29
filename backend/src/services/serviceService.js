@@ -3,6 +3,16 @@ const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const { generateTicketNumber } = require('../utils/crypto');
 const logger = require('../utils/logger');
 
+// Customer-facing German names of the ticket statuses.
+const STATUS_LABELS = {
+  open: 'Offen',
+  in_progress: 'In Bearbeitung',
+  confirmed: 'Bestätigt',
+  completed: 'Abgeschlossen',
+  cancelled: 'Storniert',
+  closed: 'Geschlossen',
+};
+
 // ──────────────────────────────────────────────
 // TICKETS
 // ──────────────────────────────────────────────
@@ -376,6 +386,7 @@ async function updateTicketStatus(ticketId, status, userId, models) {
   }
 
   const oldStatus = ticket.status;
+  if (oldStatus === status) return ticket; // nothing changed - don't notify the customer
   ticket.status = status;
   await ticket.save();
 
@@ -383,7 +394,7 @@ async function updateTicketStatus(ticketId, status, userId, models) {
   await Notification.create({
     userId: ticket.userId,
     title: 'Ticket-Status aktualisiert',
-    message: `Ihr Ticket ${ticket.ticketNumber} wurde von "${oldStatus}" auf "${status}" geändert.`,
+    message: `Ihr Ticket ${ticket.ticketNumber} wurde von "${STATUS_LABELS[oldStatus] || oldStatus}" auf "${STATUS_LABELS[status] || status}" geändert.`,
     type: 'system',
     category: 'system',
     relatedId: ticket.id,

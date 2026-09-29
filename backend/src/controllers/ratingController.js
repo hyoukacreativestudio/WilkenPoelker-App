@@ -92,7 +92,7 @@ const voteReviewHelpful = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Danke fuer Ihr Feedback',
+    message: 'Danke für Ihr Feedback',
     data: result,
   });
 });

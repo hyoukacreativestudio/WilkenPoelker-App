@@ -142,7 +142,7 @@ export default function NotificationsScreen({ navigation }) {
       if (chatMatch) return { type: 'chat', id: chatMatch[1] };
 
       const ticketRateMatch = deepLink.match(/\/service\/tickets\/([a-f0-9-]+)\/rate/i);
-      if (ticketRateMatch) return { type: 'ticket', id: ticketRateMatch[1] };
+      if (ticketRateMatch) return { type: 'chat', id: ticketRateMatch[1] }; // rating modal lives in the chat
 
       const ticketMatch = deepLink.match(/\/service\/tickets\/([a-f0-9-]+)/i);
       if (ticketMatch) return { type: 'ticket', id: ticketMatch[1] };

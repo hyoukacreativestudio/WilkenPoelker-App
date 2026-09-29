@@ -102,7 +102,7 @@ const addComment = asyncHandler(async (req, res) => {
     id,
     req.user.id,
     { content, parentId },
-    { Post, Comment }
+    { Post, Comment, User }
   );
 
   res.status(201).json({

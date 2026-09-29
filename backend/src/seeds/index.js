@@ -372,8 +372,8 @@ async function seed() {
   console.log(`${repairs.length} repairs seeded (inkl. Taifun-Simulation).`);
 
   // --- SAMPLE APPOINTMENTS (alle Kunden haben mindestens 1 Termin) ---
-  const wpWerkstatt = { name: 'WilkenPoelker Werkstatt', address: 'Musterstraße 1, 49000 Osnabrück' };
-  const wpShowroom = { name: 'WilkenPoelker Showroom', address: 'Musterstraße 1, 49000 Osnabrück' };
+  const wpWerkstatt = { name: 'WilkenPoelker Werkstatt', address: 'Langholter Straße 43, 26842 Ostrhauderfehn' };
+  const wpShowroom = { name: 'WilkenPoelker Showroom', address: 'Langholter Straße 43, 26842 Ostrhauderfehn' };
   const appointments = [
     // Customer 1 - Julia Schmidt
     { userId: customer1.id, title: 'E-Bike Inspektion', type: 'inspection', date: '2026-02-16', startTime: '10:00', endTime: '10:30', status: 'confirmed', location: wpWerkstatt },

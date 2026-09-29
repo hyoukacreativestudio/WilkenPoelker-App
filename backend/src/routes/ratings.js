@@ -10,8 +10,8 @@ router.post(
   '/service',
   authenticate,
   validate([
-    body('ticketId').optional().isUUID().withMessage('Ungueltige Ticket-ID'),
-    body('repairId').optional().isString().withMessage('Ungueltige Reparatur-ID'),
+    body('ticketId').optional().isUUID().withMessage('Ungültige Ticket-ID'),
+    body('repairId').optional().isString().withMessage('Ungültige Reparatur-ID'),
     body('type')
       .isIn(['repair', 'service', 'consultation'])
       .withMessage('Typ muss repair, service oder consultation sein'),
@@ -34,7 +34,7 @@ router.post(
   '/product/:productId',
   authenticate,
   validate([
-    param('productId').isUUID().withMessage('Ungueltige Produkt-ID'),
+    param('productId').isUUID().withMessage('Ungültige Produkt-ID'),
     body('rating').isInt({ min: 1, max: 5 }).withMessage('Bewertung muss zwischen 1 und 5 liegen'),
     body('qualityRating').optional().isInt({ min: 1, max: 5 }).withMessage('Bewertung muss zwischen 1 und 5 liegen'),
     body('valueRating').optional().isInt({ min: 1, max: 5 }).withMessage('Bewertung muss zwischen 1 und 5 liegen'),
@@ -51,7 +51,7 @@ router.post(
   '/staff/:staffId',
   authenticate,
   validate([
-    param('staffId').isUUID().withMessage('Ungueltige Mitarbeiter-ID'),
+    param('staffId').isUUID().withMessage('Ungültige Mitarbeiter-ID'),
     body('rating').isInt({ min: 1, max: 5 }).withMessage('Bewertung muss zwischen 1 und 5 liegen'),
     body('text').optional().isLength({ max: 2000 }).trim(),
   ]),
@@ -69,7 +69,7 @@ router.get(
 // GET /api/ratings/product/:productId/stats - product rating stats
 router.get(
   '/product/:productId/stats',
-  validate([param('productId').isUUID().withMessage('Ungueltige Produkt-ID')]),
+  validate([param('productId').isUUID().withMessage('Ungültige Produkt-ID')]),
   ratingController.getProductRatingStats
 );
 

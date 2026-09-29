@@ -339,14 +339,24 @@ export default function AdminRequestsScreen({ navigation }) {
       if (note !== null) {
         doReject(request, note);
       }
-    } else {
-      Alert.prompt?.(
+    } else if (Platform.OS === 'ios') {
+      // Alert.prompt returns undefined, so it must not be chained with ||.
+      Alert.prompt(
         t('adminRequests.reject'),
         '',
-        (note) => doReject(request, note),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('adminRequests.reject'), style: 'destructive', onPress: (note) => doReject(request, note) },
+        ],
         'plain-text',
         ''
-      ) || doReject(request, '');
+      );
+    } else {
+      // Android has no text prompt - at least ask before rejecting.
+      Alert.alert(t('adminRequests.reject'), t('common.areYouSure'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('adminRequests.reject'), style: 'destructive', onPress: () => doReject(request, '') },
+      ]);
     }
   }, []);
 

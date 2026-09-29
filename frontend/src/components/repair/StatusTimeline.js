@@ -11,13 +11,20 @@ const STATUS_ORDERS = {
   leasing: ['leasing_in_progress', 'ready'],
   neu: ['sale_in_progress', 'sale_test_drive', 'ready'],
 };
+const OPTIONAL_STEPS = new Set(['ordered', 'quote_created', 'parts_ordered', 'repair_done', 'sale_test_drive']);
 
 export default function StatusTimeline({ statusHistory = [], currentStatus, category, style }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const STATUS_ORDER = STATUS_ORDERS[category] || STATUS_ORDERS.reparatur;
+  // Optional steps (Taifun often jumps straight from "In Arbeit" to "Abholbereit")
+  // are only shown when the repair actually went through them - otherwise the
+  // customer would see e.g. "KVA erstellt" ticked although there never was one.
+  const visited = new Set((statusHistory || []).map((h) => h.status));
+  const STATUS_ORDER = (STATUS_ORDERS[category] || STATUS_ORDERS.reparatur).filter(
+    (st) => !OPTIONAL_STEPS.has(st) || visited.has(st) || st === currentStatus
+  );
 
   useEffect(() => {
     Animated.loop(
@@ -36,7 +43,8 @@ export default function StatusTimeline({ statusHistory = [], currentStatus, cate
     ).start();
   }, [pulseAnim]);
 
-  const currentIndex = STATUS_ORDER.indexOf(currentStatus);
+  // 'completed' = customer acknowledged the pickup: every step is done.
+  const currentIndex = currentStatus === 'completed' ? STATUS_ORDER.length : STATUS_ORDER.indexOf(currentStatus);
 
   const getHistoryItem = (statusKey) => {
     return statusHistory.find((h) => h.status === statusKey);

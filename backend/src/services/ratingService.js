@@ -154,7 +154,7 @@ async function createStaffRating(userId, staffId, data) {
 
   // Cannot rate yourself
   if (userId === staffId) {
-    throw new AppError('Sie koennen sich nicht selbst bewerten', 400, 'SELF_RATING');
+    throw new AppError('Sie können sich nicht selbst bewerten', 400, 'SELF_RATING');
   }
 
   const rating = await StaffRating.create({

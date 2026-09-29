@@ -29,12 +29,12 @@ router.post(
   validate([
     body('title').notEmpty().withMessage('Titel ist erforderlich').trim(),
     body('description').optional().trim(),
-    body('type').isIn(VALID_TYPES).withMessage('Ungueltiger Termintyp'),
-    body('date').optional().isISO8601().withMessage('Ungueltiges Datum'),
+    body('type').isIn(VALID_TYPES).withMessage('Ungültiger Termintyp'),
+    body('date').optional().isISO8601().withMessage('Ungültiges Datum'),
     body('startTime').optional().matches(/^\d{2}:\d{2}$/).withMessage('Startzeit im Format HH:MM erforderlich'),
     body('endTime').optional().matches(/^\d{2}:\d{2}$/).withMessage('Endzeit im Format HH:MM erforderlich'),
-    body('ticketId').optional().isUUID().withMessage('Ungueltige Ticket-ID'),
-    body('department').optional({ nullable: true }).isIn(['fahrrad', 'reinigung', 'rasenmaeher', 'service', 'robby', 'motorgeraete', 'elektro', 'verkauf', 'lieferungen']).withMessage('Ungueltige Abteilung'),
+    body('ticketId').optional().isUUID().withMessage('Ungültige Ticket-ID'),
+    body('department').optional({ nullable: true }).isIn(['fahrrad', 'reinigung', 'rasenmaeher', 'service', 'robby', 'motorgeraete', 'elektro', 'verkauf', 'lieferungen']).withMessage('Ungültige Abteilung'),
   ]),
   appointmentController.createAppointment
 );
@@ -90,7 +90,7 @@ router.put(
   authenticate,
   validate([
     validators.uuid(),
-    body('date').isISO8601().withMessage('Ungueltiges Datum'),
+    body('date').isISO8601().withMessage('Ungültiges Datum'),
     body('startTime').matches(/^\d{2}:\d{2}$/).withMessage('Startzeit im Format HH:MM erforderlich'),
     body('endTime').optional().matches(/^\d{2}:\d{2}$/).withMessage('Endzeit im Format HH:MM erforderlich'),
     body('title').optional().trim(),
@@ -126,7 +126,7 @@ router.post(
   authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.SERVICE_MANAGER, ROLES.ROBBY_MANAGER),
   validate([
     validators.uuid(),
-    body('date').isISO8601().withMessage('Ungueltiges Datum'),
+    body('date').isISO8601().withMessage('Ungültiges Datum'),
     body('proposedText').notEmpty().withMessage('Terminvorschlag-Text ist erforderlich').trim(),
   ]),
   appointmentController.proposeTime
@@ -160,7 +160,7 @@ router.post(
   authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.SERVICE_MANAGER, ROLES.ROBBY_MANAGER),
   validate([
     validators.uuid(),
-    body('question').notEmpty().withMessage('Rueckfrage ist erforderlich').trim(),
+    body('question').notEmpty().withMessage('Rückfrage ist erforderlich').trim(),
   ]),
   appointmentController.askQuestion
 );

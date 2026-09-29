@@ -44,7 +44,7 @@ router.post(
   authenticate,
   isAdmin,
   validate([
-    body('date').isISO8601().withMessage('Ungueltiges Datum'),
+    body('date').isISO8601().withMessage('Ungültiges Datum'),
     body('name').notEmpty().withMessage('Name ist erforderlich').trim(),
     body('isClosed').optional().isBoolean(),
     body('specialHours').optional().isArray(),

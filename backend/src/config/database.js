@@ -210,8 +210,10 @@ async function connectDatabase() {
     await sequelize.sync();
     logger.info('Database models synchronized');
 
-    // One-time fix: set emailVerified=true for all seed/test accounts
-    try {
+    // Dev convenience: set emailVerified=true for all seed/test accounts.
+    // Never in production - there anyone could register such an address and
+    // would skip the e-mail confirmation on the next restart.
+    if (!config.isProd) try {
       const [affectedRows] = await sequelize.query(
         `UPDATE users SET email_verified = true WHERE email_verified = false AND (email LIKE '%@wilkenpoelker.de' OR email LIKE '%@test.de')`,
         { type: sequelize.constructor.QueryTypes.UPDATE }
@@ -221,6 +223,16 @@ async function connectDatabase() {
       }
     } catch (e) {
       // Column might not exist yet on first run
+    }
+
+    // Appointments used to be saved with a placeholder address as location.
+    try {
+      await sequelize.query(
+        "UPDATE appointments SET location = :loc WHERE CAST(location AS TEXT) LIKE '%Musterstra%'",
+        { replacements: { loc: JSON.stringify({ name: 'WilkenPoelker', address: 'Langholter Straße 43, 26842 Ostrhauderfehn' }) } }
+      );
+    } catch (e) {
+      logger.debug(`Appointment location fix skipped: ${e.message}`);
     }
   } catch (error) {
     logger.error('Database connection failed:', error.message);

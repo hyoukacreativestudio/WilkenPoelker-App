@@ -25,8 +25,8 @@ export function navigateFromNotification(deepLink) {
         navigationRef.navigate('Service', { screen: 'TicketDetail', params: { ticketId: parts[2] } });
       } else if (parts[0] === 'service' && parts[1] === 'tickets' && parts[2]) {
         // What the backend actually sends: /service/tickets/<id>[/chat|/rate].
-        // Rating happens on the ticket detail screen.
-        if (parts[3] === 'chat') {
+        // The rating modal opens in the chat screen of a closed ticket.
+        if (parts[3] === 'chat' || parts[3] === 'rate') {
           navigationRef.navigate('Service', { screen: 'Chat', params: { ticketId: parts[2] } });
         } else {
           navigationRef.navigate('Service', { screen: 'TicketDetail', params: { ticketId: parts[2] } });
