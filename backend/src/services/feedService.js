@@ -342,6 +342,39 @@ async function reportPost(postId, userId, reason, { Post }) {
 }
 
 /**
+ * Report a comment (App Store guideline 1.2: users must be able to flag
+ * objectionable content). Admins get an in-app notification + push with a
+ * link to the post, so they can review and delete the comment quickly.
+ */
+async function reportComment(commentId, userId, reason, { Comment, User, Notification }) {
+  const comment = await Comment.findByPk(commentId);
+  if (!comment) {
+    throw new NotFoundError('Comment');
+  }
+  if (comment.userId === userId) {
+    throw new AppError('Eigene Kommentare können nicht gemeldet werden', 400, 'CANNOT_REPORT_OWN');
+  }
+
+  const admins = await User.findAll({
+    where: { role: { [Op.in]: ['admin', 'super_admin'] }, isActive: true },
+    attributes: ['id'],
+  });
+  const snippet = String(comment.content || '').slice(0, 80);
+  await Promise.all(admins.map((a) => Notification.create({
+    userId: a.id,
+    title: 'Kommentar gemeldet',
+    message: `Grund: ${reason} – „${snippet}“`,
+    type: 'system',
+    category: 'system',
+    relatedId: comment.postId,
+    relatedType: 'post',
+    deepLink: `/feed/post/${comment.postId}`,
+  })));
+
+  logger.info('Comment reported', { commentId, postId: comment.postId, userId, reason });
+}
+
+/**
  * Track a share event.
  */
 async function trackShare(postId, userId, channel, { Post, ShareTracking }) {
@@ -371,5 +404,6 @@ module.exports = {
   listComments,
   deleteComment,
   reportPost,
+  reportComment,
   trackShare,
 };

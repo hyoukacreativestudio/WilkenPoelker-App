@@ -138,6 +138,11 @@ const deleteComment = asyncHandler(async (req, res) => {
 // Report & Share
 // ──────────────────────────────────────────────
 
+const reportComment = asyncHandler(async (req, res) => {
+  await feedService.reportComment(req.params.id, req.user.id, req.body.reason, { Comment, User, Notification });
+  res.json({ success: true, message: 'Comment reported' });
+});
+
 const reportPost = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
@@ -173,5 +178,6 @@ module.exports = {
   listComments,
   deleteComment,
   reportPost,
+  reportComment,
   sharePost,
 };

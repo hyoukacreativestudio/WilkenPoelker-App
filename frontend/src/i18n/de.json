@@ -299,7 +299,21 @@
     "postEditedSuccess": "Beitrag wurde erfolgreich bearbeitet.",
     "postDeletedSuccess": "Beitrag wurde erfolgreich gelöscht.",
     "commentAddedSuccess": "Kommentar wurde erfolgreich gesendet.",
-    "readMore": "mehr"
+    "readMore": "mehr",
+    "commentOptions": "Kommentar",
+    "deleteComment": "Kommentar löschen",
+    "deleteCommentConfirm": "Möchten Sie diesen Kommentar wirklich löschen?",
+    "commentDeleted": "Kommentar gelöscht",
+    "reportComment": "Kommentar melden",
+    "reportCommentTitle": "Kommentar melden",
+    "reportCommentMessage": "Warum möchten Sie diesen Kommentar melden? Unser Team prüft die Meldung.",
+    "reportReasonAbuse": "Beleidigend / anstößig",
+    "reportReasonSpam": "Spam / Werbung",
+    "reportThanks": "Danke! Wir prüfen den Kommentar.",
+    "hideUser": "Nutzer ausblenden",
+    "hideUserTitle": "Nutzer ausblenden",
+    "hideUserMessage": "Kommentare dieses Nutzers werden Ihnen nicht mehr angezeigt.",
+    "userHidden": "Nutzer ausgeblendet"
   },
   "openingHours": {
     "open": "Jetzt geöffnet",

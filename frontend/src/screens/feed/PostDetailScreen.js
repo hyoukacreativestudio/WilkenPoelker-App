@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -27,6 +28,8 @@ import { formatRelativeTime } from '../../utils/formatters';
 import { getInitials } from '../../utils/helpers';
 import { getServerUrl } from '../../api/client';
 import { useToast } from '../../components/ui/Toast';
+
+const BLOCKED_USERS_KEY = '@blocked_users';
 
 export default function PostDetailScreen({ route, navigation }) {
   const { postId } = route.params;
@@ -45,6 +48,89 @@ export default function PostDetailScreen({ route, navigation }) {
   const [imageAspect, setImageAspect] = useState(4 / 3);
 
   const commentInputRef = useRef(null);
+  const [blockedUsers, setBlockedUsers] = useState([]);
+
+  // Users hidden by this user (stored on the device only).
+  useEffect(() => {
+    AsyncStorage.getItem(BLOCKED_USERS_KEY)
+      .then((v) => setBlockedUsers(v ? JSON.parse(v) : []))
+      .catch(() => {});
+  }, []);
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const authorIdOf = (c) => c.userId || c.author?.id || c.user?.id;
+
+  const deleteComment = useCallback((comment) => {
+    const id = comment._id || comment.id;
+    Alert.alert(t('feed.deleteComment'), t('feed.deleteCommentConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await feedApi.deleteComment(id);
+            setComments((prev) => prev.filter((c) => (c._id || c.id) !== id));
+            setPost((prev) => (prev ? { ...prev, commentsCount: Math.max(0, (prev.commentsCount || 1) - 1) } : prev));
+            showToast({ type: 'success', message: t('feed.commentDeleted') });
+          } catch (err) {
+            showToast({ type: 'error', message: t('errors.generic') });
+          }
+        },
+      },
+    ]);
+  }, [t, showToast]);
+
+  const reportComment = useCallback((comment) => {
+    const send = async (reason) => {
+      try {
+        await feedApi.reportComment(comment._id || comment.id, reason);
+        showToast({ type: 'success', message: t('feed.reportThanks') });
+      } catch (err) {
+        showToast({ type: 'error', message: (!err?.isNetworkError && err?.message) || t('errors.generic') });
+      }
+    };
+    // Android shows at most 3 buttons: cancel + 2 reasons.
+    Alert.alert(t('feed.reportCommentTitle'), t('feed.reportCommentMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('feed.reportReasonAbuse'), onPress: () => send(t('feed.reportReasonAbuse')) },
+      { text: t('feed.reportReasonSpam'), onPress: () => send(t('feed.reportReasonSpam')) },
+    ]);
+  }, [t, showToast]);
+
+  const hideUser = useCallback((comment) => {
+    const authorId = authorIdOf(comment);
+    if (!authorId) return;
+    Alert.alert(t('feed.hideUserTitle'), t('feed.hideUserMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('feed.hideUser'),
+        style: 'destructive',
+        onPress: () => {
+          setBlockedUsers((prev) => {
+            const next = prev.includes(authorId) ? prev : [...prev, authorId];
+            AsyncStorage.setItem(BLOCKED_USERS_KEY, JSON.stringify(next)).catch(() => {});
+            return next;
+          });
+          showToast({ type: 'success', message: t('feed.userHidden') });
+        },
+      },
+    ]);
+  }, [t, showToast]);
+
+  const openCommentMenu = useCallback((comment) => {
+    const authorId = authorIdOf(comment);
+    const isOwn = !!authorId && authorId === user?.id;
+    const buttons = [{ text: t('common.cancel'), style: 'cancel' }];
+    if (isOwn || isAdmin) {
+      buttons.push({ text: t('feed.deleteComment'), style: 'destructive', onPress: () => deleteComment(comment) });
+    }
+    if (!isOwn) {
+      buttons.push({ text: t('feed.reportComment'), onPress: () => reportComment(comment) });
+      if (!isAdmin) buttons.push({ text: t('feed.hideUser'), onPress: () => hideUser(comment) });
+    }
+    Alert.alert(t('feed.commentOptions'), undefined, buttons);
+  }, [user, isAdmin, t, deleteComment, reportComment, hideUser]);
 
   const likePostApi = useApi(feedApi.likePost);
 
@@ -264,6 +350,7 @@ export default function PostDetailScreen({ route, navigation }) {
     ({ item }) => (
       <CommentItem
         comment={item}
+        onMenu={openCommentMenu}
         style={{
           paddingHorizontal: theme.spacing.md,
           borderBottomWidth: StyleSheet.hairlineWidth,
@@ -271,7 +358,7 @@ export default function PostDetailScreen({ route, navigation }) {
         }}
       />
     ),
-    [theme]
+    [theme, openCommentMenu]
   );
 
   const renderEmptyComments = () => {
@@ -326,7 +413,7 @@ export default function PostDetailScreen({ route, navigation }) {
       </View>
 
       <FlatList
-        data={comments}
+        data={comments.filter((c) => !blockedUsers.includes(authorIdOf(c)))}
         renderItem={renderComment}
         keyExtractor={(item) => String(item._id || item.id)}
         ListHeaderComponent={renderPostHeader}

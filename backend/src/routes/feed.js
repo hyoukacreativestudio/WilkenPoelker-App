@@ -117,6 +117,17 @@ router.delete(
 // Report & Share
 // ──────────────────────────────────────────────
 
+// POST /api/feed/comments/:id/report
+router.post(
+  '/comments/:id/report',
+  authenticate,
+  validate([
+    validators.uuid('id'),
+    body('reason').notEmpty().withMessage('Report reason is required').isLength({ max: 200 }).withMessage('Reason must be at most 200 characters'),
+  ]),
+  feedController.reportComment
+);
+
 // POST /api/feed/:id/report
 router.post(
   '/:id/report',

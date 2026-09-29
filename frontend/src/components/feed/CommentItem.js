@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { getServerUrl } from '../../api/client';
 import { formatRelativeTime } from '../../utils/formatters';
 import { getInitials } from '../../utils/helpers';
 
-export default function CommentItem({ comment, style }) {
+export default function CommentItem({ comment, style, onMenu }) {
   const { theme } = useTheme();
 
   const user = comment.author || comment.user;
@@ -15,7 +16,10 @@ export default function CommentItem({ comment, style }) {
     : user?.username;
 
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.8}
+      disabled={!onMenu}
+      onLongPress={onMenu ? () => onMenu(comment) : undefined}
       style={[
         {
           flexDirection: 'row',
@@ -69,6 +73,18 @@ export default function CommentItem({ comment, style }) {
           {formatRelativeTime(createdAt)}
         </Text>
       </View>
-    </View>
+
+      {/* Menu: report / hide user / delete (App Store guideline 1.2) */}
+      {onMenu ? (
+        <TouchableOpacity
+          onPress={() => onMenu(comment)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Kommentar-Optionen"
+          style={{ paddingLeft: theme.spacing.sm, paddingTop: 2 }}
+        >
+          <MaterialCommunityIcons name="dots-vertical" size={18} color={theme.colors.textTertiary} />
+        </TouchableOpacity>
+      ) : null}
+    </TouchableOpacity>
   );
 }

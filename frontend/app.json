@@ -16,7 +16,7 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.hyoukacreativestudios.wilkenpoelker",
       "buildNumber": "1",
       "associatedDomains": [

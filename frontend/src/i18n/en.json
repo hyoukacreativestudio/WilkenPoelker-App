@@ -299,7 +299,21 @@
     "postEditedSuccess": "Post was edited successfully.",
     "postDeletedSuccess": "Post was deleted successfully.",
     "commentAddedSuccess": "Comment was posted successfully.",
-    "readMore": "more"
+    "readMore": "more",
+    "commentOptions": "Comment",
+    "deleteComment": "Delete comment",
+    "deleteCommentConfirm": "Do you really want to delete this comment?",
+    "commentDeleted": "Comment deleted",
+    "reportComment": "Report comment",
+    "reportCommentTitle": "Report comment",
+    "reportCommentMessage": "Why do you want to report this comment? Our team will review it.",
+    "reportReasonAbuse": "Abusive / offensive",
+    "reportReasonSpam": "Spam / advertising",
+    "reportThanks": "Thank you! We will review the comment.",
+    "hideUser": "Hide user",
+    "hideUserTitle": "Hide user",
+    "hideUserMessage": "You will no longer see comments from this user.",
+    "userHidden": "User hidden"
   },
   "openingHours": {
     "open": "Open now",

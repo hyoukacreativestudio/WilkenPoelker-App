@@ -18,5 +18,6 @@ export const feedApi = {
   getComments: (id, params) => apiClient.get(`/feed/${id}/comments`, { params }),
   deleteComment: (id) => apiClient.delete(`/feed/comments/${id}`),
   reportPost: (id, reason) => apiClient.post(`/feed/${id}/report`, { reason }),
+  reportComment: (id, reason) => apiClient.post(`/feed/comments/${id}/report`, { reason }),
   sharePost: (id, channel) => apiClient.post(`/feed/${id}/share`, { channel }),
 };
