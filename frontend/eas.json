@@ -36,7 +36,8 @@
         "image": "latest"
       },
       "env": {
-        "API_BASE_URL": "https://api.wilkenpoelker.de/api"
+        "API_BASE_URL": "https://api.wilkenpoelker.de/api",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     }
   },
