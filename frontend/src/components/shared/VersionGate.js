@@ -37,7 +37,7 @@ export default function VersionGate() {
     let active = true;
     (async () => {
       try {
-        const res = await apiClient.get('/app-version');
+        const res = await apiClient.get('/app-version', { params: { platform: Platform.OS } });
         const data = res?.data?.data;
         if (active && data) setInfo(data);
       } catch (e) { /* offline / endpoint missing → no popup */ }

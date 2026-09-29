@@ -136,13 +136,18 @@ app.use('/pc', express.static(path.resolve(__dirname, '../../desktop/dist'), {
 //   APP_LATEST_VERSION   newest version available (e.g. "1.1.0")
 //   APP_MIN_VERSION      oldest version still allowed to run (forces update)
 //   APP_UPDATE_URL       where to download the new version
+//   Per platform (store release): APP_LATEST_VERSION_IOS / _ANDROID,
+//   APP_MIN_VERSION_IOS / _ANDROID, APP_UPDATE_URL_IOS / _ANDROID
+//   (App Store / Play Store links). They fall back to the variables above.
 app.get('/api/app-version', (req, res) => {
+  const p = req.query.platform === 'ios' ? 'IOS' : req.query.platform === 'android' ? 'ANDROID' : null;
+  const env = (name, fallback) => (p && process.env[`${name}_${p}`]) || process.env[name] || fallback;
   res.json({
     success: true,
     data: {
-      latest: process.env.APP_LATEST_VERSION || '1.0.0',
-      minSupported: process.env.APP_MIN_VERSION || '1.0.0',
-      updateUrl: process.env.APP_UPDATE_URL || '',
+      latest: env('APP_LATEST_VERSION', '1.0.0'),
+      minSupported: env('APP_MIN_VERSION', '1.0.0'),
+      updateUrl: env('APP_UPDATE_URL', ''),
       message: process.env.APP_UPDATE_MESSAGE || '',
     },
   });
