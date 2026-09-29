@@ -3,7 +3,7 @@
     "name": "WilkenPoelker",
     "slug": "wilkenpoelker",
     "owner": "wilkenpoelker",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
