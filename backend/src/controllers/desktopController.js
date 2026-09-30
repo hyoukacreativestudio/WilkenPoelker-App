@@ -319,7 +319,9 @@ const deleteWarehouseItem = asyncHandler(async (req, res) => {
 // App-created appointments show up automatically (same table). Staff can also
 // create their own by hand with a free-text customer (number/name/phone).
 
-const APPT_TYPES = ['service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing', 'onsite_repair'];
+// Must match the Appointment.type ENUM - a missing entry silently became 'other'
+// (e.g. 'Urlaub' turned into 'Sonstiges' on the first save).
+const APPT_TYPES = ['service', 'pickup', 'delivery', 'inspection', 'consultation', 'other', 'repair', 'property_viewing', 'onsite_repair', 'new_installation', 'urlaub'];
 const APPT_STATUSES = ['pending', 'proposed', 'confirmed', 'cancelled', 'completed', 'rescheduled'];
 
 // Who sees every appointment (the general schedulers). Everyone else only sees

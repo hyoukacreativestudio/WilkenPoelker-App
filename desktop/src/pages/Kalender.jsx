@@ -209,6 +209,13 @@ export default function Kalender({ user }) {
     try { await api.patch(`/desktop/appointments/${a.id}`, body); toast('Zugeteilt'); await load(); }
     catch (e2) { toast(e2.message, { type: 'error' }); }
   };
+  const deleteAppt = async () => {
+    if (!createForm?._id) return;
+    if (!confirm('Termin endgültig löschen?')) return;
+    setBusy(true);
+    try { await api.del(`/desktop/appointments/${createForm._id}`); toast('Termin gelöscht'); setCreateForm(null); await load(); }
+    catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
   const cancelAppt = async (a) => {
     if (!confirm('Termin absagen?')) return;
     try { await api.patch(`/desktop/appointments/${a.id}`, { status: 'cancelled' }); await load(); toast('Abgesagt'); }
@@ -500,6 +507,9 @@ export default function Kalender({ user }) {
               </label>
             </div>
             <div className="modal-actions">
+              {createForm._id && (
+                <button className="btn danger" style={{ marginRight: 'auto' }} onClick={deleteAppt} disabled={busy}>Löschen</button>
+              )}
               <button className="btn ghost" onClick={() => setCreateForm(null)}>Abbrechen</button>
               <button className="btn" onClick={submitCreate} disabled={busy || !createForm.handle.trim()}>Speichern</button>
             </div>
