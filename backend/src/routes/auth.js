@@ -101,8 +101,8 @@ router.get('/test-email', authenticate, async (req, res) => {
       await emailService.sendEmail({
         to: req.user.email,
         subject: 'WilkenPoelker - E-Mail-Test',
-        html: '<h2>E-Mail funktioniert!</h2><p>Diese Test-E-Mail wurde erfolgreich über SendGrid versendet.</p>',
-        text: 'E-Mail funktioniert! Diese Test-E-Mail wurde erfolgreich über SendGrid versendet.',
+        html: '<h2>E-Mail funktioniert!</h2><p>Diese Test-E-Mail wurde erfolgreich versendet.</p>',
+        text: 'E-Mail funktioniert! Diese Test-E-Mail wurde erfolgreich versendet.',
       });
       configResult.testEmailSent = true;
       configResult.testEmailTo = req.user.email;
