@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { aiApi } from '../../api/ai';
+import { ensureAiConsent } from '../../utils/aiConsent';
 
 const MAX_VISIBLE_MESSAGES = 3;
 
@@ -47,6 +48,7 @@ export default function AiChatWidget({ category = 'bike', onOpenFullChat, style 
   const handleSend = useCallback(async () => {
     const trimmed = inputText.trim();
     if ((!trimmed && pendingImages.length === 0) || sending) return;
+    if (!(await ensureAiConsent(t))) return;
 
     const userMessage = {
       role: 'user',
@@ -84,7 +86,7 @@ export default function AiChatWidget({ category = 'bike', onOpenFullChat, style 
     } finally {
       setSending(false);
     }
-  }, [inputText, sending, category, sessionId, pendingImages]);
+  }, [inputText, sending, category, sessionId, pendingImages, t]);
 
   const handleOpenFull = useCallback(() => {
     if (onOpenFullChat) {

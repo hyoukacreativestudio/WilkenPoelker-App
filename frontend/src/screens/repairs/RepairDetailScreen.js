@@ -21,17 +21,18 @@ import Card from '../../components/ui/Card';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import { useToast } from '../../components/ui/Toast';
 
+// Same traffic-light colours as the repair list: red = in progress, yellow = done, green = ready
 const STATUS_COLORS = {
-  ordered: '#DD6B20',
-  in_repair: '#DD6B20',
-  quote_created: '#805AD5',
-  parts_ordered: '#D69E2E',
-  repair_done: '#38A169',
+  ordered: '#E53E3E',
+  in_repair: '#E53E3E',
+  quote_created: '#E53E3E',
+  parts_ordered: '#E53E3E',
+  repair_done: '#ECC94B',
   ready: '#38A169',
   completed: '#2D8659',
-  leasing_in_progress: '#DD6B20',
-  sale_in_progress: '#DD6B20',
-  sale_test_drive: '#D69E2E',
+  leasing_in_progress: '#E53E3E',
+  sale_in_progress: '#E53E3E',
+  sale_test_drive: '#ECC94B',
 };
 
 export default function RepairDetailScreen({ route, navigation }) {

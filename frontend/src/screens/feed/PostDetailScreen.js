@@ -50,12 +50,14 @@ export default function PostDetailScreen({ route, navigation }) {
   const commentInputRef = useRef(null);
   const [blockedUsers, setBlockedUsers] = useState([]);
 
-  // Users hidden by this user (stored on the device only).
+  // Users hidden by this account (stored on the device, per account, so another
+  // account on the same phone - e.g. an admin moderating a report - still sees them).
+  const blockedKey = `${BLOCKED_USERS_KEY}:${user?.id || 'guest'}`;
   useEffect(() => {
-    AsyncStorage.getItem(BLOCKED_USERS_KEY)
+    AsyncStorage.getItem(blockedKey)
       .then((v) => setBlockedUsers(v ? JSON.parse(v) : []))
-      .catch(() => {});
-  }, []);
+      .catch(() => setBlockedUsers([]));
+  }, [blockedKey]);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const authorIdOf = (c) => c.userId || c.author?.id || c.user?.id;
@@ -109,14 +111,14 @@ export default function PostDetailScreen({ route, navigation }) {
         onPress: () => {
           setBlockedUsers((prev) => {
             const next = prev.includes(authorId) ? prev : [...prev, authorId];
-            AsyncStorage.setItem(BLOCKED_USERS_KEY, JSON.stringify(next)).catch(() => {});
+            AsyncStorage.setItem(blockedKey, JSON.stringify(next)).catch(() => {});
             return next;
           });
           showToast({ type: 'success', message: t('feed.userHidden') });
         },
       },
     ]);
-  }, [t, showToast]);
+  }, [t, showToast, blockedKey]);
 
   const openCommentMenu = useCallback((comment) => {
     const authorId = authorIdOf(comment);

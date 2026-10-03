@@ -642,6 +642,7 @@
     "upcoming": "Upcoming",
     "past": "Past",
     "noAppointments": "No appointments",
+    "noAppointmentsMsg": "Request an appointment – we will get back to you with a suggested date.",
     "newAppointment": "Request new appointment",
     "calendarView": "Calendar",
     "listView": "List",

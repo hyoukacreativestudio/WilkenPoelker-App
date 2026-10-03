@@ -238,7 +238,7 @@ export default function AppointmentsScreen({ navigation }) {
       <EmptyState
         icon="calendar-blank-outline"
         title={t('appointments.noAppointments')}
-        message={t('appointments.noAppointments')}
+        message={t('appointments.noAppointmentsMsg')}
         actionLabel={t('appointments.newAppointment')}
         onAction={handleNewAppointment}
       />

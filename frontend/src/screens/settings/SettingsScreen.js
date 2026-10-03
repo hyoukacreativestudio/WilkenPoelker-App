@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -454,7 +455,7 @@ export default function SettingsScreen() {
                 {t('settings.version')}
               </Text>
               <Text style={[theme.typography.styles.body, { color: theme.colors.textSecondary }]}>
-                1.0.0
+                {Constants.expoConfig?.version || '–'}
               </Text>
             </View>
             <Divider style={{ marginVertical: theme.spacing.sm }} />

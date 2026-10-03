@@ -642,6 +642,7 @@
     "upcoming": "Kommende Termine",
     "past": "Vergangene Termine",
     "noAppointments": "Keine Termine vorhanden",
+    "noAppointmentsMsg": "Fragen Sie einen Termin an – wir melden uns mit einem Terminvorschlag.",
     "newAppointment": "Neuen Termin anfragen",
     "calendarView": "Kalender",
     "listView": "Liste",
