@@ -122,6 +122,11 @@ describe('formatRelativeTime', () => {
     expect(formatRelativeTime(threeDaysAgo)).toBe('vor 3 Tagen');
   });
 
+  it('uses the singular for one week', () => {
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    expect(formatRelativeTime(eightDaysAgo)).toBe('vor 1 Woche');
+  });
+
   it('returns empty for falsy input', () => {
     expect(formatRelativeTime(null)).toBe('');
     expect(formatRelativeTime('')).toBe('');

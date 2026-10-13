@@ -1,3 +1,5 @@
+import i18next from 'i18next';
+
 export function formatPrice(price, locale = 'de-DE') {
   if (price == null) return '';
   return new Intl.NumberFormat(locale, {
@@ -64,12 +66,15 @@ export function formatRelativeTime(date) {
   const diffDay = Math.floor(diffHour / 24);
   const diffWeek = Math.floor(diffDay / 7);
 
-  if (diffSec < 60) return 'gerade eben';
-  if (diffMin < 60) return `vor ${diffMin} Min.`;
-  if (diffHour < 24) return `vor ${diffHour} Std.`;
-  if (diffDay === 1) return 'gestern';
-  if (diffDay < 7) return `vor ${diffDay} Tagen`;
-  if (diffWeek < 4) return `vor ${diffWeek} Wochen`;
+  // Follows the app language (German unless English is chosen; tests run without i18n)
+  const en = String(i18next.language || '').startsWith('en');
+  if (diffSec < 60) return en ? 'just now' : 'gerade eben';
+  if (diffMin < 60) return en ? `${diffMin} min ago` : `vor ${diffMin} Min.`;
+  if (diffHour < 24) return en ? `${diffHour} h ago` : `vor ${diffHour} Std.`;
+  if (diffDay === 1) return en ? 'yesterday' : 'gestern';
+  if (diffDay < 7) return en ? `${diffDay} days ago` : `vor ${diffDay} Tagen`;
+  if (diffWeek === 1) return en ? '1 week ago' : 'vor 1 Woche';
+  if (diffWeek < 4) return en ? `${diffWeek} weeks ago` : `vor ${diffWeek} Wochen`;
   return formatDate(date);
 }
 
