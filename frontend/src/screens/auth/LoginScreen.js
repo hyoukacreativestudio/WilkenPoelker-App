@@ -15,6 +15,7 @@ import { useAuth } from '../../hooks/useAuth';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
+import { apiErrorMessage } from '../../utils/apiErrors';
 
 export default function LoginScreen({ navigation }) {
   const { t } = useTranslation();
@@ -45,7 +46,7 @@ export default function LoginScreen({ navigation }) {
       await login({ email: emailOrCustomerNumber.trim(), password, rememberMe });
     } catch (err) {
       if (err.code === 'EMAIL_NOT_VERIFIED') {
-        showToast({ type: 'info', message: t('auth.emailNotVerified', 'Bitte verifiziere zuerst deine E-Mail-Adresse.') });
+        showToast({ type: 'info', message: t('auth.emailNotVerified', 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.') });
         navigation.navigate('EmailVerification', { email: emailOrCustomerNumber.trim() });
         return;
       }
@@ -59,7 +60,7 @@ export default function LoginScreen({ navigation }) {
       } else if (err.code === 'INVALID_CREDENTIALS' || /refresh|token/i.test(err.message || '') || /no refresh token/i.test(err.message || '')) {
         msg = t('auth.wrongPassword', 'E-Mail oder Passwort falsch.');
       } else {
-        msg = err.message || t('errors.invalidCredentials');
+        msg = apiErrorMessage(err, t, 'errors.invalidCredentials');
       }
       showToast({ type: 'error', message: msg });
     } finally {
@@ -96,7 +97,7 @@ export default function LoginScreen({ navigation }) {
         {/* Welcome Text */}
         <View style={s.welcomeSection}>
           <Text style={s.welcomeTitle}>{t('auth.loginWelcome', 'Willkommen zurück')}</Text>
-          <Text style={s.welcomeSubtitle}>{t('auth.loginSubtitle', 'Melde dich an, um fortzufahren')}</Text>
+          <Text style={s.welcomeSubtitle}>{t('auth.loginSubtitle', 'Bitte melden Sie sich an')}</Text>
         </View>
 
         {/* Form Card */}

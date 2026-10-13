@@ -202,7 +202,7 @@
   },
   "emailVerification": {
     "title": "E-Mail verifizieren",
-    "message": "Wir haben dir eine Verifizierungs-E-Mail gesendet. Bitte überprüfe dein Postfach und klicke auf den Link.",
+    "message": "Wir haben Ihnen eine E-Mail zur Bestätigung gesendet. Bitte öffnen Sie Ihr Postfach und tippen Sie auf den Link.",
     "resend": "Erneut senden",
     "resent": "E-Mail gesendet",
     "resentMessage": "Eine neue Verifizierungs-E-Mail wurde gesendet.",
@@ -229,7 +229,7 @@
     "hasAccount": "Bereits ein Konto?",
     "registerNow": "Jetzt registrieren",
     "loginNow": "Jetzt anmelden",
-    "emailNotVerified": "Bitte verifiziere zuerst deine E-Mail-Adresse.",
+    "emailNotVerified": "Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.",
     "wrongPassword": "E-Mail oder Passwort falsch.",
     "accountDeactivated": "Dieser Account ist deaktiviert.",
     "dsgvoAccept": "Ich akzeptiere die Datenschutzerklärung",
@@ -241,7 +241,7 @@
     "resetEmailSent": "Falls ein Konto mit dieser E-Mail existiert, wurde ein Link gesendet.",
     "passwordChanged": "Passwort erfolgreich geändert.",
     "loginWelcome": "Willkommen zurück",
-    "loginSubtitle": "Melde dich an, um fortzufahren",
+    "loginSubtitle": "Bitte melden Sie sich an",
     "biometricLogin": "Mit Biometrie anmelden",
     "pinLogin": "Mit PIN anmelden",
     "passwordStrength": "Passwortstärke",
@@ -251,7 +251,8 @@
     "good": "Gut",
     "strong": "Stark",
     "veryStrong": "Sehr stark",
-    "passwordRequirements": "Min. 8 Zeichen, Groß-/Kleinbuchstaben, Zahl, Sonderzeichen"
+    "passwordRequirements": "Min. 8 Zeichen, Groß-/Kleinbuchstaben, Zahl, Sonderzeichen",
+    "addressHint": "Mit Ihrer Adresse finden wir Sie in unserem Kundenstamm und verknüpfen Ihr Konto automatisch mit Ihrer Kundennummer – dann sehen Sie Ihre Reparaturen sofort."
   },
   "feed": {
     "title": "Feed",
@@ -282,9 +283,9 @@
     "likesCount": "{{count}} Likes",
     "commentsCount": "{{count}} Kommentare",
     "createPostError": "Beitrag konnte nicht erstellt werden",
-    "checkOutPost": "Schau dir diesen Beitrag an!",
+    "checkOutPost": "Schauen Sie sich diesen Beitrag an!",
     "newPost": "Neuer Beitrag",
-    "whatsOnYourMind": "Was beschäftigt dich?",
+    "whatsOnYourMind": "Was gibt es Neues?",
     "noCommentsYet": "Noch keine Kommentare",
     "beFirstToComment": "Schreiben Sie den ersten Kommentar!",
     "addComment": "Kommentar hinzufügen...",
@@ -578,8 +579,10 @@
     "activeRepairs": "Aktive Reparaturen",
     "completedRepairs": "Abgeschlossene Reparaturen",
     "noRepairs": "Keine Reparaturen vorhanden",
+    "noRepairsMsg": "Sobald wir einen Auftrag für Sie anlegen, sehen Sie hier den aktuellen Stand.",
     "repairNumber": "Reparatur-Nr.",
     "orderNumber": "Auftragsnummer",
+    "orderNumberShort": "Auftrags-Nr.",
     "customerNumber": "Kundennummer",
     "device": "Gerät",
     "problem": "Problem",
@@ -922,7 +925,7 @@
     "broadcastNoRecipients": "Keine Benutzer mit den ausgewählten Rollen gefunden.",
     "changeRoleMessage": "Rolle von {{name}} ändern:",
     "confirmRoleChange": "Rolle ändern?",
-    "confirmRoleChangeMessage": "Möchtest du die Rolle von {{name}} auf {{role}} ändern?",
+    "confirmRoleChangeMessage": "Möchten Sie die Rolle von {{name}} auf {{role}} ändern?",
     "roleChangeSuccess": "Die Rolle von {{name}} wurde erfolgreich geändert.",
     "roleChangeError": "Die Rolle konnte nicht geändert werden.",
     "roleUser": "Kunde",
@@ -1200,9 +1203,12 @@
     "invalidFileType": "Ungültiger Dateityp.",
     "requiredField": "Dieses Feld ist erforderlich.",
     "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "tooManyRequests": "Zu viele Versuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+    "resetLinkInvalid": "Dieser Link ist ungültig oder abgelaufen. Bitte fordern Sie einen neuen an.",
+    "wrongCurrentPassword": "Das aktuelle Passwort ist nicht korrekt.",
     "pageNotFound": "Seite nicht gefunden",
     "pageNotFoundMessage": "Die angeforderte Seite existiert nicht.",
-    "generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+    "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
   },
   "createTicket": {
     "selectTitle": "Betreff auswählen",
@@ -1312,6 +1318,7 @@
     "messageLabel": "Nachricht an uns",
     "submitRequest": "Anfrage absenden",
     "requestSent": "Ihre Anfrage wurde erfolgreich gesendet!",
+    "autoAssigned": "Ihre Kundennummer {{number}} wurde zugeordnet.",
     "statusPending": "Anfrage wird bearbeitet",
     "statusApproved": "Kundennummer zugewiesen",
     "statusRejected": "Anfrage abgelehnt",
@@ -1334,7 +1341,8 @@
   },
   "adminTickets": {
     "title": "Offene Tickets",
-    "noTickets": "Keine offenen Tickets"
+    "noTickets": "Keine offenen Tickets",
+    "noTicketsMsg": "Alle Anfragen sind bearbeitet."
   },
   "connectionError": {
     "title": "Keine Verbindung",
@@ -1404,9 +1412,9 @@
   },
   "imagePicker": {
     "maxReached": "Maximale Anzahl an Bildern erreicht",
-    "permissionMessage": "Bitte erlaube den Zugriff auf deine Fotos."
+    "permissionMessage": "Bitte erlauben Sie den Zugriff auf Ihre Fotos."
   },
   "permissions": {
-    "mediaLibrary": "Bitte erlaube den Zugriff auf deine Fotos, um Bilder anzuhängen."
+    "mediaLibrary": "Bitte erlauben Sie den Zugriff auf Ihre Fotos, um Bilder anzuhängen."
   }
 }

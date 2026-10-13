@@ -20,6 +20,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import { useToast } from '../../components/ui/Toast';
+import { repairNumberLabelKey, repairOrderDate, separateOrderNumber } from '../../utils/repairDisplay';
 
 // Same traffic-light colours as the repair list: red = in progress, yellow = done, green = ready
 const STATUS_COLORS = {
@@ -189,7 +190,7 @@ export default function RepairDetailScreen({ route, navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.adminBarName} numberOfLines={1}>{customerName || t('common.unknown', 'Unbekannt')}</Text>
             <Text style={styles.adminBarMeta} numberOfLines={1}>
-              {t('repairs.repairNumber')} {repair.repairNumber || repair.number || '–'}
+              {t(repairNumberLabelKey(repair))} {repair.repairNumber || repair.number || '–'}
             </Text>
             {customerPhone ? (
               <Text style={styles.adminBarMeta} numberOfLines={1}>{customerPhone}</Text>
@@ -210,7 +211,7 @@ export default function RepairDetailScreen({ route, navigation }) {
 
       {/* Repair Number */}
       <Text style={styles.repairNumber}>
-        {t('repairs.repairNumber')} {repair.repairNumber || repair.number}
+        {t(repairNumberLabelKey(repair))} {repair.repairNumber || repair.number}
       </Text>
 
       {/* Device Name */}
@@ -290,18 +291,18 @@ export default function RepairDetailScreen({ route, navigation }) {
         <View style={styles.detailRow}>
           <MaterialCommunityIcons name="wrench-outline" size={18} color={theme.colors.textSecondary} />
           <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>{t('repairs.repairNumber')}</Text>
+            <Text style={styles.detailLabel}>{t(repairNumberLabelKey(repair))}</Text>
             <Text style={styles.detailValue}>{repair.repairNumber || repair.number}</Text>
           </View>
         </View>
 
         {/* Auftragsnummer (Taifun) */}
-        {repair.taifunRepairId ? (
+        {separateOrderNumber(repair) ? (
           <View style={styles.detailRow}>
             <MaterialCommunityIcons name="file-document-outline" size={18} color={theme.colors.textSecondary} />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>{t('repairs.orderNumber')}</Text>
-              <Text style={styles.detailValue}>{repair.taifunRepairId}</Text>
+              <Text style={styles.detailValue}>{separateOrderNumber(repair)}</Text>
             </View>
           </View>
         ) : null}
@@ -318,12 +319,12 @@ export default function RepairDetailScreen({ route, navigation }) {
         ) : null}
 
         {/* Datum */}
-        {repair.createdAt || repair.receivedDate ? (
+        {repairOrderDate(repair) ? (
           <View style={styles.detailRow}>
             <MaterialCommunityIcons name="calendar-outline" size={18} color={theme.colors.textSecondary} />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>{t('repairs.receivedDate')}</Text>
-              <Text style={styles.detailValue}>{formatDate(repair.createdAt || repair.receivedDate)}</Text>
+              <Text style={styles.detailValue}>{formatDate(repairOrderDate(repair))}</Text>
             </View>
           </View>
         ) : null}

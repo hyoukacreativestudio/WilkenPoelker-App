@@ -19,6 +19,10 @@ const app = express();
 app.set('trust proxy', 1);
 
 const server = http.createServer(app);
+// Keep idle connections open longer than clients/proxies reuse them (Node's default
+// is 5 s): otherwise a POST can land on a socket Node is just closing and fail.
+server.keepAliveTimeout = 125 * 1000;
+server.headersTimeout = 126 * 1000;
 
 // Socket.io setup with CORS
 const io = socketIo(server, {
@@ -55,7 +59,9 @@ try {
 // TEMPORARY DEBUG: log every incoming request BEFORE body-parsing so we can see
 // what actually reaches Express. Remove once mobile POST issue is diagnosed.
 app.use((req, res, next) => {
-  logger.info(`[REQ] ${req.method} ${req.url} UA=${(req.headers['user-agent'] || '').slice(0, 30)} CT=${req.headers['content-type'] || '-'} CL=${req.headers['content-length'] || '-'}`);
+  // Path only: query strings (search terms, reset tokens) and e-mail tokens stay out of the log
+  const safePath = req.path.replace(/\/(verify-email|reset-password|passwort-zuruecksetzen)\/[^/]+/, '/$1/…');
+  logger.info(`[REQ] ${req.method} ${safePath} UA=${(req.headers['user-agent'] || '').slice(0, 30)} CT=${req.headers['content-type'] || '-'} CL=${req.headers['content-length'] || '-'}`);
   next();
 });
 
@@ -116,6 +122,8 @@ app.use('/api/desktop', desktopRoutes);
 app.use(['/datenschutz', '/privacy'], require('./routes/legal'));
 // Account deletion request page (Google Play requires a web URL).
 app.use(['/konto-loeschen', '/delete-account'], require('./routes/legal').deleteAccountRouter);
+// Target of the link in the password-reset e-mail (works without the app)
+app.use(['/reset-password', '/passwort-zuruecksetzen'], require('./routes/resetPasswordPage'));
 
 // Serve the desktop tool (built web app) so every company PC just opens
 // <server>/pc in a browser — no install, no Node, no CORS (same origin as /api).

@@ -797,29 +797,43 @@ async function generateICalContent(appointmentId) {
     ? `${location.name}${location.address ? ', ' + location.address : ''}`
     : 'WilkenPoelker';
 
-  // Build dtstart and dtend in YYYYMMDDTHHMMSS format
-  const dateClean = appointment.date.replace(/-/g, '');
-  const startClean = appointment.startTime.replace(/:/g, '').substring(0, 4) + '00';
-  const dtStart = `${dateClean}T${startClean}`;
+  if (!appointment.date) {
+    throw new AppError('Für diesen Termin steht noch kein Datum fest.', 400, 'APPOINTMENT_NO_DATE');
+  }
+  const dateClean = String(appointment.date).slice(0, 10).replace(/-/g, '');
 
-  let dtEnd;
-  if (appointment.endTime) {
-    const endClean = appointment.endTime.replace(/:/g, '').substring(0, 4) + '00';
-    dtEnd = `${dateClean}T${endClean}`;
+  // With a start time: timed event (default 1 hour). Staff often propose the
+  // time only as free text ("Mittwoch um 12 Uhr") - then an all-day entry.
+  let startLine;
+  let endLine;
+  if (appointment.startTime) {
+    const startClean = appointment.startTime.replace(/:/g, '').substring(0, 4) + '00';
+    let endClean;
+    if (appointment.endTime) {
+      endClean = appointment.endTime.replace(/:/g, '').substring(0, 4) + '00';
+    } else {
+      const [h, m] = appointment.startTime.split(':').map(Number);
+      endClean = `${String(Math.min(h + 1, 23)).padStart(2, '0')}${String(m).padStart(2, '0')}00`;
+    }
+    startLine = `DTSTART;TZID=Europe/Berlin:${dateClean}T${startClean}`;
+    endLine = `DTEND;TZID=Europe/Berlin:${dateClean}T${endClean}`;
   } else {
-    // Default to 1 hour after start
-    const [h, m] = appointment.startTime.split(':').map(Number);
-    const endH = String(h + 1).padStart(2, '0');
-    const endM = String(m).padStart(2, '0');
-    dtEnd = `${dateClean}T${endH}${endM}00`;
+    const next = new Date(`${String(appointment.date).slice(0, 10)}T00:00:00Z`);
+    next.setUTCDate(next.getUTCDate() + 1);
+    startLine = `DTSTART;VALUE=DATE:${dateClean}`;
+    endLine = `DTEND;VALUE=DATE:${next.toISOString().slice(0, 10).replace(/-/g, '')}`;
   }
 
   const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   const uid = `${appointment.id}@wilkenpoelker.de`;
 
-  const description = appointment.description
-    ? appointment.description.replace(/\n/g, '\\n')
-    : '';
+  // RFC 5545 text escaping
+  const icsText = (v) => String(v || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+  const description = icsText([appointment.proposedText, appointment.description].filter(Boolean).join('\n'));
 
   const ical = [
     'BEGIN:VCALENDAR',
@@ -830,11 +844,11 @@ async function generateICalContent(appointmentId) {
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${now}`,
-    `DTSTART;TZID=Europe/Berlin:${dtStart}`,
-    `DTEND;TZID=Europe/Berlin:${dtEnd}`,
-    `SUMMARY:${appointment.title}`,
+    startLine,
+    endLine,
+    `SUMMARY:${icsText(appointment.title)}`,
     `DESCRIPTION:${description}`,
-    `LOCATION:${locationStr}`,
+    `LOCATION:${icsText(locationStr)}`,
     `STATUS:${appointment.status === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE'}`,
     'END:VEVENT',
     'END:VCALENDAR',

@@ -23,6 +23,7 @@ import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import { useToast } from '../../components/ui/Toast';
+import { apiErrorMessage } from '../../utils/apiErrors';
 
 export default function ProfileScreen({ navigation }) {
   const { t } = useTranslation();
@@ -156,12 +157,7 @@ export default function ProfileScreen({ navigation }) {
       await updateUser(typeof updatedUser === 'object' ? updatedUser : profileData);
       showToast({ type: 'success', message: t('profile.profileSaved') });
     } catch (err) {
-      let msg = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || t('errors.somethingWentWrong');
-      const details = err?.details || err?.response?.data?.error?.details;
-      if (details && Array.isArray(details) && details.length > 0) {
-        msg = details[0].message || msg;
-      }
-      showToast({ type: 'error', message: msg });
+      showToast({ type: 'error', message: apiErrorMessage(err, t) });
     }
   }, [firstName, lastName, phone, street, zip, city, updateProfileApi, updateUser, t]);
 
@@ -187,14 +183,7 @@ export default function ProfileScreen({ navigation }) {
       setConfirmPassword('');
       showToast({ type: 'success', message: t('auth.passwordChanged') });
     } catch (err) {
-      // Normalized errors from interceptor have { message, details }
-      let msg = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || t('errors.somethingWentWrong');
-      // If validation details are available, show the first specific error
-      const details = err?.details || err?.response?.data?.error?.details;
-      if (details && Array.isArray(details) && details.length > 0) {
-        msg = details[0].message || msg;
-      }
-      showToast({ type: 'error', message: msg });
+      showToast({ type: 'error', message: apiErrorMessage(err, t) });
     }
   }, [currentPassword, newPassword, confirmPassword, changePasswordApi, t, showToast]);
 

@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { storage } from '../utils/storage';
 import { emitAuthEvent, AUTH_EVENT_LOGOUT } from '../utils/authEvents';
-import { addBreadcrumb, captureError } from '../config/sentry';
+import { addBreadcrumb, captureError, isReportableHttpStatus, stripQuery } from '../config/sentry';
 
 // Environment-based API URL with fallback
 const getBaseUrl = () => {
@@ -128,7 +128,7 @@ apiClient.interceptors.request.use(
 
       // Breadcrumb: what we are about to send. Sentry keeps the last 100 —
       // when an error hits, we'll see the exact request that preceded it.
-      addBreadcrumb('http.request', `${config.method?.toUpperCase()} ${config.url}`, {
+      addBreadcrumb('http.request', `${config.method?.toUpperCase()} ${stripQuery(config.url)}`, {
         hasAuth: !!config.headers?.Authorization,
         isFormData: config.data instanceof FormData,
         contentType: config.headers?.['Content-Type'] || config.headers?.['content-type'] || '(unset)',
@@ -192,42 +192,42 @@ apiClient.interceptors.response.use(
       isNetworkError: !error.response,
     };
 
-    // Breadcrumb + Sentry capture for every failed API call so we can see
-    // in production exactly which endpoint blew up and what response came back.
+    // Breadcrumb for every failed call; a Sentry error only for unexpected failures
+    // (see isReportableHttpStatus). Field names only - never the values (privacy).
     try {
-      // Redact PII (passwords, tokens) but keep everything else so we can debug validation errors
-      const safeBody = (() => {
+      const fields = (() => {
         try {
           const raw = originalRequest?.data;
-          if (!raw || raw instanceof FormData) return raw instanceof FormData ? '[FormData]' : null;
+          if (!raw) return null;
+          if (raw instanceof FormData) return '[FormData]';
           const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-          const clone = { ...parsed };
-          for (const k of Object.keys(clone)) {
-            if (/password|token|secret/i.test(k)) clone[k] = '[redacted]';
-            if (typeof clone[k] === 'string' && clone[k].length > 200) clone[k] = clone[k].slice(0, 200) + '…';
-          }
-          return clone;
+          return parsed && typeof parsed === 'object' ? Object.keys(parsed) : null;
         } catch { return '[unparseable]'; }
       })();
+      const details = Array.isArray(normalizedError.details)
+        ? normalizedError.details.map((d) => ({ field: d?.field, message: d?.message }))
+        : null;
+      const method = originalRequest?.method?.toUpperCase() || 'REQ';
+      const url = stripQuery(originalRequest?.url) || '?';
 
-      addBreadcrumb('http.response.error', `${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} -> ${normalizedError.status || 'network'}`, {
+      addBreadcrumb('http.response.error', `${method} ${url} -> ${normalizedError.status || 'network'}`, {
         code: normalizedError.code,
         isNetworkError: normalizedError.isNetworkError,
         message: normalizedError.message,
-        details: normalizedError.details,
-        body: safeBody,
+        details,
+        fields,
       });
-      // Report so Sentry sees the actual failure with full context
-      const err = new Error(`API ${originalRequest?.method?.toUpperCase() || 'REQ'} ${originalRequest?.url || '?'} failed: ${normalizedError.message}`);
-      captureError(err, {
-        status: normalizedError.status,
-        code: normalizedError.code,
-        isNetworkError: normalizedError.isNetworkError,
-        url: originalRequest?.url,
-        method: originalRequest?.method,
-        details: normalizedError.details,
-        requestBody: safeBody,
-      });
+      if (isReportableHttpStatus(normalizedError.status)) {
+        captureError(new Error(`API ${method} ${url} failed: ${normalizedError.message}`), {
+          status: normalizedError.status,
+          code: normalizedError.code,
+          isNetworkError: normalizedError.isNetworkError,
+          url,
+          method,
+          details,
+          fields,
+        });
+      }
     } catch {}
 
     return Promise.reject(normalizedError);

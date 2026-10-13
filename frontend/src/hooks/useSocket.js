@@ -11,8 +11,6 @@ export function useSocket(ticketId) {
     let cancelled = false;
 
     (async () => {
-      // Pass the JWT so the backend can authenticate the WebSocket handshake.
-      const token = await storage.getItem('accessToken');
       if (cancelled) return;
 
       const socket = io(getServerUrl(), {
@@ -20,7 +18,11 @@ export function useSocket(ticketId) {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 10000,
         reconnectionAttempts: Infinity,
-        auth: { token },
+        // Function form: the JWT is read on every (re)connect. Access tokens
+        // expire after 15 min, a token captured once would fail later reconnects.
+        auth: (cb) => {
+          storage.getItem('accessToken').then((token) => cb({ token })).catch(() => cb({}));
+        },
       });
 
       socket.on('connect', () => {
@@ -54,20 +56,20 @@ export function useSocket(ticketId) {
     };
   }, [ticketId]);
 
-  const onMessage = useCallback((callback) => {
-    socketRef.current?.on('newMessage', callback);
-    return () => socketRef.current?.off('newMessage', callback);
-  }, []);
+  // The socket is created asynchronously (after reading the token), so a listener
+  // registered on the first render would find no socket. These helpers change
+  // identity when the connection state changes, so consumers' effects re-run
+  // and attach to the live socket.
+  const listen = useCallback((event, callback) => {
+    const s = socketRef.current;
+    if (!s) return () => {};
+    s.on(event, callback);
+    return () => s.off(event, callback);
+  }, [connected]);
 
-  const onTyping = useCallback((callback) => {
-    socketRef.current?.on('typing', callback);
-    return () => socketRef.current?.off('typing', callback);
-  }, []);
-
-  const onStopTyping = useCallback((callback) => {
-    socketRef.current?.on('stopTyping', callback);
-    return () => socketRef.current?.off('stopTyping', callback);
-  }, []);
+  const onMessage = useCallback((callback) => listen('newMessage', callback), [listen]);
+  const onTyping = useCallback((callback) => listen('typing', callback), [listen]);
+  const onStopTyping = useCallback((callback) => listen('stopTyping', callback), [listen]);
 
   const emitTyping = useCallback((userId, username) => {
     if (ticketId) {

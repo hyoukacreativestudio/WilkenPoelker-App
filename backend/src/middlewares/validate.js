@@ -11,23 +11,29 @@ function validate(validations) {
     const errors = validationResult(req);
     if (errors.isEmpty()) return next();
 
+    // Field + message only: the submitted values (names, e-mails, addresses) are
+    // neither echoed back nor written to the server log (data minimisation).
     const formattedErrors = errors.array().map((err) => ({
       field: err.path,
       message: err.msg,
-      value: err.value,
     }));
 
-    try {
-      const safeBody = { ...(req.body || {}) };
-      for (const k of Object.keys(safeBody)) {
-        if (/password|token|secret/i.test(k)) safeBody[k] = '[redacted]';
-      }
-      console.log('[VALIDATE FAIL]', req.method, req.originalUrl, 'body=', JSON.stringify(safeBody), 'errors=', JSON.stringify(formattedErrors));
-    } catch {}
+    console.log('[VALIDATE FAIL]', req.method, req.originalUrl.split('?')[0],
+      'fields=', JSON.stringify(Object.keys(req.body || {})), 'errors=', JSON.stringify(formattedErrors));
 
     next(new ValidationError(formattedErrors));
   };
 }
+
+// The password policy, defined once (API validators + reset web page). Any
+// character that is not a letter or digit counts as special ("Sommer-2026x").
+const PASSWORD_RULES = [
+  { test: (p) => p.length >= 8, en: 'Password must be at least 8 characters', de: 'Das Passwort muss mindestens 8 Zeichen lang sein.' },
+  { test: (p) => /[a-z]/.test(p), en: 'Password must contain a lowercase letter', de: 'Das Passwort braucht mindestens einen Kleinbuchstaben.' },
+  { test: (p) => /[A-Z]/.test(p), en: 'Password must contain an uppercase letter', de: 'Das Passwort braucht mindestens einen Großbuchstaben.' },
+  { test: (p) => /\d/.test(p), en: 'Password must contain a number', de: 'Das Passwort braucht mindestens eine Zahl.' },
+  { test: (p) => /[^A-Za-z0-9]/.test(p), en: 'Password must contain a special character', de: 'Das Passwort braucht mindestens ein Sonderzeichen (z. B. ! ? - _ #).' },
+];
 
 // Reusable validation chains
 const validators = {
@@ -36,17 +42,11 @@ const validators = {
     .withMessage('Please provide a valid email address')
     .normalizeEmail(),
 
-  password: body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .matches(/[a-z]/)
-    .withMessage('Password must contain a lowercase letter')
-    .matches(/[A-Z]/)
-    .withMessage('Password must contain an uppercase letter')
-    .matches(/\d/)
-    .withMessage('Password must contain a number')
-    .matches(/[!@#$%^&*(),.?":{}|<>]/)
-    .withMessage('Password must contain a special character'),
+  password: body('password').custom((value) => {
+    const broken = PASSWORD_RULES.find((rule) => !rule.test(String(value || '')));
+    if (broken) throw new Error(broken.en);
+    return true;
+  }),
 
   passwordConfirm: body('passwordConfirm')
     .custom((value, { req }) => {
@@ -85,4 +85,4 @@ const validators = {
     param(paramName).isUUID().withMessage(`Invalid ${paramName} format`),
 };
 
-module.exports = { validate, validators, body, query, param };
+module.exports = { validate, validators, PASSWORD_RULES, body, query, param };

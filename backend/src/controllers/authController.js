@@ -6,10 +6,11 @@ const db = require('../models');
 const { taifunDb } = require('../config/database');
 
 const register = asyncHandler(async (req, res) => {
-  const { username, email, password, customerNumber, firstName, lastName, phone, address, dsgvoAccepted } = req.body;
+  // No customerNumber here: it is matched against Taifun or approved by staff.
+  const { username, email, password, firstName, lastName, phone, address, dsgvoAccepted } = req.body;
 
   const result = await authService.registerUser(
-    { username, email, password, customerNumber, firstName, lastName, phone, address, dsgvoAccepted },
+    { username, email, password, firstName, lastName, phone, address, dsgvoAccepted },
     db.User,
     taifunDb
   );
@@ -17,7 +18,7 @@ const register = asyncHandler(async (req, res) => {
   // Send verification email (non-blocking, but log errors clearly)
   const requestOrigin = `${req.protocol}://${req.get('host')}`;
   emailService
-    .sendVerificationEmail(email, username, result.verificationToken, requestOrigin)
+    .sendVerificationEmail(email, firstName || username, result.verificationToken, requestOrigin)
     .then(() => console.log(`Verification email sent to ${email}`))
     .catch((err) => {
       console.error(`CRITICAL: Failed to send verification email to ${email}:`, err.message, err.response || '');

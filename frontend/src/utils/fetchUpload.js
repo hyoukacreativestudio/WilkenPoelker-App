@@ -5,7 +5,7 @@
 // of that — RN's networking layer sets Content-Type + boundary itself.
 
 import { storage } from './storage';
-import { addBreadcrumb, captureError } from '../config/sentry';
+import { addBreadcrumb, captureError, isReportableHttpStatus } from '../config/sentry';
 import { emitAuthEvent, AUTH_EVENT_LOGOUT } from './authEvents';
 
 let BASE_URL = null;
@@ -86,12 +86,14 @@ async function doFetch(method, path, formData, retried = false) {
       // Still unauthorised after a fresh token (or no refresher) — reset to login
       emitAuthEvent(AUTH_EVENT_LOGOUT, { reason: 'upload_401' });
     }
-    captureError(new Error(`Upload ${method} ${path} failed: ${normalized.message}`), {
-      status: normalized.status,
-      code: normalized.code,
-      url: path,
-      method,
-    });
+    if (isReportableHttpStatus(res.status)) {
+      captureError(new Error(`Upload ${method} ${path} failed: ${normalized.message}`), {
+        status: normalized.status,
+        code: normalized.code,
+        url: path,
+        method,
+      });
+    }
     throw normalized;
   }
 

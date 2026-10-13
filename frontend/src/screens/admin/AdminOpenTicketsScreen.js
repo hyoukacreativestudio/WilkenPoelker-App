@@ -230,7 +230,7 @@ export default function AdminOpenTicketsScreen({ navigation }) {
       <EmptyState
         icon="ticket-outline"
         title={t('adminTickets.noTickets')}
-        message={t('adminTickets.noTickets')}
+        message={t('adminTickets.noTicketsMsg')}
       />
     );
   };

@@ -40,27 +40,16 @@
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
       ],
       "googleServicesFile": "./google-services.json",
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "wilkenpoelker.de",
-              "pathPrefix": "/"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -68,7 +57,20 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker",
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "WilkenPoelker benötigt Zugriff auf Ihre Fotos für Profilbilder und Service-Anfragen.",
+          "cameraPermission": "WilkenPoelker benötigt Zugriff auf die Kamera für Profilbilder und Service-Anfragen.",
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-notifications",
         {

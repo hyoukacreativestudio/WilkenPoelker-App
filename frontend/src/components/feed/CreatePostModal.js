@@ -59,8 +59,10 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
     setImage(null);
   };
 
-  const handleSubmit = () => {
-    if (!content.trim() && !image) return;
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if ((!content.trim() && !image) || submitting) return;
     const postData = { content: content.trim() };
     if (image) {
       const uri = image.uri;
@@ -74,9 +76,19 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
         file: image.file || image._webFile || null, // expo-image-picker provides native File on web
       };
     }
-    onSubmit(postData);
-    setContent('');
-    setImage(null);
+    // Keep text and picture until the upload succeeded - on an error the
+    // staff member can simply tap "Posten" again.
+    setSubmitting(true);
+    let ok = false;
+    try {
+      ok = (await onSubmit(postData)) !== false;
+    } finally {
+      setSubmitting(false);
+    }
+    if (ok) {
+      setContent('');
+      setImage(null);
+    }
   };
 
   const handleClose = () => {
@@ -86,7 +98,7 @@ export default function CreatePostModal({ visible, onClose, onSubmit }) {
     onClose();
   };
 
-  const canSubmit = content.trim() || image;
+  const canSubmit = (content.trim() || image) && !submitting;
 
   return (
     <RNModal

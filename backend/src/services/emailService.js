@@ -4,6 +4,24 @@ const logger = require('../utils/logger');
 
 let transporter;
 
+// User input (names, ticket titles) must not become HTML in our e-mails
+const esc = (v) => String(v == null ? '' : v)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;');
+
+const TICKET_TYPE_LABELS = {
+  inspection: 'Inspektion',
+  repair: 'Reparatur',
+  consultation: 'Beratung',
+  maintenance: 'Wartung',
+  bike_question: 'Frage zum Fahrrad',
+  cleaning_question: 'Frage zur Reinigungstechnik',
+  motor_question: 'Frage zu Motorgeräten',
+  other: 'Sonstiges',
+};
+
 function getTransporter() {
   if (transporter) return transporter;
 
@@ -81,7 +99,7 @@ async function sendVerificationEmail(email, name, token, requestOrigin) {
   if (baseUrl.includes('localhost') && requestOrigin) {
     baseUrl = requestOrigin;
   } else if (baseUrl.includes('localhost')) {
-    baseUrl = 'https://wilkenpoelker-app.onrender.com';
+    baseUrl = 'https://api.wilkenpoelker.de';
   }
   // Ensure baseUrl ends with /api (API_URL might not include it)
   baseUrl = baseUrl.replace(/\/+$/, '');
@@ -100,7 +118,7 @@ async function sendVerificationEmail(email, name, token, requestOrigin) {
           <h1 style="color: white; margin: 0;">WilkenPoelker</h1>
         </div>
         <div style="padding: 30px;">
-          <h2>Hallo ${name}!</h2>
+          <h2>Hallo ${esc(name)}!</h2>
           <p>Vielen Dank für Ihre Registrierung bei WilkenPoelker.</p>
           <p>Bitte bestätigen Sie Ihre E-Mail-Adresse, indem Sie auf den folgenden Button klicken:</p>
           <div style="text-align: center; margin: 30px 0;">
@@ -134,7 +152,7 @@ async function sendPasswordResetEmail(email, name, token) {
         </div>
         <div style="padding: 30px;">
           <h2>Passwort zurücksetzen</h2>
-          <p>Hallo ${name},</p>
+          <p>Hallo ${esc(name)},</p>
           <p>Sie haben angefordert, Ihr Passwort zurückzusetzen. Klicken Sie auf den Button:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${resetUrl}"
@@ -165,10 +183,10 @@ async function sendAppointmentReminder(email, name, appointment) {
         </div>
         <div style="padding: 30px;">
           <h2>Termin-Erinnerung</h2>
-          <p>Hallo ${name},</p>
+          <p>Hallo ${esc(name)},</p>
           <p>Wir möchten Sie an Ihren bevorstehenden Termin erinnern:</p>
           <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>${appointment.title}</strong></p>
+            <p><strong>${esc(appointment.title)}</strong></p>
             <p>Datum: ${appointment.date}</p>
             <p>Uhrzeit: ${appointment.startTime} Uhr</p>
             <p>Ort: WilkenPoelker</p>
@@ -195,11 +213,11 @@ async function sendTicketConfirmation(email, name, ticket) {
         </div>
         <div style="padding: 30px;">
           <h2>Service-Anfrage erhalten</h2>
-          <p>Hallo ${name},</p>
+          <p>Hallo ${esc(name)},</p>
           <p>Ihre Service-Anfrage wurde erfolgreich erstellt:</p>
           <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p><strong>Ticket-Nummer:</strong> ${ticket.ticketNumber}</p>
-            <p><strong>Art:</strong> ${ticket.type}</p>
+            <p><strong>Art:</strong> ${esc(TICKET_TYPE_LABELS[ticket.type] || ticket.type)}</p>
             <p><strong>Status:</strong> Offen</p>
           </div>
           <p>Wir bearbeiten Ihre Anfrage schnellstmöglich und melden uns bei Ihnen.</p>

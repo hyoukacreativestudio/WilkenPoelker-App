@@ -3,7 +3,7 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { authenticate } = require('../middlewares/auth');
 const { authorize, isAdmin, isSuperAdmin, canPost, ROLES } = require('../middlewares/roles');
-const { validate, validators, body, query, param } = require('../middlewares/validate');
+const { validate, validators, PASSWORD_RULES, body, query, param } = require('../middlewares/validate');
 const { uploadSingle } = require('../middlewares/upload');
 const { uploadLimiter } = require('../middlewares/rateLimit');
 
@@ -45,17 +45,11 @@ router.put(
   authenticate,
   validate([
     body('currentPassword').notEmpty().withMessage('Current password is required'),
-    body('newPassword')
-      .isLength({ min: 8 })
-      .withMessage('New password must be at least 8 characters')
-      .matches(/[a-z]/)
-      .withMessage('New password must contain a lowercase letter')
-      .matches(/[A-Z]/)
-      .withMessage('New password must contain an uppercase letter')
-      .matches(/\d/)
-      .withMessage('New password must contain a number')
-      .matches(/[!@#$%^&*(),.?":{}|<>]/)
-      .withMessage('New password must contain a special character'),
+    body('newPassword').custom((value) => {
+      const broken = PASSWORD_RULES.find((rule) => !rule.test(String(value || '')));
+      if (broken) throw new Error(broken.en.replace('Password', 'New password'));
+      return true;
+    }),
     body('confirmPassword')
       .custom((value, { req }) => {
         if (value !== req.body.newPassword) {

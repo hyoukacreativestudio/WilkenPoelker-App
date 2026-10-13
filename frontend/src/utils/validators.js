@@ -6,7 +6,8 @@ export const validators = {
     if (!/[a-z]/.test(password)) return false;
     if (!/[A-Z]/.test(password)) return false;
     if (!/\d/.test(password)) return false;
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return false;
+    // Any non-letter/non-digit counts as special (same rule as the server)
+    if (!/[^A-Za-z0-9]/.test(password)) return false;
     return true;
   },
 
@@ -17,7 +18,7 @@ export const validators = {
     if (password.length >= 12) score++;
     if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
     if (/\d/.test(password)) score++;
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
 
     if (score <= 1) return { score, label: 'weak', color: '#F44336' };
     if (score <= 2) return { score, label: 'fair', color: '#FF9800' };

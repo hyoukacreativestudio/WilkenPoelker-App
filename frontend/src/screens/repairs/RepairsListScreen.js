@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import OfflineBanner from '../../components/ui/OfflineBanner';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import NoCustomerNumberGate from '../../components/shared/NoCustomerNumberGate';
+import { repairNumberLabelKey, repairOrderDate, separateOrderNumber } from '../../utils/repairDisplay';
 
 // Ampelfarben: Rot = In Bearbeitung, Gelb = Fertig, Grün = Abholbereit
 const STATUS_COLORS = {
@@ -115,9 +117,22 @@ export default function RepairsListScreen({ navigation }) {
     refresh: refreshAll,
   } = usePagination(repairsApi.getAllRepairs);
 
+  // Load on mount and again when a customer number gets linked (the first load
+  // ran while the gate was shown and returned an empty list).
   useEffect(() => {
     loadInitialRepairs();
-  }, []);
+  }, [hasCustomerNumber]);
+
+  // Coming back to the tab (e.g. after opening a push) shows current statuses
+  const focusedOnce = useRef(false);
+  const refreshRef = useRef(null);
+  refreshRef.current = () => { refreshMy(); if (isStaff) refreshAll(); };
+  useFocusEffect(
+    useCallback(() => {
+      if (!focusedOnce.current) { focusedOnce.current = true; return; }
+      refreshRef.current();
+    }, [])
+  );
 
   const loadInitialRepairs = async () => {
     if (isStaff) {
@@ -329,11 +344,11 @@ export default function RepairsListScreen({ navigation }) {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm }}>
           <View>
             <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary }]}>
-              {t('repairs.repairNumber')} {item.repairNumber || item.number}
+              {t(repairNumberLabelKey(item))} {item.repairNumber || item.number}
             </Text>
-            {item.taifunRepairId ? (
+            {separateOrderNumber(item) ? (
               <Text style={[theme.typography.styles.small, { color: theme.colors.textTertiary, marginTop: 2 }]}>
-                Taifun: {item.taifunRepairId}
+                {t('repairs.orderNumber')}: {separateOrderNumber(item)}
               </Text>
             ) : null}
           </View>
@@ -356,7 +371,7 @@ export default function RepairsListScreen({ navigation }) {
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <MaterialCommunityIcons name="calendar-outline" size={14} color={theme.colors.textTertiary} />
           <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary, marginLeft: theme.spacing.xs }]}>
-            {formatDate(item.createdAt || item.date)}
+            {formatDate(repairOrderDate(item))}
           </Text>
         </View>
       </TouchableOpacity>
@@ -427,7 +442,7 @@ export default function RepairsListScreen({ navigation }) {
             {item.repairNumber || item.number}
           </Text>
           <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary }]}>
-            {formatDate(item.createdAt || item.date)}
+            {formatDate(repairOrderDate(item))}
           </Text>
         </View>
 
@@ -479,7 +494,7 @@ export default function RepairsListScreen({ navigation }) {
       <EmptyState
         icon="wrench-outline"
         title={t('repairs.noRepairs')}
-        message={t('repairs.noRepairs')}
+        message={t('repairs.noRepairsMsg')}
       />
     );
   };

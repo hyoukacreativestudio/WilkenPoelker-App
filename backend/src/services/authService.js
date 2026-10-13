@@ -17,39 +17,83 @@ function normStreet(s) {
     .replace(/\d+$/, ''); // drop a trailing house number if it slipped into the street
 }
 
-// Try to find a matching Taifun customer by last name + zip (+ street when it
-// helps). Returns kdNr on a UNIQUE match, null otherwise (never assigns a wrong
-// number silently). Zip is compared exactly (numeric, dialect-agnostic).
-async function findTaifunCustomerNumber({ firstName, lastName, address }) {
-  const { TaifunCustomer } = require('../models');
-  if (!TaifunCustomer || !lastName || !address?.zip) return null;
+// "Musterstraße 12a" -> { street: "Musterstraße", houseNumber: "12a" }
+function splitStreet(s) {
+  const raw = String(s || '').trim();
+  const m = raw.match(/^(.*?)[\s,]*(\d+\s*[a-zA-Z]?(?:\s*[-/]\s*\d+\s*[a-zA-Z]?)?)$/);
+  return m ? { street: m[1], houseNumber: m[2] } : { street: raw, houseNumber: '' };
+}
 
+const normHouse = (h) => String(h || '').toLowerCase().replace(/\s+/g, '');
+
+function normEmail(email) {
+  const lower = String(email || '').trim().toLowerCase();
+  if (!lower.includes('@')) return '';
+  try { return require('validator').normalizeEmail(lower) || lower; } catch { return lower; }
+}
+
+// Find the Taifun customer number for a new/unlinked app account. Returns kdNr on
+// a UNIQUE match, null otherwise - then the customer requests the number and staff
+// approve it. The number unlocks that customer's repairs, so a match needs more
+// than facts that are easy to know about someone else (name + postcode):
+//   1. the same e-mail address as in Taifun (safe even before verification - the
+//      account cannot be used until the mailbox owner confirms it), or
+//   2. last name + postcode + street, plus the first name when Taifun has one and
+//      the house number when Taifun has one.
+async function findTaifunCustomerNumber({ firstName, lastName, address, email }) {
+  const { TaifunCustomer } = require('../models');
+  if (!TaifunCustomer) return null;
+
+  const mail = normEmail(email);
+  if (mail) {
+    const rows = await TaifunCustomer.findAll({
+      where: { email: { [Op.like]: '%@%' } },
+      attributes: ['kdNr', 'email'],
+    });
+    const nrs = [...new Set(rows.filter((r) => normEmail(r.email) === mail).map((r) => r.kdNr).filter(Boolean))];
+    if (nrs.length === 1) {
+      logger.info('Taifun auto-match customer number', { by: 'email', matched: nrs[0] });
+      return nrs[0];
+    }
+  }
+
+  if (!lastName || !address?.zip || !address?.street) return null;
   const last = String(lastName).trim().toLowerCase();
+  const first = String(firstName || '').trim().toLowerCase();
   const zip = String(address.zip).trim();
-  const street = normStreet(address.street);
+  const parts = splitStreet(address.street);
+  const street = normStreet(parts.street);
+  const house = normHouse(parts.houseNumber);
+  if (!last || !street) return null;
 
   const candidates = await TaifunCustomer.findAll({
     where: { zip },
-    attributes: ['kdNr', 'name1', 'name2', 'street', 'zip'],
+    attributes: ['kdNr', 'name1', 'name2', 'street', 'houseNumber', 'zip'],
   });
 
-  // Last name may live in name1 (Firma) or name2 (person)
-  const byName = candidates.filter((c) =>
-    `${(c.name1 || '')} ${(c.name2 || '')}`.toLowerCase().includes(last)
-  );
-  const byStreet = street ? byName.filter((c) => normStreet(c.street) === street) : [];
-
-  // Prefer a street-confirmed unique match; otherwise a unique name+zip match.
-  let match = null;
-  if (byStreet.length === 1) match = byStreet[0];
-  else if (byName.length === 1) match = byName[0];
+  const matches = candidates.filter((c) => {
+    const name = `${c.name1 || ''} ${c.name2 || ''}`.toLowerCase();
+    if (!name.includes(last)) return false;
+    if (normStreet(splitStreet(c.street).street) !== street) return false;
+    // Taifun name with a first name ("Martin Blache") must contain the user's first name
+    const personName = String(c.name2 || '').trim().toLowerCase();
+    if (first && personName.split(/\s+/).length > 1 && !personName.includes(first)) return false;
+    // Taifun house number known -> the user's must be the same
+    const taifunHouse = normHouse(c.houseNumber || splitStreet(c.street).houseNumber);
+    if (taifunHouse && taifunHouse !== house) return false;
+    return true;
+  });
+  // A household can have a record with the first name and one without
+  // ("Paul Prüfmann" / "Prüfmann"): the one naming this person wins.
+  const named = first ? matches.filter((c) => String(c.name2 || '').toLowerCase().includes(first)) : [];
+  const pool = named.length ? named : matches;
+  const nrs = [...new Set(pool.map((c) => c.kdNr).filter(Boolean))];
+  const match = nrs.length === 1 ? nrs[0] : null;
 
   logger.info('Taifun auto-match customer number', {
-    zip, lastName: last, candidatesAtZip: candidates.length,
-    byName: byName.length, byStreet: byStreet.length, matched: match?.kdNr || null,
+    by: 'address', candidatesAtZip: candidates.length, matches: matches.length, matched: match,
   });
-
-  return match && match.kdNr ? match.kdNr : null;
+  return match;
 }
 
 // Re-check a user WITHOUT a customer number against Taifun and assign it if a
@@ -65,6 +109,7 @@ async function tryAutoAssignCustomerNumber(user) {
       firstName: user.firstName,
       lastName: user.lastName,
       address: user.address || {},
+      email: user.email,
     });
   } catch (err) {
     logger.warn('Auto customer-number match failed', { userId: user.id, error: err.message });
@@ -143,7 +188,7 @@ async function pruneExpiredSessions(userId) {
 }
 
 async function registerUser(data, User, taifunDb) {
-  const { username, email, password, customerNumber, firstName, lastName, phone, address, dsgvoAccepted } = data;
+  const { username, email, password, firstName, lastName, phone, address, dsgvoAccepted } = data;
 
   // Check DSGVO acceptance
   if (!dsgvoAccepted) {
@@ -162,35 +207,19 @@ async function registerUser(data, User, taifunDb) {
     throw new AppError('This username is already taken', 409, 'USERNAME_EXISTS');
   }
 
-  // Validate customer number against Taifun DB (optional)
-  let customerData = null;
-  if (customerNumber) {
-    customerData = await taifunDb.validateCustomerNumber(customerNumber);
-    if (!customerData) {
-      throw new AppError('Customer number not found in our system', 400, 'INVALID_CUSTOMER_NUMBER');
-    }
-
-    // Check if customer number already registered
-    const existingCustomer = await User.findOne({ where: { customerNumber } });
-    if (existingCustomer) {
-      throw new AppError('This customer number is already registered', 409, 'CUSTOMER_NUMBER_EXISTS');
-    }
-  }
-
-  // Auto-match Taifun customer number by name + address when the user did not
-  // enter one. Silent: unique match assigns, ambiguous/none leaves it empty
-  // so the customer can request approval manually.
+  // Customer numbers are never typed in at registration (the number unlocks that
+  // customer's repairs): they are matched against Taifun here or approved by staff.
+  // Silent: a unique match assigns, ambiguous/none leaves it empty so the customer
+  // can request it.
   let autoMatchedNumber = null;
-  if (!customerNumber) {
-    try {
-      autoMatchedNumber = await findTaifunCustomerNumber({ firstName, lastName, address });
-      if (autoMatchedNumber) {
-        const taken = await User.findOne({ where: { customerNumber: autoMatchedNumber } });
-        if (taken) autoMatchedNumber = null;
-      }
-    } catch (err) {
-      logger.warn('Auto customer-number match failed', { error: err.message });
+  try {
+    autoMatchedNumber = await findTaifunCustomerNumber({ firstName, lastName, address, email });
+    if (autoMatchedNumber) {
+      const taken = await User.findOne({ where: { customerNumber: autoMatchedNumber } });
+      if (taken) autoMatchedNumber = null;
     }
+  } catch (err) {
+    logger.warn('Auto customer-number match failed', { error: err.message });
   }
 
   // Hash password
@@ -204,9 +233,9 @@ async function registerUser(data, User, taifunDb) {
     username,
     email,
     password: hashedPassword,
-    customerNumber: customerNumber || autoMatchedNumber || null,
-    firstName: firstName || customerData?.firstName || '',
-    lastName: lastName || customerData?.lastName || '',
+    customerNumber: autoMatchedNumber || null,
+    firstName: firstName || '',
+    lastName: lastName || '',
     phone: phone || null,
     address: address || { street: null, zip: null, city: null, country: 'Deutschland' },
     emailVerificationToken: hashToken(verificationToken),
@@ -268,10 +297,6 @@ async function loginUser(data, User) {
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
-  if (!user.isActive) {
-    throw new AppError('Account is deactivated. Please contact support.', 403, 'ACCOUNT_DEACTIVATED');
-  }
-
   // Verify customer number (only if user has one and one was provided)
   if (customerNumber && user.customerNumber && user.customerNumber !== customerNumber) {
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
@@ -283,9 +308,14 @@ async function loginUser(data, User) {
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
+  // Only after the password: otherwise anyone could probe which accounts are deactivated
+  if (!user.isActive) {
+    throw new AppError('Account is deactivated. Please contact support.', 403, 'ACCOUNT_DEACTIVATED');
+  }
+
   // Check email verification
   if (!user.emailVerified) {
-    throw new AppError('Bitte verifiziere zuerst deine E-Mail-Adresse.', 403, 'EMAIL_NOT_VERIFIED');
+    throw new AppError('Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.', 403, 'EMAIL_NOT_VERIFIED');
   }
 
   // Re-check the Taifun customer number on every login until one is linked.

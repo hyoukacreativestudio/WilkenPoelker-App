@@ -251,7 +251,8 @@
     "good": "Good",
     "strong": "Strong",
     "veryStrong": "Very strong",
-    "passwordRequirements": "Min. 8 chars, upper/lowercase, number, special char"
+    "passwordRequirements": "Min. 8 chars, upper/lowercase, number, special char",
+    "addressHint": "With your address we can find you in our customer records and link your account to your customer number automatically – so you can see your repairs right away."
   },
   "feed": {
     "title": "Feed",
@@ -578,8 +579,10 @@
     "activeRepairs": "Active repairs",
     "completedRepairs": "Completed repairs",
     "noRepairs": "No repairs",
+    "noRepairsMsg": "As soon as we create an order for you, you will see its current status here.",
     "repairNumber": "Repair no.",
     "orderNumber": "Order number",
+    "orderNumberShort": "Order no.",
     "customerNumber": "Customer number",
     "device": "Device",
     "problem": "Problem",
@@ -1214,6 +1217,9 @@
     "invalidFileType": "Invalid file type.",
     "requiredField": "This field is required.",
     "somethingWentWrong": "Something went wrong. Please try again.",
+    "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
+    "resetLinkInvalid": "This link is invalid or has expired. Please request a new one.",
+    "wrongCurrentPassword": "The current password is not correct.",
     "pageNotFound": "Page not found",
     "pageNotFoundMessage": "The requested page does not exist.",
     "generic": "Something went wrong. Please try again."
@@ -1326,6 +1332,7 @@
     "messageLabel": "Message to us",
     "submitRequest": "Submit request",
     "requestSent": "Your request has been sent successfully!",
+    "autoAssigned": "Your customer number {{number}} has been linked.",
     "statusPending": "Request is being processed",
     "statusApproved": "Customer number assigned",
     "statusRejected": "Request declined",
@@ -1348,7 +1355,8 @@
   },
   "adminTickets": {
     "title": "Open Tickets",
-    "noTickets": "No open tickets"
+    "noTickets": "No open tickets",
+    "noTicketsMsg": "All requests have been handled."
   },
   "connectionError": {
     "title": "No Connection",

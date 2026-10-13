@@ -16,7 +16,11 @@ router.post(
     validators.email,
     validators.password,
     validators.passwordConfirm,
-    body('customerNumber').optional().matches(/^\d{4,}$/).withMessage('Kundennummer muss mindestens 4 Ziffern haben'),
+    body('phone').optional().isString().trim().isLength({ max: 40 }).withMessage('Telefonnummer ist zu lang'),
+    body('address').optional().isObject().withMessage('Ungültige Adresse'),
+    body('address.street').optional().isString().trim().isLength({ max: 200 }).withMessage('Straße ist zu lang'),
+    body('address.zip').optional().isString().trim().isLength({ max: 10 }).withMessage('Postleitzahl ist zu lang'),
+    body('address.city').optional().isString().trim().isLength({ max: 100 }).withMessage('Ort ist zu lang'),
     body('dsgvoAccepted').custom((value) => {
       if (value === true || value === 'true' || value === 1 || value === '1') return true;
       throw new Error('Datenschutzerklärung muss akzeptiert werden');

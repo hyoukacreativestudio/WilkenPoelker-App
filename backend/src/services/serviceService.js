@@ -740,13 +740,16 @@ async function getChatMessages(ticketId, userId, query, models) {
   const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
   const isTicketOwner = ticket.userId === userId;
   const isAssigned = ticket.assignedTo === userId;
+  // Same rule as sending and the live socket: any staff member may open a ticket
+  // nobody has taken yet (writing the first answer assigns it to them).
+  const isStaffOnUnassigned = !!user && user.role !== 'customer' && !ticket.assignedTo;
 
   let hasContext = false;
-  if (!isAdmin && !isTicketOwner && !isAssigned) {
+  if (!isAdmin && !isTicketOwner && !isAssigned && !isStaffOnUnassigned) {
     hasContext = await hasActiveTicketFromCustomer(userId, ticket.userId, models);
   }
 
-  if (!isAdmin && !isTicketOwner && !isAssigned && !hasContext) {
+  if (!isAdmin && !isTicketOwner && !isAssigned && !isStaffOnUnassigned && !hasContext) {
     throw new AppError('You do not have access to this chat', 403, 'CHAT_ACCESS_DENIED');
   }
 

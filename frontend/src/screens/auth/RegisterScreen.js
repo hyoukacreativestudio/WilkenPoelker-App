@@ -16,6 +16,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import { useToast } from '../../components/ui/Toast';
+import { apiErrorMessage, apiFieldErrors } from '../../utils/apiErrors';
 
 export default function RegisterScreen({ navigation }) {
   const { t } = useTranslation();
@@ -92,20 +93,12 @@ export default function RegisterScreen({ navigation }) {
       navigation.navigate('EmailVerification', { email: form.email.trim() });
     } catch (err) {
       // Normalized errors from interceptor: { message, code, details }
-      let msg = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || t('errors.somethingWentWrong');
-      // Show field-specific validation errors
-      const details = err?.details || err?.response?.data?.error?.details;
-      if (details && Array.isArray(details) && details.length > 0) {
-        // Map validation details to field errors for inline display
-        const fieldErrors = {};
-        details.forEach((d) => {
-          if (d.field) fieldErrors[d.field] = d.message;
-        });
-        if (Object.keys(fieldErrors).length > 0) {
-          setErrors(fieldErrors);
-          msg = details[0].message || msg;
-        }
-      }
+      // Inline field errors + one translated toast (server texts are partly English)
+      const fieldErrors = apiFieldErrors(err, t);
+      if (err?.code === 'EMAIL_EXISTS') fieldErrors.email = t('errors.emailExists');
+      if (err?.code === 'USERNAME_EXISTS') fieldErrors.username = t('errors.usernameExists');
+      if (Object.keys(fieldErrors).length > 0) setErrors(fieldErrors);
+      const msg = apiErrorMessage(err, t);
       showToast({ type: 'error', message: msg });
     } finally {
       setLoading(false);
@@ -190,6 +183,7 @@ export default function RegisterScreen({ navigation }) {
 
         {/* Address section */}
         <Text style={s.sectionTitle}>{`${t('profile.address')} (${t('common.optional')})`}</Text>
+        <Text style={s.sectionHint}>{t('auth.addressHint')}</Text>
 
         <Input
           label={t('profile.street')}
@@ -284,6 +278,12 @@ const styles = (theme) =>
       ...theme.typography.styles.h2,
       color: theme.colors.text,
       marginBottom: theme.spacing.lg,
+    },
+    sectionHint: {
+      ...theme.typography.styles.caption,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      marginBottom: theme.spacing.sm,
     },
     sectionTitle: {
       ...theme.typography.styles.body,

@@ -3,6 +3,20 @@ import Constants from 'expo-constants';
 
 const SENTRY_DSN = Constants.expoConfig?.extra?.sentryDsn || '';
 
+// Expected API answers (wrong password, validation, not found, conflict, ...) are
+// shown to the user and are not bugs. Only these are reported as errors: network
+// failures/timeouts (status 0), server errors (5xx) and the few 4xx that point at
+// an app problem (upload too large / wrong type, rate limited).
+const REPORTABLE_CLIENT_STATUSES = new Set([413, 415, 429]);
+export function isReportableHttpStatus(status) {
+  return !status || status >= 500 || REPORTABLE_CLIENT_STATUSES.has(status);
+}
+
+// Query strings can contain search terms (names, e-mails) - never send them.
+export function stripQuery(url) {
+  return typeof url === 'string' ? url.split('?')[0] : url;
+}
+
 export function initializeSentry() {
   if (!SENTRY_DSN) {
     return;
@@ -18,15 +32,15 @@ export function initializeSentry() {
     // Don't send in development
     enabled: !__DEV__,
 
-    // Filter sensitive data
+    // Data minimisation (privacy policy, section 11): only technical data leaves the
+    // device. Breadcrumbs never carry request bodies or query strings.
     beforeSend(event) {
-      // Remove sensitive breadcrumb data
       if (event.breadcrumbs) {
-        event.breadcrumbs = event.breadcrumbs.map(breadcrumb => {
-          if (breadcrumb.data?.url?.includes('auth')) {
-            breadcrumb.data = { ...breadcrumb.data, body: '[REDACTED]' };
-          }
-          return breadcrumb;
+        event.breadcrumbs = event.breadcrumbs.map((breadcrumb) => {
+          if (!breadcrumb.data) return breadcrumb;
+          const { body, ...data } = breadcrumb.data;
+          if (typeof data.url === 'string') data.url = stripQuery(data.url);
+          return { ...breadcrumb, data };
         });
       }
       return event;

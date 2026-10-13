@@ -14,6 +14,7 @@ import Button from '../../components/ui/Button';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import { resetPassword } from '../../api/auth';
 import { useToast } from '../../components/ui/Toast';
+import { apiErrorMessage } from '../../utils/apiErrors';
 
 export default function ResetPasswordScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -39,8 +40,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
       showToast({ type: 'success', message: t('auth.passwordChanged') });
       navigation.navigate('Login');
     } catch (err) {
-      const msg = (!err?.isNetworkError && err?.message) || t('errors.somethingWentWrong');
-      showToast({ type: 'error', message: msg });
+      showToast({ type: 'error', message: apiErrorMessage(err, t) });
     } finally {
       setLoading(false);
     }

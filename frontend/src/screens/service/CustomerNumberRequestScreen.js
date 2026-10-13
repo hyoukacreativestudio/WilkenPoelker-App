@@ -16,11 +16,12 @@ import { customerNumberApi } from '../../api/customerNumber';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
+import { apiErrorMessage } from '../../utils/apiErrors';
 
 export default function CustomerNumberRequestScreen({ navigation }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { showToast } = useToast();
 
   const [phone, setPhone] = useState(user?.phone || '');
@@ -68,7 +69,7 @@ export default function CustomerNumberRequestScreen({ navigation }) {
 
     setLoading(true);
     try {
-      await customerNumberApi.createRequest({
+      const res = await customerNumberApi.createRequest({
         phone: phone.trim(),
         address: {
           street: street.trim(),
@@ -79,11 +80,18 @@ export default function CustomerNumberRequestScreen({ navigation }) {
         isExistingCustomer,
         message: message.trim() || undefined,
       });
+      const data = res?.data?.data || {};
+      if (data.autoAssigned && data.customerNumber) {
+        // Found in our system right away - no staff step needed
+        await updateUser({ customerNumber: data.customerNumber });
+        showToast({ type: 'success', message: t('customerNumber.autoAssigned', { number: data.customerNumber }) });
+        navigation.navigate('Repairs');
+        return;
+      }
       showToast({ type: 'success', message: t('customerNumber.requestSent') });
       navigation.goBack();
     } catch (err) {
-      const msg = (!err?.isNetworkError && err?.message) || t('errors.somethingWentWrong');
-      showToast({ type: 'error', message: msg });
+      showToast({ type: 'error', message: apiErrorMessage(err, t) });
     } finally {
       setLoading(false);
     }

@@ -51,11 +51,13 @@ export default function ChatScreen({ route, navigation }) {
   // when they are — so reading history isn't interrupted by new messages.
   const nearBottomRef = useRef(true);
 
-  const { onMessage, onTyping, onStopTyping, emitTyping, emitStopTyping, socket } = useSocket(ticketId);
+  const { onMessage, onTyping, onStopTyping, emitTyping, emitStopTyping, socket, connected } = useSocket(ticketId);
 
   const userId = user?._id || user?.id;
   const isStaff = user && user.role !== 'customer';
   const isTicketOwner = ticket && (ticket.userId === userId || ticket.user === userId);
+  const ticketRef = useRef(null);
+  ticketRef.current = ticket;
 
   // Determine the chat partner from ticket data
   const chatPartner = ticket
@@ -144,6 +146,15 @@ export default function ChatScreen({ route, navigation }) {
     loadTicketAndMessages();
   }, [ticketId]);
 
+  // After a reconnect (network change, app back from background) reload, so
+  // messages sent while the socket was down are not missing.
+  const wasConnectedRef = useRef(false);
+  useEffect(() => {
+    if (connected && wasConnectedRef.current === 'lost') loadTicketAndMessages();
+    if (connected) wasConnectedRef.current = true;
+    else if (wasConnectedRef.current) wasConnectedRef.current = 'lost';
+  }, [connected]);
+
   // Socket: listen for new messages.
   // Deduplicate by message id so a message that arrives via both REST and socket
   // is only shown once, and don't filter out own-userId messages — otherwise a
@@ -155,14 +166,32 @@ export default function ChatScreen({ route, navigation }) {
         if (newId && prev.some((m) => (m._id || m.id) === newId)) {
           return prev;
         }
+        // Own message echoed by the socket before the send request returned:
+        // replace the placeholder instead of showing it twice
+        const senderId = newMessage.userId || newMessage.sender?.id;
+        const tempIdx = senderId && senderId === userId
+          ? prev.findIndex((m) => m.isTemp && (m.message || '') === (newMessage.message || ''))
+          : -1;
+        if (tempIdx !== -1) {
+          const next = [...prev];
+          next[tempIdx] = newMessage;
+          return next;
+        }
         return [...prev, newMessage];
       });
+      // First answer from the shop: refresh the ticket so the header shows who took it
+      const fromOther = (newMessage.userId || newMessage.sender?.id) !== userId;
+      if (fromOther && !isStaff && !ticketRef.current?.assignee) {
+        serviceApi.getTicket(ticketId)
+          .then((r) => { const tk = r.data?.data?.ticket || r.data?.data; if (tk) setTicket(tk); })
+          .catch(() => {});
+      }
       if (nearBottomRef.current) {
         scrollToBottom();
       }
     });
     return cleanup;
-  }, [onMessage]);
+  }, [onMessage, userId, isStaff, ticketId]);
 
   // Socket: listen for ticket closed
   useEffect(() => {
@@ -308,10 +337,12 @@ export default function ChatScreen({ route, navigation }) {
       const savedMessage = result.data?.data?.message || result.data?.data || result.data;
 
       if (savedMessage) {
+        const savedId = savedMessage._id || savedMessage.id;
         setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === tempMessage._id ? { ...savedMessage, user: user } : msg
-          )
+          // The socket may have delivered this message already - then just drop the placeholder
+          savedId && prev.some((m) => (m._id || m.id) === savedId)
+            ? prev.filter((msg) => msg._id !== tempMessage._id)
+            : prev.map((msg) => (msg._id === tempMessage._id ? { ...savedMessage, user: user } : msg))
         );
       }
     } catch (err) {

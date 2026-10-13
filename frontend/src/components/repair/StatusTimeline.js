@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { formatDateTime } from '../../utils/formatters';
+import { visibleHistoryNote } from '../../utils/repairDisplay';
 
 // Step order per category. 'ready' is the shared pickup-ready end state.
 const STATUS_ORDERS = {
@@ -167,7 +168,7 @@ export default function StatusTimeline({ statusHistory = [], currentStatus, cate
                 </Text>
               )}
 
-              {historyItem?.note && (
+              {visibleHistoryNote(historyItem?.note) && (
                 <Text
                   style={[
                     theme.typography.styles.caption,
@@ -178,7 +179,7 @@ export default function StatusTimeline({ statusHistory = [], currentStatus, cate
                     },
                   ]}
                 >
-                  {historyItem.note}
+                  {visibleHistoryNote(historyItem.note)}
                 </Text>
               )}
             </View>
