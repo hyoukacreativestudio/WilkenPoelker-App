@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, AppState } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -56,7 +56,12 @@ function isCurrentlyOpenFallback(hours, date = new Date()) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function OpeningHoursBanner() {
+// Status is re-read on pull-to-refresh (refreshKey), when the app comes back to
+// the foreground and every few minutes - the feed stays mounted for days, and a
+// status read only once showed "Geöffnet" long after closing time.
+const REFRESH_INTERVAL = 5 * 60 * 1000;
+
+export default function OpeningHoursBanner({ refreshKey = 0 }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
 
@@ -78,41 +83,52 @@ export default function OpeningHoursBanner() {
   const [holidayHours, setHolidayHours] = useState(null);
   const [weekdayClose, setWeekdayClose] = useState(fallback.weekdayClose);
 
+  const loadStatus = useCallback(async (isCancelled = () => false) => {
+    try {
+      const status = await settingsApi.getOpeningStatus();
+      if (isCancelled()) return;
+
+      setIsOpen(status.isOpen);
+
+      // Set AND clear the holiday info - the day may have changed since the last read
+      const today = status.todayHours || {};
+      setIsHoliday(!!today.isHoliday);
+      setHolidayName(today.isHoliday ? today.holidayName || null : null);
+      setHolidayHours(
+        today.isHoliday && !today.isClosed && today.periods?.length > 0
+          ? today.periods.map((p) => `${p.open} - ${p.close}`).join(', ')
+          : null
+      );
+
+      // Update weekday close from season
+      if (status.season === 'winter') {
+        setWeekdayClose('17:00');
+      } else {
+        setWeekdayClose('18:00');
+      }
+    } catch {
+      // Keep the last known values on error
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-
-    (async () => {
-      try {
-        const status = await settingsApi.getOpeningStatus();
-        if (cancelled) return;
-
-        setIsOpen(status.isOpen);
-
-        if (status.todayHours?.isHoliday) {
-          setIsHoliday(true);
-          setHolidayName(status.todayHours.holidayName || null);
-
-          if (!status.todayHours.isClosed && status.todayHours.periods?.length > 0) {
-            const hrs = status.todayHours.periods
-              .map((p) => `${p.open} - ${p.close}`)
-              .join(', ');
-            setHolidayHours(hrs);
-          }
-        }
-
-        // Update weekday close from season
-        if (status.season === 'winter') {
-          setWeekdayClose('17:00');
-        } else {
-          setWeekdayClose('18:00');
-        }
-      } catch {
-        // Keep fallback values on error
-      }
-    })();
-
+    loadStatus(() => cancelled);
     return () => { cancelled = true; };
-  }, []);
+  }, [loadStatus, refreshKey]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (AppState.currentState === 'active') loadStatus();
+    }, REFRESH_INTERVAL);
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') loadStatus();
+    });
+    return () => {
+      clearInterval(timer);
+      sub?.remove?.();
+    };
+  }, [loadStatus]);
 
   const statusColor = isOpen ? '#2E7D32' : '#D32F2F';
   const statusBg = isOpen ? '#E8F5E9' : '#FFEBEE';
@@ -237,11 +253,15 @@ const s = StyleSheet.create({
   titleLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
   },
   title: {
     fontSize: 15,
+    flexShrink: 1,
   },
   statusBadge: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,

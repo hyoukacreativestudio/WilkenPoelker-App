@@ -57,7 +57,7 @@ export default function CustomerProfileScreen({ route, navigation }) {
     if (!text) return;
     setBusy(true);
     try {
-      await adminApi.sendDirectMessage(customerId, { title: t('customerProfile.messageTitle', 'Nachricht von WilkenPoelker'), message: text });
+      await adminApi.sendDirectMessage(customerId, { title: 'Nachricht von WilkenPoelker', message: text });
       setMsgVisible(false);
       setMsgText('');
       showToast({ type: 'success', message: t('customerProfile.messageSent', 'Nachricht gesendet') });

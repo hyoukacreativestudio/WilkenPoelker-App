@@ -23,6 +23,35 @@ Notifications.setNotificationHandler({
 // Push notifications handle real-time delivery; polling is only a fallback
 const POLL_INTERVAL = 60000; // 60 seconds
 
+// Each tap is handled once, whether it arrives via the listener or, after a cold
+// start, via getLastNotificationResponseAsync(). Returns the mark-as-read request
+// (if any) so the caller can refresh the unread badge afterwards.
+const handledResponses = new Set();
+function handleNotificationResponse(response) {
+  const id = response?.notification?.request?.identifier;
+  if (!id || handledResponses.has(id)) return null;
+  handledResponses.add(id);
+  const data = response.notification.request.content.data || {};
+  // Opening the push counts as reading it - otherwise it stays unread in the list.
+  const read = data.notificationId
+    ? notificationsApi.markAsRead(data.notificationId).catch(() => {})
+    : null;
+  if (data.deepLink) {
+    // Navigate using the deep link (string path or { type, id } object)
+    navigateFromNotification(data.deepLink);
+  } else if (data.type && data.repairId) {
+    navigateFromNotification({ type: data.type, id: data.repairId });
+  } else if (data.type && data.appointmentId) {
+    navigateFromNotification({ type: data.type, id: data.appointmentId });
+  } else if (data.type && data.ticketId) {
+    navigateFromNotification({ type: data.type, id: data.ticketId });
+  } else if (data.relatedType && data.relatedId) {
+    // Most backend notifications (e.g. appointments) only carry relatedType/relatedId.
+    navigateFromNotification({ type: data.relatedType, id: data.relatedId });
+  }
+  return read;
+}
+
 export function NotificationProvider({ children }) {
   const { isAuthenticated, user } = useContext(AuthContext);
   const userId = user?.id || null;
@@ -129,24 +158,22 @@ export function NotificationProvider({ children }) {
 
       // Listen for notification taps → navigate to relevant screen
       responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-        const data = response.notification.request.content.data;
-        if (data?.deepLink) {
-          // Navigate using the deep link (string path or { type, id } object)
-          navigateFromNotification(data.deepLink);
-        } else if (data?.type && data?.repairId) {
-          // Fallback: use type + repairId from push payload
-          navigateFromNotification({ type: data.type, id: data.repairId });
-        } else if (data?.type && data?.appointmentId) {
-          navigateFromNotification({ type: data.type, id: data.appointmentId });
-        } else if (data?.type && data?.ticketId) {
-          navigateFromNotification({ type: data.type, id: data.ticketId });
-        } else if (data?.relatedType && data?.relatedId) {
-          // Most backend notifications (e.g. appointments) only carry relatedType/relatedId.
-          navigateFromNotification({ type: data.relatedType, id: data.relatedId });
-        }
-        // Refresh unread count after tap
-        fetchUnreadCount();
+        const read = handleNotificationResponse(response);
+        Notifications.clearLastNotificationResponseAsync?.().catch?.(() => {});
+        Promise.resolve(read).then(fetchUnreadCount);
       });
+
+      // Cold start: the tap that launched the app arrives before we are logged in
+      // and the listener exists - pick it up once, now that the session is restored.
+      // Cleared afterwards, so a later normal start does not jump there again.
+      Notifications.getLastNotificationResponseAsync()
+        .then((response) => {
+          if (!response) return;
+          const read = handleNotificationResponse(response);
+          Notifications.clearLastNotificationResponseAsync?.().catch?.(() => {});
+          if (read) read.then(fetchUnreadCount);
+        })
+        .catch(() => {});
     }
 
     return () => {

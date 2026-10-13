@@ -103,10 +103,10 @@ export default function LoginScreen({ navigation }) {
         {/* Form Card */}
         <View style={s.formCard}>
           <Input
-            label={t('auth.emailOrCustomerNumber', 'Email / Kundennummer')}
+            label={t('auth.emailOrCustomerNumber', 'E-Mail / Kundennummer')}
             value={emailOrCustomerNumber}
             onChangeText={setEmailOrCustomerNumber}
-            placeholder={t('auth.emailOrCustomerNumber', 'Email / Kundennummer')}
+            placeholder={t('auth.emailOrCustomerNumber', 'E-Mail / Kundennummer')}
             autoCapitalize="none"
             error={errors.email}
           />

@@ -7,7 +7,6 @@ import { useTheme } from '../hooks/useTheme';
 import NotificationBell from '../components/shared/NotificationBell';
 import MoreMenuScreen from '../screens/more/MoreMenuScreen';
 import AboutUsScreen from '../screens/about/AboutUsScreen';
-import AppointmentsScreen from '../screens/appointments/AppointmentsScreen';
 import AppointmentDetailScreen from '../screens/appointments/AppointmentDetailScreen';
 import NewAppointmentScreen from '../screens/appointments/NewAppointmentScreen';
 import ProposeTimeScreen from '../screens/appointments/ProposeTimeScreen';
@@ -39,7 +38,7 @@ export default function MoreStack() {
           navigation.goBack();
         } else {
           // Deep-linked / direct URL → no MoreMenu below us, navigate there
-          navigation.navigate('MoreMenu');
+          navigation.replace('MoreMenu');
         }
       }}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -76,15 +75,6 @@ export default function MoreStack() {
         component={AboutUsScreen}
         options={({ navigation }) => ({
           title: t('aboutUs.title', 'Über uns'),
-          headerLeft: () => backButton(navigation),
-          headerRight: () => <NotificationBell />,
-        })}
-      />
-      <Stack.Screen
-        name="Appointments"
-        component={AppointmentsScreen}
-        options={({ navigation }) => ({
-          title: t('appointments.title'),
           headerLeft: () => backButton(navigation),
           headerRight: () => <NotificationBell />,
         })}

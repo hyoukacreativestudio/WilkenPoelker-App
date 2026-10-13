@@ -63,7 +63,12 @@
       "sunday": "Sunday"
     },
     "notice": "Notice",
-    "permission": "Permission Required"
+    "permission": "Permission Required",
+    "enterValue": "Enter value",
+    "remove": "Remove",
+    "send": "Send",
+    "undo": "Undo",
+    "unknown": "Unknown"
   },
   "navigation": {
     "feed": "Feed",
@@ -100,7 +105,8 @@
       "title": "Our Team",
       "intro": "Competent advisors in Ostrhauderfehn for motor equipment and cleaning technology. Professional consultation, qualified workshops and comprehensive service.",
       "memberCount": "{{count}} Employees",
-      "member": "Employee"
+      "member": "Employee",
+      "members": "Team members"
     },
     "store": {
       "title": "Our Store",
@@ -141,7 +147,9 @@
       "benefitAdvice": "Qualified Advice",
       "benefitStaff": "Trained Staff",
       "benefitAudits": "Regular Audits",
-      "benefitProtection": "Consumer Protection"
+      "benefitProtection": "Consumer Protection",
+      "benefitsTitle": "What QMF means for you",
+      "certifiedForTitle": "Certified for"
     },
     "kaercher": {
       "title": "Authorized Kärcher Dealer",
@@ -158,7 +166,10 @@
       "serviceParts": "Comprehensive spare parts inventory",
       "serviceStaff": "Trained specialist staff",
       "serviceRepair": "In-house repair & maintenance",
-      "serviceOnsite": "On-site service for commercial clients"
+      "serviceOnsite": "On-site service for commercial clients",
+      "categoriesTitle": "Product categories",
+      "gallery": "Product overview",
+      "serviceTitle": "Our service"
     },
     "edit": {
       "toggle": "Edit",
@@ -197,7 +208,9 @@
       "deleteConfirmMsg": "Really remove \"{{name}}\"?",
       "removePhotoConfirm": "Really remove \"{{name}}\"?",
       "image": "Image",
-      "addEntry": "Add"
+      "addEntry": "Add",
+      "noImages": "No images yet",
+      "saving": "Saving..."
     }
   },
   "emailVerification": {
@@ -252,7 +265,9 @@
     "strong": "Strong",
     "veryStrong": "Very strong",
     "passwordRequirements": "Min. 8 chars, upper/lowercase, number, special char",
-    "addressHint": "With your address we can find you in our customer records and link your account to your customer number automatically – so you can see your repairs right away."
+    "addressHint": "With your address we can find you in our customer records and link your account to your customer number automatically – so you can see your repairs right away.",
+    "emailOrCustomerNumber": "Email / customer number",
+    "forgotPasswordHint": "Enter your email address. We will send you a link to reset your password."
   },
   "feed": {
     "title": "Feed",
@@ -322,7 +337,8 @@
     "monFri": "Mon - Fri",
     "sat": "Sat",
     "and": "and",
-    "winterHours": "Winter hours (Nov 1 – Feb 1)"
+    "winterHours": "Winter hours (Nov 1 – Feb 1)",
+    "title": "Current opening hours:"
   },
   "service": {
     "title": "Service",
@@ -414,7 +430,8 @@
     "phone": "Phone",
     "email": "Email",
     "address": "Address",
-    "closed": "Closed"
+    "closed": "Closed",
+    "customer": "Customer"
   },
   "ticket": {
     "type": {
@@ -637,7 +654,8 @@
     "acknowledged": "Acknowledged ✓",
     "acknowledgeSuccess": "Thank you for your confirmation!",
     "patienceNote": "Please understand that waiting times may occur. We handle every order with the utmost care.",
-    "repairPatienceNote": "Please understand that repair duration depends on the availability of spare parts and the complexity of the damage."
+    "repairPatienceNote": "Please understand that repair duration depends on the availability of spare parts and the complexity of the damage.",
+    "statusCompleted": "Completed"
   },
   "appointments": {
     "title": "Appointments",
@@ -735,7 +753,8 @@
     "answerSent": "Answer sent",
     "awaitingAnswer": "Awaiting answer",
     "questionPlaceholder": "Your question to the customer...",
-    "answerPlaceholder": "Your answer to the question..."
+    "answerPlaceholder": "Your answer to the question...",
+    "department": "Department (optional)"
   },
   "notifications": {
     "title": "Notifications",
@@ -755,7 +774,8 @@
     "settings": "Notification settings",
     "accept": "Accept",
     "decline": "Decline",
-    "appointmentNoteHint": "Would you like to add a note to the appointment? (optional)"
+    "appointmentNoteHint": "Would you like to add a note to the appointment? (optional)",
+    "noNotificationsMsg": "Updates about your repairs, appointments and messages appear here."
   },
   "profile": {
     "title": "Profile",
@@ -977,7 +997,9 @@
     "messageBodyPlaceholder": "Your message to the customer...",
     "messageSent": "Message sent to {{name}}.",
     "messageError": "Message could not be sent.",
-    "userActionPrompt": "What would you like to do?"
+    "userActionPrompt": "What would you like to do?",
+    "multiRoleHint": "Several roles are possible – just tap them.",
+    "openProfile": "Open profile"
   },
   "faq": {
     "editMode": "Edit FAQs",
@@ -1053,7 +1075,8 @@
     "createTicket": "Create request",
     "consentTitle": "AI assistant consent",
     "consentMessage": "Your messages and attached photos are sent to OpenAI (USA) to generate answers. They are not used to train AI models; we delete chat histories automatically after 90 days. Please do not enter sensitive data. You can always send a service ticket to our team instead.\n\nDo you agree to this transfer?",
-    "consentAccept": "Agree"
+    "consentAccept": "Agree",
+    "maxImages": "Maximum of 3 images"
   },
   "serviceHome": {
     "aiChat": {
@@ -1216,8 +1239,9 @@
     "fileTooLarge": "File is too large. Maximum size: {{size}}",
     "invalidFileType": "Invalid file type.",
     "requiredField": "This field is required.",
+    "houseNumberMissing": "Please also enter your house number – then we can link you to your customer number automatically.",
     "somethingWentWrong": "Something went wrong. Please try again.",
-    "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
+    "tooManyRequests": "Too many attempts. Please wait a few minutes and try again.",
     "resetLinkInvalid": "This link is invalid or has expired. Please request a new one.",
     "wrongCurrentPassword": "The current password is not correct.",
     "pageNotFound": "Page not found",
@@ -1247,7 +1271,8 @@
     "errors": {
       "titleRequired": "Please select a subject.",
       "customTitleRequired": "Please enter a subject."
-    }
+    },
+    "selectDepartment": "Department"
   },
   "serviceAdmin": {
     "title": "Ticket Management",
@@ -1313,7 +1338,18 @@
     "tabTickets": "Tickets",
     "tabRepairs": "Repairs",
     "noRepairs": "No repairs",
-    "noRepairsMessage": "No repairs are on file for this customer."
+    "noRepairsMessage": "No repairs are on file for this customer.",
+    "clearNumberMsg": "The link to the Taifun customer number will be removed.",
+    "clearNumberTitle": "Remove customer number?",
+    "customerSince": "Customer since",
+    "deleteMsg": "The customer and ALL of their data will be deleted permanently.",
+    "deleteTitle": "Delete customer?",
+    "deleted": "Customer deleted",
+    "message": "Message",
+    "messagePlaceholder": "Message to the customer…",
+    "messageSent": "Message sent",
+    "numberRemoved": "Customer number removed",
+    "removeNumber": "Cust. no."
   },
   "version": {
     "updateTitle": "Update available",
@@ -1351,7 +1387,9 @@
     "existingCustomer": "Existing customer",
     "newCustomer": "New customer",
     "approved": "Approved",
-    "rejected": "Rejected"
+    "rejected": "Rejected",
+    "pending": "Open",
+    "noRequestsMsg": "New customer number requests from the app appear here."
   },
   "adminTickets": {
     "title": "Open Tickets",
@@ -1419,7 +1457,14 @@
     "recurring": "Recurring",
     "closed": "Closed",
     "todayHoliday": "Today: {{name}}",
-    "todaySpecialHours": "Today special hours: {{hours}}"
+    "todaySpecialHours": "Today special hours: {{hours}}",
+    "adminOnly": "Only admins can manage closed days",
+    "dateRange": "Date range (from–to)",
+    "endDate": "End date",
+    "invalidRange": "Invalid date range",
+    "rangeTooLong": "Maximum of 60 days",
+    "savedRange": "{{count}} days saved",
+    "startDate": "Start date"
   },
   "datePicker": {
     "select": "Select..."
@@ -1430,5 +1475,45 @@
   },
   "permissions": {
     "mediaLibrary": "Please allow access to your photos to attach images."
+  },
+  "about": {
+    "addImage": "Add image",
+    "removeImage": "Remove"
+  },
+  "repairCategory": {
+    "leasing": "Leasing",
+    "neu": "New purchase",
+    "reparatur": "Repair"
+  },
+  "repairStatus": {
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "inProgress": "In progress",
+    "ordered": "Ordered",
+    "pickedUp": "Picked up",
+    "ready": "Ready for pickup",
+    "requested": "Requested"
+  },
+  "store": {
+    "categories": {
+      "title": "Our range"
+    },
+    "contact": {
+      "title": "Contact & directions"
+    },
+    "gallery": {
+      "title": "Impressions"
+    },
+    "highlights": {
+      "title": "Our store"
+    },
+    "hours": {
+      "closed": "Closed",
+      "title": "Opening hours",
+      "winterNote": "Winter opening hours (1 Nov – 1 Feb)"
+    },
+    "services": {
+      "title": "Our services"
+    }
   }
 }

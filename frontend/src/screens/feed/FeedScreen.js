@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -48,6 +49,7 @@ function confirmAction(title, message, onConfirm) {
 }
 
 export default function FeedScreen({ navigation }) {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme, isDark, setThemeMode, mode } = useTheme();
   const { user } = useAuth();
@@ -88,8 +90,11 @@ export default function FeedScreen({ navigation }) {
     setInitialLoad(false);
   };
 
+  // Bumped on pull-to-refresh so the opening hours banner reloads too
+  const [bannerRefreshKey, setBannerRefreshKey] = useState(0);
   const handleRefresh = useCallback(() => {
     refresh();
+    setBannerRefreshKey((k) => k + 1);
   }, [refresh]);
 
   const handleLoadMore = useCallback(() => {
@@ -337,7 +342,7 @@ export default function FeedScreen({ navigation }) {
   const s = styles(theme);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity
@@ -408,7 +413,7 @@ export default function FeedScreen({ navigation }) {
           data={posts}
           renderItem={renderPost}
           keyExtractor={(item) => String(item._id || item.id)}
-          ListHeaderComponent={<OpeningHoursBanner />}
+          ListHeaderComponent={<OpeningHoursBanner refreshKey={bannerRefreshKey} />}
           contentContainerStyle={
             posts.length === 0 ? { flex: 1, alignItems: 'center' } : { paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.xxl }
           }

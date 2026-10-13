@@ -75,7 +75,7 @@ export default function ForgotPasswordScreen({ navigation }) {
           />
           <Text style={s.title}>{t('auth.forgotPassword')}</Text>
           <Text style={s.subtitle}>
-            {t('auth.forgotPasswordHint', 'Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link zum Zurücksetzen deines Passworts.')}
+            {t('auth.forgotPasswordHint', 'Geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.')}
           </Text>
         </View>
 

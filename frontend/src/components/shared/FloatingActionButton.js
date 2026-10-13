@@ -5,7 +5,7 @@ import { useTheme } from '../../hooks/useTheme';
 
 const FAB_SIZE = 56;
 
-export default function FloatingActionButton({ icon, onPress, color, style }) {
+export default function FloatingActionButton({ icon = 'plus', onPress, color, style, accessibilityLabel }) {
   const { theme } = useTheme();
 
   const backgroundColor = color || theme.colors.primary;
@@ -31,6 +31,8 @@ export default function FloatingActionButton({ icon, onPress, color, style }) {
       ]}
       onPress={onPress}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
     >
       <MaterialCommunityIcons
         name={icon}

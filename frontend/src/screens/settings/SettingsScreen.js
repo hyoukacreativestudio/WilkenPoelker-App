@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -34,6 +35,7 @@ const ACCENT_COLORS = ['green', 'blue', 'red', 'purple', 'orange'];
 const TEXT_SIZES = ['small', 'medium', 'large', 'extraLarge'];
 
 export default function SettingsScreen() {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme, isDark, mode, accentColor, textSize, setThemeMode, setAccentColor, setTextSize } = useTheme();
   const { language, setLanguage: setLanguageRaw } = useContext(LanguageContext);
@@ -183,7 +185,7 @@ export default function SettingsScreen() {
   const s = styles(theme);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: theme.spacing.xxl }}

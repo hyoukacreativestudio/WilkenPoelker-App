@@ -48,7 +48,9 @@ function today() {
 }
 
 // Create or refresh a single Repair from a TaifunOrder for a known user.
-async function upsertRepairFromOrder(order, userId) {
+// notifyNewReady: live imports also tell the customer about an order that arrives
+// already finished (same-day jobs). The backfill at registration stays silent.
+async function upsertRepairFromOrder(order, userId, { notifyNewReady = false } = {}) {
   const mapping = appStatusToRepair(order.appStatus);
   if (!mapping) return 'skipped'; // hidden/unknown — shouldn't reach here
 
@@ -58,7 +60,7 @@ async function upsertRepairFromOrder(order, userId) {
   const existing = await Repair.findOne({ where: { taifunRepairId: order.nr } });
 
   if (!existing) {
-    await Repair.create({
+    const repair = await Repair.create({
       userId,
       taifunRepairId: order.nr,
       repairNumber: order.nr, // Taifun order number is the natural, unique key
@@ -70,7 +72,11 @@ async function upsertRepairFromOrder(order, userId) {
       statusHistory: [
         { status: mapping.repairStatus, timestamp: nowIso, note: `Aus Taifun importiert (${mapping.label})` },
       ],
+      ...(mapping.repairStatus === 'ready' ? { actualCompletion: today() } : {}),
     });
+    if (notifyNewReady && mapping.repairStatus === 'ready') {
+      await notifyStatusChange(repair, mapping, deviceName);
+    }
     return 'created';
   }
 
@@ -109,7 +115,7 @@ async function upsertRepairFromOrder(order, userId) {
 }
 
 // Sync a list of TaifunOrder instances into Repairs.
-async function syncOrders(orders) {
+async function syncOrders(orders, opts = {}) {
   let created = 0;
   let updated = 0;
   let skippedNoUser = 0;
@@ -129,7 +135,7 @@ async function syncOrders(orders) {
     const userId = order.kdNr ? userIdByNr.get(order.kdNr) : null;
     if (!userId) { skippedNoUser++; continue; }
     try {
-      const res = await upsertRepairFromOrder(order, userId);
+      const res = await upsertRepairFromOrder(order, userId, opts);
       if (res === 'created') created++;
       else if (res === 'updated') updated++;
     } catch (err) {
@@ -145,7 +151,7 @@ async function syncRepairsForOrderNrs(nrs) {
   const orders = await TaifunOrder.findAll({
     where: { nr: { [Op.in]: nrs }, appHidden: false, vanishedAt: null, storno: false },
   });
-  return syncOrders(orders);
+  return syncOrders(orders, { notifyNewReady: true });
 }
 
 // Backfill: when a user gets a customerNumber (registration or admin approval),

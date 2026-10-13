@@ -69,7 +69,7 @@ export default function VersionGate() {
           <Text style={s.title}>{t('version.updateTitle', 'Update verfügbar')}</Text>
           <Text style={s.msg}>
             {info.message
-              || t('version.updateMessage', 'Es ist eine neuere Version der App verfügbar. Bitte aktualisiere, um die neuesten Funktionen und Fehlerbehebungen zu erhalten.')}
+              || t('version.updateMessage', 'Es ist eine neuere Version der App verfügbar. Bitte aktualisieren Sie die App, um die neuesten Funktionen und Fehlerbehebungen zu erhalten.')}
           </Text>
           <Text style={s.versions}>
             {t('version.installed', 'Installiert')}: {current}  ·  {t('version.latest', 'Neu')}: {info.latest}

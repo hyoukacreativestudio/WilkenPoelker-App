@@ -427,13 +427,13 @@ cron.schedule('30 3 * * *', async () => {
       : 0;
 
     if (deletedRepairs > 0) {
-      logger.info('Cron: purged acknowledged repairs after 7d', {
+      logger.info('Cron: purged acknowledged repairs after 2d', {
         repairs: deletedRepairs,
         taifunOrders: deletedOrders,
       });
     }
   } catch (err) {
-    logger.error('Cron: 7-day repair purge failed', { error: err.message });
+    logger.error('Cron: 2-day repair purge failed', { error: err.message });
   }
 });
 

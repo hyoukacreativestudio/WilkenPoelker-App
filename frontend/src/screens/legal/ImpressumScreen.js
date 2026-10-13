@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -88,6 +89,7 @@ function InfoBlock({ label, value, theme }) {
 }
 
 export default function ImpressumScreen() {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
 
@@ -110,7 +112,7 @@ export default function ImpressumScreen() {
   const s = styles(theme);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: theme.spacing.xxl }}

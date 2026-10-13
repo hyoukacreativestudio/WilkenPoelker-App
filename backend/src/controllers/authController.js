@@ -134,12 +134,18 @@ const verifyEmail = asyncHandler(async (req, res) => {
       .card{background:#fff;border-radius:16px;padding:40px;max-width:420px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.1)}
       .icon{font-size:64px;margin-bottom:16px}.btn{display:inline-block;background:#2E7D32;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:20px}</style></head>
       <body><div class="card"><div class="icon">✅</div><h2>E-Mail bestätigt!</h2>
-      <p>Deine E-Mail-Adresse wurde erfolgreich verifiziert. Du kannst dich jetzt in der App anmelden.</p>
+      <p>Ihre E-Mail-Adresse wurde erfolgreich bestätigt. Sie können sich jetzt in der App anmelden.</p>
       </div></body></html>
     `);
   } catch (err) {
+    // Almost always an old or already used link. The technical error ("Invalid
+    // verification token") meant nothing to customers - explain it instead.
+    if (err.code !== 'INVALID_VERIFICATION_TOKEN') {
+      logger.warn('Email verification failed', { error: err.message });
+    }
     const safeMessage = escapeHtml(
-      err.message || 'Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Verifizierungslink in der App an.'
+      'Dieser Link ist nicht mehr gültig. Wenn Sie Ihre E-Mail-Adresse bereits bestätigt haben, '
+      + 'können Sie sich einfach in der App anmelden – sonst fordern Sie dort bitte einen neuen Bestätigungslink an.'
     );
     res.status(400).send(`
       <!DOCTYPE html>
@@ -149,7 +155,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
       <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}
       .card{background:#fff;border-radius:16px;padding:40px;max-width:420px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.1)}
       .icon{font-size:64px;margin-bottom:16px}</style></head>
-      <body><div class="card"><div class="icon">❌</div><h2>Verifizierung fehlgeschlagen</h2>
+      <body><div class="card"><div class="icon">⚠️</div><h2>Link nicht mehr gültig</h2>
       <p>${safeMessage}</p>
       </div></body></html>
     `);

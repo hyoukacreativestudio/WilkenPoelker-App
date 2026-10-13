@@ -54,12 +54,16 @@ const linking = {
               RepairDetail: 'repairs/:repairId',
             },
           },
+          Appointments: {
+            screens: {
+              AppointmentsList: 'appointments',
+              AppointmentDetail: 'appointments/:appointmentId',
+            },
+          },
           More: {
             screens: {
               MoreMenu: 'more',
               AboutUs: 'about-us',
-              Appointments: 'appointments',
-              AppointmentDetail: 'appointments/:appointmentId',
               Notifications: 'notifications',
               Profile: 'profile',
               Settings: 'settings',

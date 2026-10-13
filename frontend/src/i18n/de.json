@@ -63,7 +63,12 @@
       "sunday": "Sonntag"
     },
     "notice": "Hinweis",
-    "permission": "Berechtigung erforderlich"
+    "permission": "Berechtigung erforderlich",
+    "enterValue": "Wert eingeben",
+    "remove": "Entfernen",
+    "send": "Senden",
+    "undo": "Rückgängig",
+    "unknown": "Unbekannt"
   },
   "navigation": {
     "feed": "Feed",
@@ -100,7 +105,8 @@
       "title": "Unser Team",
       "intro": "Kompetente Ansprechpartner in Ostrhauderfehn für Motorgeräte und Reinigungstechnik. Professionelle Beratung, qualifizierte Werkstätten und umfassender Service.",
       "memberCount": "{{count}} Mitarbeiter",
-      "member": "Mitarbeiter"
+      "member": "Mitarbeiter",
+      "members": "Mitarbeiter"
     },
     "store": {
       "title": "Unser Ladengeschäft",
@@ -141,7 +147,9 @@
       "benefitAdvice": "Qualifizierte Beratung",
       "benefitStaff": "Geschultes Personal",
       "benefitAudits": "Regelmäßige Audits",
-      "benefitProtection": "Verbraucherschutz"
+      "benefitProtection": "Verbraucherschutz",
+      "benefitsTitle": "Was QMF für Sie bedeutet",
+      "certifiedForTitle": "Zertifiziert für"
     },
     "kaercher": {
       "title": "Autorisierter Kärcher-Händler",
@@ -158,7 +166,10 @@
       "serviceParts": "Umfangreiches Ersatzteillager",
       "serviceStaff": "Geschultes Fachpersonal",
       "serviceRepair": "Hauseigene Reparatur & Wartung",
-      "serviceOnsite": "Vor-Ort-Service für Gewerbekunden"
+      "serviceOnsite": "Vor-Ort-Service für Gewerbekunden",
+      "categoriesTitle": "Produktkategorien",
+      "gallery": "Produktübersicht",
+      "serviceTitle": "Unser Service"
     },
     "edit": {
       "toggle": "Bearbeiten",
@@ -197,7 +208,9 @@
       "deleteConfirmMsg": "\"{{name}}\" wirklich entfernen?",
       "removePhotoConfirm": "\"{{name}}\" wirklich entfernen?",
       "image": "Bild",
-      "addEntry": "Hinzufügen"
+      "addEntry": "Hinzufügen",
+      "noImages": "Keine Bilder vorhanden",
+      "saving": "Speichern..."
     }
   },
   "emailVerification": {
@@ -252,7 +265,9 @@
     "strong": "Stark",
     "veryStrong": "Sehr stark",
     "passwordRequirements": "Min. 8 Zeichen, Groß-/Kleinbuchstaben, Zahl, Sonderzeichen",
-    "addressHint": "Mit Ihrer Adresse finden wir Sie in unserem Kundenstamm und verknüpfen Ihr Konto automatisch mit Ihrer Kundennummer – dann sehen Sie Ihre Reparaturen sofort."
+    "addressHint": "Mit Ihrer Adresse finden wir Sie in unserem Kundenstamm und verknüpfen Ihr Konto automatisch mit Ihrer Kundennummer – dann sehen Sie Ihre Reparaturen sofort.",
+    "emailOrCustomerNumber": "E-Mail / Kundennummer",
+    "forgotPasswordHint": "Geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts."
   },
   "feed": {
     "title": "Feed",
@@ -322,7 +337,8 @@
     "monFri": "Mo - Fr",
     "sat": "Sa",
     "and": "und",
-    "winterHours": "Winteröffnungszeiten (01.11. – 01.02.)"
+    "winterHours": "Winteröffnungszeiten (01.11. – 01.02.)",
+    "title": "Aktuelle Öffnungszeiten:"
   },
   "service": {
     "title": "Service",
@@ -414,7 +430,8 @@
     "phone": "Telefon",
     "email": "E-Mail",
     "address": "Adresse",
-    "closed": "Geschlossen"
+    "closed": "Geschlossen",
+    "customer": "Kunde"
   },
   "ticket": {
     "type": {
@@ -637,7 +654,8 @@
     "acknowledged": "Kenntnisnahme bestätigt ✓",
     "acknowledgeSuccess": "Vielen Dank für Ihre Bestätigung!",
     "patienceNote": "Bitte haben Sie Verständnis, dass es zu Wartezeiten kommen kann. Wir bearbeiten jeden Auftrag mit größter Sorgfalt.",
-    "repairPatienceNote": "Bitte haben Sie Verständnis, dass die Reparaturdauer von der Verfügbarkeit der Ersatzteile und der Komplexität des Schadens abhängt."
+    "repairPatienceNote": "Bitte haben Sie Verständnis, dass die Reparaturdauer von der Verfügbarkeit der Ersatzteile und der Komplexität des Schadens abhängt.",
+    "statusCompleted": "Abgeschlossen"
   },
   "appointments": {
     "title": "Termine",
@@ -735,7 +753,8 @@
     "answerSent": "Antwort gesendet",
     "awaitingAnswer": "Wartet auf Antwort",
     "questionPlaceholder": "Ihre Rückfrage an den Kunden...",
-    "answerPlaceholder": "Ihre Antwort auf die Rückfrage..."
+    "answerPlaceholder": "Ihre Antwort auf die Rückfrage...",
+    "department": "Abteilung (optional)"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -755,7 +774,8 @@
     "settings": "Benachrichtigungseinstellungen",
     "accept": "Annehmen",
     "decline": "Ablehnen",
-    "appointmentNoteHint": "Möchten Sie eine Notiz zum Termin hinzufügen? (optional)"
+    "appointmentNoteHint": "Möchten Sie eine Notiz zum Termin hinzufügen? (optional)",
+    "noNotificationsMsg": "Hier erscheinen Neuigkeiten zu Ihren Reparaturen, Terminen und Nachrichten."
   },
   "profile": {
     "title": "Profil",
@@ -977,7 +997,9 @@
     "messageBodyPlaceholder": "Ihre Nachricht an den Kunden...",
     "messageSent": "Nachricht an {{name}} gesendet.",
     "messageError": "Nachricht konnte nicht gesendet werden.",
-    "userActionPrompt": "Was möchten Sie tun?"
+    "userActionPrompt": "Was möchten Sie tun?",
+    "multiRoleHint": "Mehrere Rollen möglich – einfach antippen.",
+    "openProfile": "Profil öffnen"
   },
   "faq": {
     "editMode": "FAQs bearbeiten",
@@ -1053,7 +1075,8 @@
     "createTicket": "Anfrage stellen",
     "consentTitle": "Einwilligung KI-Assistent",
     "consentMessage": "Ihre Nachrichten und angehängten Fotos werden zur Beantwortung an OpenAI (USA) übermittelt. Sie werden nicht zum Training von KI-Modellen verwendet; die Chat-Verläufe löschen wir nach 90 Tagen automatisch. Bitte geben Sie keine sensiblen Daten ein. Sie können stattdessen jederzeit ein Service-Ticket an unser Team senden.\n\nStimmen Sie der Übermittlung zu?",
-    "consentAccept": "Zustimmen"
+    "consentAccept": "Zustimmen",
+    "maxImages": "Maximal 3 Bilder"
   },
   "serviceHome": {
     "aiChat": {
@@ -1202,8 +1225,9 @@
     "fileTooLarge": "Datei ist zu groß. Maximale Größe: {{size}}",
     "invalidFileType": "Ungültiger Dateityp.",
     "requiredField": "Dieses Feld ist erforderlich.",
+    "houseNumberMissing": "Bitte geben Sie auch Ihre Hausnummer an – dann können wir Sie automatisch Ihrer Kundennummer zuordnen.",
     "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
-    "tooManyRequests": "Zu viele Versuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+    "tooManyRequests": "Zu viele Versuche. Bitte warten Sie ein paar Minuten und versuchen Sie es dann erneut.",
     "resetLinkInvalid": "Dieser Link ist ungültig oder abgelaufen. Bitte fordern Sie einen neuen an.",
     "wrongCurrentPassword": "Das aktuelle Passwort ist nicht korrekt.",
     "pageNotFound": "Seite nicht gefunden",
@@ -1233,7 +1257,8 @@
     "errors": {
       "titleRequired": "Bitte wählen Sie einen Betreff aus.",
       "customTitleRequired": "Bitte geben Sie einen Betreff ein."
-    }
+    },
+    "selectDepartment": "Abteilung"
   },
   "serviceAdmin": {
     "title": "Ticket-Verwaltung",
@@ -1299,11 +1324,22 @@
     "tabTickets": "Tickets",
     "tabRepairs": "Reparaturen",
     "noRepairs": "Keine Reparaturen",
-    "noRepairsMessage": "Für diesen Kunden sind keine Reparaturen hinterlegt."
+    "noRepairsMessage": "Für diesen Kunden sind keine Reparaturen hinterlegt.",
+    "clearNumberMsg": "Die Verknüpfung zur Taifun-Kundennummer wird entfernt.",
+    "clearNumberTitle": "Kundennummer entfernen?",
+    "customerSince": "Kunde seit",
+    "deleteMsg": "Der Kunde und ALLE seine Daten werden unwiderruflich gelöscht.",
+    "deleteTitle": "Kunde löschen?",
+    "deleted": "Kunde gelöscht",
+    "message": "Nachricht",
+    "messagePlaceholder": "Nachricht an den Kunden…",
+    "messageSent": "Nachricht gesendet",
+    "numberRemoved": "Kundennummer entfernt",
+    "removeNumber": "Kd-Nr."
   },
   "version": {
     "updateTitle": "Update verfügbar",
-    "updateMessage": "Es ist eine neuere Version der App verfügbar. Bitte aktualisiere, um die neuesten Funktionen und Fehlerbehebungen zu erhalten.",
+    "updateMessage": "Es ist eine neuere Version der App verfügbar. Bitte aktualisieren Sie die App, um die neuesten Funktionen und Fehlerbehebungen zu erhalten.",
     "installed": "Installiert",
     "latest": "Neu",
     "updateNow": "Jetzt aktualisieren",
@@ -1337,7 +1373,9 @@
     "existingCustomer": "Bestandskunde",
     "newCustomer": "Neukunde",
     "approved": "Genehmigt",
-    "rejected": "Abgelehnt"
+    "rejected": "Abgelehnt",
+    "pending": "Offen",
+    "noRequestsMsg": "Neue Kundennummer-Anfragen aus der App erscheinen hier."
   },
   "adminTickets": {
     "title": "Offene Tickets",
@@ -1405,7 +1443,14 @@
     "recurring": "Wiederkehrend",
     "closed": "Geschlossen",
     "todayHoliday": "Heute: {{name}}",
-    "todaySpecialHours": "Heute Sonderöffnungszeiten: {{hours}}"
+    "todaySpecialHours": "Heute Sonderöffnungszeiten: {{hours}}",
+    "adminOnly": "Nur Admins können geschlossene Tage verwalten",
+    "dateRange": "Zeitraum (von–bis)",
+    "endDate": "Enddatum",
+    "invalidRange": "Ungültiger Zeitraum",
+    "rangeTooLong": "Maximal 60 Tage",
+    "savedRange": "{{count}} Tage gespeichert",
+    "startDate": "Startdatum"
   },
   "datePicker": {
     "select": "Auswählen…"
@@ -1416,5 +1461,45 @@
   },
   "permissions": {
     "mediaLibrary": "Bitte erlauben Sie den Zugriff auf Ihre Fotos, um Bilder anzuhängen."
+  },
+  "about": {
+    "addImage": "Bild hinzufügen",
+    "removeImage": "Entfernen"
+  },
+  "repairCategory": {
+    "leasing": "Leasing",
+    "neu": "Neukauf",
+    "reparatur": "Reparatur"
+  },
+  "repairStatus": {
+    "cancelled": "Storniert",
+    "completed": "Abgeschlossen",
+    "inProgress": "In Bearbeitung",
+    "ordered": "Bestellt",
+    "pickedUp": "Abgeholt",
+    "ready": "Abholbereit",
+    "requested": "Angefragt"
+  },
+  "store": {
+    "categories": {
+      "title": "Unser Sortiment"
+    },
+    "contact": {
+      "title": "Kontakt & Anfahrt"
+    },
+    "gallery": {
+      "title": "Impressionen"
+    },
+    "highlights": {
+      "title": "Unser Ladengeschäft"
+    },
+    "hours": {
+      "closed": "Geschlossen",
+      "title": "Öffnungszeiten",
+      "winterNote": "Winteröffnungszeiten (01.11. – 01.02.)"
+    },
+    "services": {
+      "title": "Unsere Leistungen"
+    }
   }
 }

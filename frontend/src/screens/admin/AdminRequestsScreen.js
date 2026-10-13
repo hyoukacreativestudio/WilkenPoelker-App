@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -276,6 +277,7 @@ function RequestCard({ request, onApprove, onReject, theme, t }) {
 }
 
 export default function AdminRequestsScreen({ navigation }) {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
 
@@ -285,7 +287,7 @@ export default function AdminRequestsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('pending');
 
   const tabs = [
-    { key: 'pending', label: t('customerNumber.statusPending') },
+    { key: 'pending', label: t('adminRequests.pending') },
     { key: 'approved', label: t('adminRequests.approved') },
     { key: 'rejected', label: t('adminRequests.rejected') },
   ];
@@ -408,7 +410,7 @@ export default function AdminRequestsScreen({ navigation }) {
       <EmptyState
         icon="account-question-outline"
         title={t('adminRequests.noRequests')}
-        message={t('adminRequests.noRequests')}
+        message={t('adminRequests.noRequestsMsg')}
       />
     );
   };
@@ -416,7 +418,7 @@ export default function AdminRequestsScreen({ navigation }) {
   const s = styles(theme);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <Tabs
         tabs={tabs}
         activeTab={activeTab}

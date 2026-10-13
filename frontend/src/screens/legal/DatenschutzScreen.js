@@ -6,11 +6,13 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import AccordionSection from '../../components/shared/AccordionSection';
 
 export default function DatenschutzScreen() {
+  const safeEdges = useScreenEdges();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
 
@@ -29,7 +31,7 @@ export default function DatenschutzScreen() {
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: theme.spacing.xxl }}

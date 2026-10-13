@@ -56,6 +56,8 @@ export default function RegisterScreen({ navigation }) {
     if (!form.username.trim()) errs.username = t('errors.requiredField');
     if (!form.email.trim()) errs.email = t('errors.requiredField');
     if (!form.password) errs.password = t('errors.requiredField');
+    // Without a house number we cannot find the customer in our records automatically
+    if (form.street.trim() && !/[0-9]/.test(form.street)) errs.street = t('errors.houseNumberMissing');
     if (form.password !== form.passwordConfirm) errs.passwordConfirm = t('errors.passwordMismatch');
     if (!dsgvo) errs.dsgvo = t('errors.requiredField');
     if (!agb) errs.agb = t('errors.requiredField');
@@ -189,6 +191,7 @@ export default function RegisterScreen({ navigation }) {
           label={t('profile.street')}
           value={form.street}
           onChangeText={(v) => updateField('street', v)}
+          error={errors.street}
         />
 
         <View style={s.row}>

@@ -40,7 +40,9 @@ export default function CategoryBar() {
                 fontWeight: theme.typography.weights.medium,
               },
             ]}
-            numberOfLines={2}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
           >
             {t(cat.labelKey, cat.key)}
           </Text>

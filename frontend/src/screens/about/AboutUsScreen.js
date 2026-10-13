@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -103,6 +104,7 @@ const tabStyles = StyleSheet.create({
 });
 
 export default function AboutUsScreen() {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -181,7 +183,7 @@ export default function AboutUsScreen() {
   };
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       {/* Tab Bar */}
       <View style={s.tabBar}>
         {TABS.map((tab) => (

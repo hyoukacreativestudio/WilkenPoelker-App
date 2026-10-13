@@ -31,6 +31,8 @@ WICHTIG: Du darfst NUR Fragen beantworten, die sich auf folgende Fachbereiche be
 Wenn eine Frage NICHT zu diesen Themen gehoert, antworte freundlich:
 "Das liegt leider außerhalb meines Fachbereichs. Ich kann Ihnen bei Fragen zu Fahrrädern, Reinigungsgeräten und Motorgeräten weiterhelfen. Wie kann ich Ihnen in diesen Bereichen behilflich sein?"
 
+Sprich Kunden immer mit "Sie" an, niemals mit "du".
+
 Erfinde KEINE Informationen. Wenn du dir bei Preisen oder Verfuegbarkeiten unsicher bist, verweise auf den direkten Kontakt mit dem Geschaeft.`;
 
 const REPAIR_HINT = `

@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -22,6 +23,7 @@ import Tabs from '../../components/ui/Tabs';
 import EmptyState from '../../components/ui/EmptyState';
 import OfflineBanner from '../../components/ui/OfflineBanner';
 import NotificationCard from '../../components/notification/NotificationCard';
+import { apiErrorMessage } from '../../utils/apiErrors';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 
 // Platform-safe alert
@@ -53,6 +55,7 @@ const CATEGORY_FILTERS = [
 ];
 
 export default function NotificationsScreen({ navigation }) {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { fetchUnreadCount, decrementUnread, resetUnread } = useNotifications();
@@ -134,7 +137,9 @@ export default function NotificationsScreen({ navigation }) {
     }
 
     // Handle string format: '/repairs/{id}', '/service/tickets/{id}/chat', etc.
+    // Older reminders were stored without the leading slash ("appointments/{id}").
     if (typeof deepLink === 'string') {
+      if (!deepLink.startsWith('/')) deepLink = `/${deepLink}`;
       const repairMatch = deepLink.match(/\/repairs\/([a-f0-9-]+)/i);
       if (repairMatch) return { type: 'repair', id: repairMatch[1] };
 
@@ -259,7 +264,8 @@ export default function NotificationsScreen({ navigation }) {
       showAlert(t('common.success'), t('appointments.proposalAccepted'));
       fetchUnreadCount();
     } catch (err) {
-      showAlert(t('common.error'), t('errors.somethingWentWrong'));
+      // e.g. "Es liegt kein Terminvorschlag vor" when it was already answered
+      showAlert(t('common.error'), apiErrorMessage(err, t));
     }
   }, [respondApi, markAsReadApi, setItems, decrementUnread, fetchUnreadCount, t]);
 
@@ -294,7 +300,7 @@ export default function NotificationsScreen({ navigation }) {
       showAlert(t('common.success'), t('appointments.proposalDeclined'));
       fetchUnreadCount();
     } catch (err) {
-      showAlert(t('common.error'), t('errors.somethingWentWrong'));
+      showAlert(t('common.error'), apiErrorMessage(err, t));
     }
   }, [respondApi, markAsReadApi, setItems, decrementUnread, fetchUnreadCount, t]);
 
@@ -349,7 +355,7 @@ export default function NotificationsScreen({ navigation }) {
       <EmptyState
         icon="bell-off-outline"
         title={t('notifications.noNotifications')}
-        message={t('notifications.noNotifications')}
+        message={t('notifications.noNotificationsMsg')}
       />
     );
   };
@@ -357,12 +363,11 @@ export default function NotificationsScreen({ navigation }) {
   const s = styles(theme);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <OfflineBanner />
 
-      {/* Header */}
+      {/* The stack header already shows the title - this row only holds the action */}
       <View style={s.header}>
-        <Text style={s.headerTitle}>{t('notifications.title')}</Text>
         <TouchableOpacity
           onPress={handleMarkAllRead}
           activeOpacity={0.7}
@@ -431,14 +436,9 @@ const styles = (theme) =>
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
       backgroundColor: theme.colors.headerBackground,
-    },
-    headerTitle: {
-      ...theme.typography.styles.h4,
-      color: theme.colors.text,
-      fontWeight: theme.typography.weights.bold,
     },
   });

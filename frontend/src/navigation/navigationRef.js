@@ -6,8 +6,13 @@ export const navigationRef = createNavigationContainerRef();
  * Navigate to a screen from outside React components (e.g., push notification handlers).
  * Waits for navigator to be ready before navigating.
  */
-export function navigateFromNotification(deepLink) {
-  if (!deepLink || !navigationRef.isReady()) return;
+export function navigateFromNotification(deepLink, attempt = 0) {
+  if (!deepLink) return;
+  // After a cold start the navigator may not be mounted yet - retry for ~6 s
+  if (!navigationRef.isReady()) {
+    if (attempt < 20) setTimeout(() => navigateFromNotification(deepLink, attempt + 1), 300);
+    return;
+  }
 
   try {
     // deepLink can be a string like "/repairs/uuid" or an object { type, id }
@@ -18,7 +23,7 @@ export function navigateFromNotification(deepLink) {
       if (parts[0] === 'repairs' && parts[1]) {
         navigationRef.navigate('Repairs', { screen: 'RepairDetail', params: { repairId: parts[1] } });
       } else if (parts[0] === 'appointments' && parts[1]) {
-        navigationRef.navigate('More', { screen: 'AppointmentDetail', params: { appointmentId: parts[1] } });
+        navigationRef.navigate('Appointments', { screen: 'AppointmentDetail', params: { appointmentId: parts[1] } });
       } else if (parts[0] === 'service' && parts[1] === 'chat' && parts[2]) {
         navigationRef.navigate('Service', { screen: 'Chat', params: { ticketId: parts[2] } });
       } else if (parts[0] === 'service' && parts[1] === 'ticket' && parts[2]) {
@@ -48,13 +53,13 @@ export function navigateFromNotification(deepLink) {
         case 'repair_ready':
         case 'new_repair':
           if (id) navigationRef.navigate('Repairs', { screen: 'RepairDetail', params: { repairId: id } });
-          else navigationRef.navigate('Repairs', { screen: 'RepairsList' });
+          else navigationRef.navigate('Repairs', { screen: 'RepairsList', pop: true });
           break;
         case 'appointment':
         case 'appointment_reminder':
         case 'appointment_proposal':
-          if (id) navigationRef.navigate('More', { screen: 'AppointmentDetail', params: { appointmentId: id } });
-          else navigationRef.navigate('More', { screen: 'Appointments' });
+          if (id) navigationRef.navigate('Appointments', { screen: 'AppointmentDetail', params: { appointmentId: id } });
+          else navigationRef.navigate('Appointments', { screen: 'AppointmentsList', pop: true });
           break;
         case 'chat':
         case 'chat_message':
@@ -63,12 +68,12 @@ export function navigateFromNotification(deepLink) {
         case 'ticket':
         case 'new_ticket':
           if (id) navigationRef.navigate('Service', { screen: 'TicketDetail', params: { ticketId: id } });
-          else navigationRef.navigate('Service', { screen: 'ServiceHome' });
+          else navigationRef.navigate('Service', { screen: 'ServiceHome', pop: true });
           break;
         case 'post':
         case 'feed':
           if (id) navigationRef.navigate('Feed', { screen: 'PostDetail', params: { postId: id } });
-          else navigationRef.navigate('Feed', { screen: 'FeedHome' });
+          else navigationRef.navigate('Feed', { screen: 'FeedHome', pop: true });
           break;
         case 'customer_number_request':
         case 'customer_number':

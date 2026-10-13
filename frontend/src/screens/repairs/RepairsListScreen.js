@@ -11,6 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -62,6 +63,7 @@ const STAFF_ROLES = ['admin', 'super_admin', 'service_manager', 'bike_manager', 
 const ADMIN_TABS = ['open', 'ready', 'archived'];
 
 export default function RepairsListScreen({ navigation }) {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -1003,7 +1005,7 @@ export default function RepairsListScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <OfflineBanner />
 
       {/* Header */}

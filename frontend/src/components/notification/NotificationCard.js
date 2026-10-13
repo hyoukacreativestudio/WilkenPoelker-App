@@ -25,13 +25,18 @@ export default function NotificationCard({
   const { theme } = useTheme();
   const { t } = useTranslation();
 
-  const { title, message, type, category, read, createdAt, relatedType } = notification;
+  const { title, message, type, category, read, createdAt, relatedType, deepLink } = notification;
 
   const iconName = CATEGORY_ICONS[category] || CATEGORY_ICONS.system;
   const iconColor = theme.colors.notification?.[category] || theme.colors.primary;
 
-  // Appointment proposal actions
-  const isAppointmentProposal = category === 'appointment' && relatedType === 'appointment' && type === 'appointment_reminder';
+  // Appointment proposal actions. Every appointment notification has the type
+  // 'appointment_reminder' - only the proposal itself gets accept/decline here.
+  // Once read (answered, or opened from the push) a tap opens the appointment,
+  // which always shows its current state.
+  const isAppointmentProposal = category === 'appointment' && relatedType === 'appointment'
+    && type === 'appointment_reminder' && !read
+    && (String(deepLink || '').endsWith('/proposal') || title === 'Terminvorschlag erhalten');
   const [showActions, setShowActions] = useState(false);
   const [customerNote, setCustomerNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -115,9 +120,10 @@ export default function NotificationCard({
                 theme.typography.styles.caption,
                 { color: theme.colors.textSecondary, marginTop: 2 },
               ]}
-              numberOfLines={2}
+              numberOfLines={showActions ? undefined : 2}
             >
-              {truncateText(message, 80)}
+              {/* Expanded proposal: show the whole proposed time before accepting */}
+              {showActions ? message : truncateText(message, 80)}
             </Text>
           ) : null}
           <Text

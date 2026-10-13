@@ -71,8 +71,8 @@ export default class ErrorBoundary extends React.Component {
         </Text>
         <Text style={[styles.message, { color: colors.textSecondary }]}>
           {isScreenLevel
-            ? 'Dieser Bereich hat einen Fehler. Versuche es erneut.'
-            : 'Ein unerwarteter Fehler ist aufgetreten. Bitte starte die App neu.'}
+            ? 'Dieser Bereich hat einen Fehler. Bitte versuchen Sie es erneut.'
+            : 'Ein unerwarteter Fehler ist aufgetreten. Bitte starten Sie die App neu.'}
         </Text>
 
         {__DEV__ && this.state.error && (

@@ -64,7 +64,7 @@ export default function TermineHeute({ user }) {
                   <td className="no-print" style={{ textAlign: 'center' }}>
                     <input type="checkbox" checked={!!a.workDone} onChange={() => toggleDone(a)} title="Erledigt" />
                   </td>
-                  <td>{hm(a.startTime) || '—'}</td>
+                  <td>{hm(a.startTime) || (a.proposedText ? <span className="muted">{a.proposedText}</span> : '—')}</td>
                   <td><strong>{a.repairNumber || '—'}</strong></td>
                   <td>
                     {a.customerName || '—'}{a.customerNumber ? <span className="muted"> · Kd {a.customerNumber}</span> : null}

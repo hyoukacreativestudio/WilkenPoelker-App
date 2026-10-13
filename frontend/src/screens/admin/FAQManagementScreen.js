@@ -14,6 +14,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -43,6 +44,7 @@ const CATEGORY_COLORS = {
 };
 
 export default function FAQManagementScreen() {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -395,7 +397,7 @@ export default function FAQManagementScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <SafeAreaView style={s.container} edges={safeEdges}>
         <View style={s.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={[theme.typography.styles.body, { color: theme.colors.textSecondary, marginTop: theme.spacing.md }]}>
@@ -407,7 +409,7 @@ export default function FAQManagementScreen() {
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <FlatList
         data={filteredFaqs}
         keyExtractor={(item) => String(item.id)}

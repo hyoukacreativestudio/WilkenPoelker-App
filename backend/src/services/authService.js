@@ -6,31 +6,7 @@ const { hashPassword, comparePassword, generateToken, hashToken } = require('../
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
 
-// Normalize a street for fuzzy comparison: lowercase, unify "straße/strasse/str."
-// to "str", drop everything non-alphanumeric. So "Dresdener Str." == "Dresdener Straße".
-function normStreet(s) {
-  return String(s || '')
-    .toLowerCase()
-    .replace(/ß/g, 'ss')
-    .replace(/stra(ss|s)?e|str\.?/g, 'str')
-    .replace(/[^a-z0-9]/g, '')
-    .replace(/\d+$/, ''); // drop a trailing house number if it slipped into the street
-}
-
-// "Musterstraße 12a" -> { street: "Musterstraße", houseNumber: "12a" }
-function splitStreet(s) {
-  const raw = String(s || '').trim();
-  const m = raw.match(/^(.*?)[\s,]*(\d+\s*[a-zA-Z]?(?:\s*[-/]\s*\d+\s*[a-zA-Z]?)?)$/);
-  return m ? { street: m[1], houseNumber: m[2] } : { street: raw, houseNumber: '' };
-}
-
-const normHouse = (h) => String(h || '').toLowerCase().replace(/\s+/g, '');
-
-function normEmail(email) {
-  const lower = String(email || '').trim().toLowerCase();
-  if (!lower.includes('@')) return '';
-  try { return require('validator').normalizeEmail(lower) || lower; } catch { return lower; }
-}
+const { matchByEmail, matchByAddress } = require('../utils/customerMatching');
 
 // Find the Taifun customer number for a new/unlinked app account. Returns kdNr on
 // a UNIQUE match, null otherwise - then the customer requests the number and staff
@@ -38,60 +14,32 @@ function normEmail(email) {
 // than facts that are easy to know about someone else (name + postcode):
 //   1. the same e-mail address as in Taifun (safe even before verification - the
 //      account cannot be used until the mailbox owner confirms it), or
-//   2. last name + postcode + street, plus the first name when Taifun has one and
-//      the house number when Taifun has one.
+//   2. name + postcode + street + house number (rules in utils/customerMatching.js).
 async function findTaifunCustomerNumber({ firstName, lastName, address, email }) {
   const { TaifunCustomer } = require('../models');
   if (!TaifunCustomer) return null;
 
-  const mail = normEmail(email);
-  if (mail) {
+  if (email) {
     const rows = await TaifunCustomer.findAll({
       where: { email: { [Op.like]: '%@%' } },
       attributes: ['kdNr', 'email'],
     });
-    const nrs = [...new Set(rows.filter((r) => normEmail(r.email) === mail).map((r) => r.kdNr).filter(Boolean))];
-    if (nrs.length === 1) {
-      logger.info('Taifun auto-match customer number', { by: 'email', matched: nrs[0] });
-      return nrs[0];
+    const byMail = matchByEmail(rows, email);
+    if (byMail) {
+      logger.info('Taifun auto-match customer number', { by: 'email', matched: byMail });
+      return byMail;
     }
   }
 
   if (!lastName || !address?.zip || !address?.street) return null;
-  const last = String(lastName).trim().toLowerCase();
-  const first = String(firstName || '').trim().toLowerCase();
-  const zip = String(address.zip).trim();
-  const parts = splitStreet(address.street);
-  const street = normStreet(parts.street);
-  const house = normHouse(parts.houseNumber);
-  if (!last || !street) return null;
-
   const candidates = await TaifunCustomer.findAll({
-    where: { zip },
+    where: { zip: String(address.zip).trim() },
     attributes: ['kdNr', 'name1', 'name2', 'street', 'houseNumber', 'zip'],
   });
-
-  const matches = candidates.filter((c) => {
-    const name = `${c.name1 || ''} ${c.name2 || ''}`.toLowerCase();
-    if (!name.includes(last)) return false;
-    if (normStreet(splitStreet(c.street).street) !== street) return false;
-    // Taifun name with a first name ("Martin Blache") must contain the user's first name
-    const personName = String(c.name2 || '').trim().toLowerCase();
-    if (first && personName.split(/\s+/).length > 1 && !personName.includes(first)) return false;
-    // Taifun house number known -> the user's must be the same
-    const taifunHouse = normHouse(c.houseNumber || splitStreet(c.street).houseNumber);
-    if (taifunHouse && taifunHouse !== house) return false;
-    return true;
-  });
-  // A household can have a record with the first name and one without
-  // ("Paul Prüfmann" / "Prüfmann"): the one naming this person wins.
-  const named = first ? matches.filter((c) => String(c.name2 || '').toLowerCase().includes(first)) : [];
-  const pool = named.length ? named : matches;
-  const nrs = [...new Set(pool.map((c) => c.kdNr).filter(Boolean))];
-  const match = nrs.length === 1 ? nrs[0] : null;
+  const { match, matches } = matchByAddress(candidates, { firstName, lastName, address });
 
   logger.info('Taifun auto-match customer number', {
-    by: 'address', candidatesAtZip: candidates.length, matches: matches.length, matched: match,
+    by: 'address', candidatesAtZip: candidates.length, matches, matched: match,
   });
   return match;
 }

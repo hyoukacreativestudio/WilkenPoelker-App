@@ -182,6 +182,9 @@ export default function NewAppointmentScreen({ navigation }) {
                     { color: isSelected ? cat.color : theme.colors.text },
                   ]}
                   numberOfLines={2}
+                  // Long German words ("Grundstücksbesichtigung") get a real hyphen
+                  // instead of being cut mid-word on narrow screens
+                  android_hyphenationFrequency="normal"
                 >
                   {getCategoryTranslation(cat.key)}
                 </Text>

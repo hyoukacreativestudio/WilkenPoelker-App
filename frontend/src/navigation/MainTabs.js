@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, Platform, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +20,14 @@ const SafeAppointmentsStack = (props) => (<ErrorBoundary level="screen" name="Ap
 const SafeRepairsStack = (props) => (<ErrorBoundary level="screen" name="RepairsStack"><RepairsStack {...props} /></ErrorBoundary>);
 const SafeProfileStack = (props) => (<ErrorBoundary level="screen" name="ProfileStack"><ProfileStack {...props} /></ErrorBoundary>);
 const SafeMoreStack = (props) => (<ErrorBoundary level="screen" name="MoreStack"><MoreStack {...props} /></ErrorBoundary>);
-const SafeServiceStack = (props) => (<ErrorBoundary level="screen" name="ServiceStack"><ServiceStack {...props} /></ErrorBoundary>);
+// React Navigation 7 dropped unmountOnBlur: the hidden Service tab is only rendered
+// while focused, so it starts fresh each time (its state is cleared on unmount) and
+// "back" from e.g. Feed -> Fahrraeder returns to the feed again.
+const SafeServiceStack = (props) => {
+  const isFocused = useIsFocused();
+  if (!isFocused) return null;
+  return (<ErrorBoundary level="screen" name="ServiceStack"><ServiceStack {...props} /></ErrorBoundary>);
+};
 
 const Tab = createBottomTabNavigator();
 
@@ -37,6 +45,9 @@ export default function MainTabs() {
 
   return (
     <Tab.Navigator
+      // "Back" returns to the tab the user came from - e.g. from a chat opened via
+      // More > Offene Tickets back to that list instead of always to the feed.
+      backBehavior="history"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarHideOnKeyboard: true,
@@ -78,7 +89,7 @@ export default function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('Feed', { screen: 'FeedHome' });
+            navigation.navigate('Feed', { screen: 'FeedHome', pop: true });
           },
         })}
       />
@@ -89,7 +100,7 @@ export default function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('Appointments', { screen: 'AppointmentsList' });
+            navigation.navigate('Appointments', { screen: 'AppointmentsList', pop: true });
           },
         })}
       />
@@ -100,7 +111,7 @@ export default function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('Repairs', { screen: 'RepairsList' });
+            navigation.navigate('Repairs', { screen: 'RepairsList', pop: true });
           },
         })}
       />
@@ -111,7 +122,7 @@ export default function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('Profile', { screen: 'ProfileMain' });
+            navigation.navigate('Profile', { screen: 'ProfileMain', pop: true });
           },
         })}
       />
@@ -122,14 +133,14 @@ export default function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('More', { screen: 'MoreMenu' });
+            navigation.navigate('More', { screen: 'MoreMenu', pop: true });
           },
         })}
       />
       <Tab.Screen
         name="Service"
         component={SafeServiceStack}
-        options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' }, unmountOnBlur: true }}
+        options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
       />
     </Tab.Navigator>
   );

@@ -60,17 +60,19 @@ export default function Termine({ user }) {
   // Requests (customer asked, not yet scheduled) vs running (confirmed) appointments
   const REQUEST_STATES = ['pending', 'proposed', 'rescheduled'];
   const isRequest = (a) => REQUEST_STATES.includes(a.status);
-  const requestCount = useMemo(() => rows.filter(isRequest).length, [rows]);
 
   // Hide appointments more than 24h in the past
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const isPast = (a) => a.date && String(a.date).slice(0, 10) < cutoff;
+  // Same rule as the list below - otherwise the badge counted hidden old requests
+  const requestCount = useMemo(() => rows.filter((a) => isRequest(a) && !isPast(a)).length, [rows, cutoff]);
   const filtered = useMemo(
     () => rows.filter((a) => {
       if (kind === 'anfragen' && !isRequest(a)) return false;
       if (kind === 'laufend' && a.status !== 'confirmed') return false;
       if (type !== 'all' && a.type !== type) return false;
       if (isAdmin && dept !== 'all' && (a.department || '') !== dept) return false;
-      if (a.date && String(a.date).slice(0, 10) < cutoff) return false;
+      if (isPast(a)) return false;
       return true;
     }),
     [rows, kind, type, dept, isAdmin, cutoff]
@@ -179,7 +181,7 @@ export default function Termine({ user }) {
             {sorted.map((a) => (
               <tr key={a.id}>
                 <td>{a.date || '—'}</td>
-                <td>{a.startTime ? String(a.startTime).slice(0, 5) : ''}</td>
+                <td>{a.startTime ? String(a.startTime).slice(0, 5) : (a.proposedText ? <span className="muted" title={a.proposedText}>{a.proposedText}</span> : '')}</td>
                 <td>
                   {a.customerName || '—'}
                   {a.customerNumber ? <div className="muted">Kd {a.customerNumber}</div> : null}

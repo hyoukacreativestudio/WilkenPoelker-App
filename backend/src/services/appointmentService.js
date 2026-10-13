@@ -496,6 +496,8 @@ async function proposeTime(appointmentId, adminUserId, { date, proposedText }) {
     message: `Für Ihre Anfrage "${appointment.title}" wurde der ${fmtDate(date)} vorgeschlagen: ${proposedText}`,
     type: 'appointment_reminder',
     category: 'appointment',
+    // "/proposal" marks the one appointment notification the app answers inline
+    deepLink: `/appointments/${appointment.id}/proposal`,
     relatedId: appointment.id,
     relatedType: 'appointment',
   });
@@ -717,17 +719,32 @@ async function cancelAppointment(appointmentId, userId, cancelReason) {
   appointment.cancelReason = cancelReason || null;
   await appointment.save();
 
-  // Notify assigned staff if any
-  if (appointment.assignedTo) {
-    await Notification.create({
-      userId: appointment.assignedTo,
-      title: 'Termin storniert',
-      message: `Der Termin "${appointment.title}" am ${fmtDate(appointment.date)} wurde vom Kunden storniert.${cancelReason ? ` Grund: ${cancelReason}` : ''}`,
-      type: 'appointment_reminder',
-      category: 'appointment',
-      relatedId: appointment.id,
-      relatedType: 'appointment',
-    });
+  // Tell the shop: the assigned staff member, otherwise the same people who get new
+  // requests (admins + Service, Robby for property viewings) - usually nobody is
+  // assigned, and a cancelled confirmed appointment must not go unnoticed.
+  try {
+    let recipientIds = [];
+    if (appointment.assignedTo) {
+      recipientIds = [appointment.assignedTo];
+    } else {
+      const roles = ['admin', 'super_admin', appointment.type === 'property_viewing' ? 'robby_manager' : 'service_manager'];
+      const staff = await User.findAll({ where: { role: { [Op.in]: roles }, isActive: true }, attributes: ['id'] });
+      recipientIds = staff.map((u) => u.id);
+    }
+    const when = appointment.date ? ` am ${fmtDate(appointment.date)}` : '';
+    for (const id of recipientIds) {
+      await Notification.create({
+        userId: id,
+        title: 'Termin abgesagt',
+        message: `Der Termin "${appointment.title}"${when} wurde vom Kunden abgesagt.${cancelReason ? ` Grund: ${cancelReason}` : ''}`,
+        type: 'appointment_reminder',
+        category: 'appointment',
+        relatedId: appointment.id,
+        relatedType: 'appointment',
+      });
+    }
+  } catch (err) {
+    logger.error('Failed to notify staff about cancellation', { appointmentId, error: err.message });
   }
 
   logger.info('Appointment cancelled', { appointmentId, userId });

@@ -238,7 +238,7 @@ const rejectRequest = asyncHandler(async (req, res) => {
   await Notification.create({
     userId: request.userId,
     title: 'Kundennummer-Anfrage abgelehnt',
-    message: note || 'Ihre Anfrage wurde leider abgelehnt.',
+    message: note || 'Wir konnten Ihnen leider keine Kundennummer zuordnen. Bei Fragen erreichen Sie uns telefonisch oder direkt im Laden.',
     type: 'system',
     category: 'system',
     relatedId: request.id,

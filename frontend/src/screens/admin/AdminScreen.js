@@ -13,13 +13,13 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { adminApi } from '../../api/admin';
 import Card from '../../components/ui/Card';
-import Badge from '../../components/ui/Badge';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Chip from '../../components/ui/Chip';
@@ -81,6 +81,7 @@ const ROLE_ICONS = {
 };
 
 export default function AdminScreen() {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -448,7 +449,7 @@ export default function AdminScreen() {
   ];
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: theme.spacing.xxl }}
@@ -707,24 +708,21 @@ export default function AdminScreen() {
                           {u.email}
                         </Text>
                       </View>
-                      <Badge
-                        count={1}
-                        showZero
-                        color={getRoleBadgeColor(u.role)}
-                        style={{ minWidth: 'auto', paddingHorizontal: theme.spacing.sm }}
-                      />
-                      <Text
-                        style={[
-                          theme.typography.styles.small,
-                          {
-                            color: getRoleBadgeColor(u.role),
-                            fontWeight: theme.typography.weights.semiBold,
-                            marginLeft: -theme.spacing.xs,
-                          },
-                        ]}
-                      >
-                        {t(`admin.roles.${u.role}`, u.role || 'user')}
-                      </Text>
+                      {/* Role as a tinted pill (was a count badge "1" covering the label) */}
+                      <View style={[s.rolePill, { backgroundColor: getRoleBadgeColor(u.role) + '22' }]}>
+                        <Text
+                          style={[
+                            theme.typography.styles.small,
+                            {
+                              color: getRoleBadgeColor(u.role),
+                              fontWeight: theme.typography.weights.semiBold,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {t(`admin.roles.${u.role}`, u.role || 'user')}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                     {index < filteredUsers.length - 1 ? (
                       <Divider style={{ marginVertical: 0 }} />
@@ -1071,6 +1069,13 @@ const styles = (theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: theme.spacing.sm,
+    },
+    rolePill: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 2,
+      borderRadius: theme.borderRadius.round,
+      marginLeft: theme.spacing.sm,
+      maxWidth: 140,
     },
     userAvatar: {
       width: 40,

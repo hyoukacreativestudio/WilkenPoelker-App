@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -10,6 +11,7 @@ import Button from '../../components/ui/Button';
 import client from '../../api/client';
 
 export default function EmailVerificationScreen({ route, navigation }) {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const email = route.params?.email || '';
@@ -36,7 +38,7 @@ export default function EmailVerificationScreen({ route, navigation }) {
   const s = styles(theme);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <View style={s.content}>
         <View style={s.iconContainer}>
           <MaterialCommunityIcons name="email-check-outline" size={80} color={theme.colors.primary} />
@@ -45,7 +47,7 @@ export default function EmailVerificationScreen({ route, navigation }) {
           {t('emailVerification.title', 'E-Mail verifizieren')}
         </Text>
         <Text style={s.message}>
-          {t('emailVerification.message', 'Wir haben dir eine Verifizierungs-E-Mail gesendet. Bitte überprüfe dein Postfach und klicke auf den Link.')}
+          {t('emailVerification.message', 'Wir haben Ihnen eine Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihr Postfach und klicken Sie auf den Link.')}
         </Text>
         {email ? (
           <Text style={s.email}>{email}</Text>

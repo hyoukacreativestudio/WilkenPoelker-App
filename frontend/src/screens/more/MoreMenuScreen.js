@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -79,6 +80,7 @@ const menuRowStyles = StyleSheet.create({
 });
 
 export default function MoreMenuScreen({ navigation }) {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { user, logout } = useAuth();
@@ -114,7 +116,7 @@ export default function MoreMenuScreen({ navigation }) {
   const s = styles(theme);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: theme.spacing.xxl }}
@@ -149,7 +151,7 @@ export default function MoreMenuScreen({ navigation }) {
             <MenuRow
               icon="calendar-month-outline"
               label={t('more.appointments')}
-              onPress={() => navigation.navigate('Appointments')}
+              onPress={() => navigation.navigate('Appointments', { screen: 'AppointmentsList', pop: true })}
               theme={theme}
             />
             <Divider style={{ marginVertical: 0 }} />

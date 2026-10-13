@@ -55,6 +55,7 @@ export default function CustomerNumberRequestScreen({ navigation }) {
     const errs = {};
     if (!phone.trim()) errs.phone = t('errors.requiredField');
     if (!street.trim()) errs.street = t('errors.requiredField');
+    else if (!/[0-9]/.test(street)) errs.street = t('errors.houseNumberMissing');
     if (!zip.trim()) errs.zip = t('errors.requiredField');
     if (!city.trim()) errs.city = t('errors.requiredField');
     return errs;

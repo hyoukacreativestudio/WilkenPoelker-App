@@ -9,6 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -55,6 +56,7 @@ const CATEGORY_CONFIG = {
 };
 
 export default function CategoryServiceScreen({ route, navigation }) {
+  const safeEdges = useScreenEdges();
   const { category } = route.params;
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -77,7 +79,7 @@ export default function CategoryServiceScreen({ route, navigation }) {
   const s = styles(theme);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}

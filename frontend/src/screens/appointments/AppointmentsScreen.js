@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -53,6 +54,7 @@ const showAlert = (title, message, buttons) => {
 const STAFF_ROLES = ['admin', 'super_admin', 'service_manager', 'robby_manager'];
 
 export default function AppointmentsScreen({ navigation }) {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme, isDark, setThemeMode } = useTheme();
   const { user } = useAuth();
@@ -253,7 +255,7 @@ export default function AppointmentsScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       {/* Header - matching Feed style */}
       <View style={s.header}>
         <View style={s.headerLeft}>

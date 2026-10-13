@@ -63,7 +63,14 @@ function errorHandler(err, req, res, _next) {
     statusCode = 409;
     code = 'DUPLICATE_ENTRY';
     const field = err.errors?.[0]?.path || 'field';
-    message = `A record with this ${field} already exists`;
+    // Shown as-is in the app and the PC tool, so say it in plain German
+    const DUPLICATE_MESSAGES = {
+      customer_number: 'Diese Kundennummer ist bereits vergeben.',
+      customerNumber: 'Diese Kundennummer ist bereits vergeben.',
+      email: 'Diese E-Mail-Adresse wird bereits verwendet.',
+      username: 'Dieser Benutzername ist bereits vergeben.',
+    };
+    message = DUPLICATE_MESSAGES[field] || 'Dieser Eintrag existiert bereits.';
   }
 
   // JWT errors

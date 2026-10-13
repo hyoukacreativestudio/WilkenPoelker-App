@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -36,6 +37,7 @@ function formatDate(dateStr) {
 }
 
 export default function ClosedDaysScreen() {
+  const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -182,7 +184,7 @@ export default function ClosedDaysScreen() {
           }
         }
         setHolidays((prev) => [...prev, ...created].sort((a, b) => a.date.localeCompare(b.date)));
-        showToast({ type: 'success', message: t('closedDays.savedRange', `${created.length} Tage gespeichert`) });
+        showToast({ type: 'success', message: t('closedDays.savedRange', { count: created.length }) });
       } else {
         const payload = {
           date: formDate.trim(),
@@ -324,6 +326,23 @@ export default function ClosedDaysScreen() {
     </View>
   );
 
+  // Upcoming days first; one-off days in the past are hidden (they no longer
+  // matter), yearly ones are sorted by their next occurrence.
+  const visibleHolidays = useMemo(() => {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const nextOccurrence = (h) => {
+      const iso = String(h.date || '').slice(0, 10);
+      if (!h.isRecurring) return iso;
+      const md = iso.slice(5);
+      return `${md >= todayIso.slice(5) ? now.getFullYear() : now.getFullYear() + 1}-${md}`;
+    };
+    return holidays
+      .filter((h) => h.isRecurring || String(h.date || '').slice(0, 10) >= todayIso)
+      .sort((a, b) => nextOccurrence(a).localeCompare(nextOccurrence(b)));
+  }, [holidays]);
+
   const renderHeader = () => (
     <View style={s.headerContainer}>
       <View style={s.titleRow}>
@@ -331,7 +350,7 @@ export default function ClosedDaysScreen() {
           {t('closedDays.title', 'Geschlossene Tage')}
         </Text>
         <View style={s.countBadge}>
-          <Text style={s.countBadgeText}>{holidays.length}</Text>
+          <Text style={s.countBadgeText}>{visibleHolidays.length}</Text>
         </View>
       </View>
     </View>
@@ -339,7 +358,7 @@ export default function ClosedDaysScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <SafeAreaView style={s.container} edges={safeEdges}>
         <View style={s.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={[theme.typography.styles.body, { color: theme.colors.textSecondary, marginTop: theme.spacing.md }]}>
@@ -351,9 +370,9 @@ export default function ClosedDaysScreen() {
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={safeEdges}>
       <FlatList
-        data={holidays}
+        data={visibleHolidays}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderHolidayItem}
         ListHeaderComponent={renderHeader}
