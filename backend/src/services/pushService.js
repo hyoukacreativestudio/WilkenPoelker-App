@@ -125,9 +125,9 @@ async function sendAndCleanup(tokens, notification) {
         title: notification.title,
         body: notification.body || notification.message,
         data: notification.data || {},
-        // Critical: `sound: 'default'` must be set on the Expo payload AND the
-        // channel must allow sound. Both are configured.
-        sound: 'default',
+        // Our soft notification sound, bundled in the app (iOS plays it from the
+        // payload; on Android the channel defines it - see NotificationContext).
+        sound: 'wp_hinweis.wav',
         priority: 'high',
         channelId,
       };

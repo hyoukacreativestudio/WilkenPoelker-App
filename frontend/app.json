@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2E7D32"
+      "backgroundColor": "#163A1E"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -32,7 +32,9 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2E7D32"
+        "backgroundImage": "./assets/adaptive-icon-background.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#1A4223"
       },
       "package": "com.hyoukacreativestudios.wilkenpoelker",
       "versionCode": 2,
@@ -75,7 +77,10 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#2E7D32"
+          "color": "#2E7D32",
+          "sounds": [
+            "./assets/sounds/wp_hinweis.wav"
+          ]
         }
       ],
       [

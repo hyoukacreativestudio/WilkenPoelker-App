@@ -218,13 +218,18 @@ export function NotificationProvider({ children }) {
   };
 
   // Android notification channels (with sound). Idempotent — safe every launch.
+  // Our own soft notification sound (assets/sounds/wp_hinweis.wav, bundled by the
+  // expo-notifications plugin) and one short vibration instead of a double buzz.
+  // Android fixes a channel's sound when the channel is first created.
   const createAndroidChannels = async () => {
     try {
+      const sound = 'wp_hinweis.wav';
+      const vibrationPattern = [0, 180];
       await Notifications.setNotificationChannelAsync('default', {
         name: 'WilkenPoelker',
         importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        sound: 'default',
+        vibrationPattern,
+        sound,
         enableVibrate: true,
         showBadge: true,
       });
@@ -232,15 +237,16 @@ export function NotificationProvider({ children }) {
         name: 'Reparatur-Updates',
         description: 'Benachrichtigungen zu Reparaturstatus',
         importance: Notifications.AndroidImportance.HIGH,
-        vibrationPattern: [0, 250, 250, 250],
-        sound: 'default',
+        vibrationPattern,
+        sound,
         enableVibrate: true,
       });
       await Notifications.setNotificationChannelAsync('appointments', {
         name: 'Termine',
         description: 'Terminerinnerungen und Vorschläge',
         importance: Notifications.AndroidImportance.HIGH,
-        sound: 'default',
+        vibrationPattern,
+        sound,
         enableVibrate: true,
       });
     } catch {}
