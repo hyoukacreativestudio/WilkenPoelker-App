@@ -340,9 +340,9 @@ export default function RepairsListScreen({ navigation }) {
           ...theme.shadows.sm,
         }}
       >
-        {/* Top row: Repair number + Taifun ID + Status badge */}
+        {/* Top row: Repair number + Status badge (number wraps, badge keeps its size) */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm }}>
-          <View>
+          <View style={{ flex: 1, marginRight: theme.spacing.sm }}>
             <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary }]}>
               {t(repairNumberLabelKey(item))} {item.repairNumber || item.number}
             </Text>
@@ -352,7 +352,7 @@ export default function RepairsListScreen({ navigation }) {
               </Text>
             ) : null}
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: statusColor, borderRadius: theme.borderRadius.md, paddingHorizontal: theme.spacing.md, paddingVertical: 6, ...theme.shadows.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0, backgroundColor: statusColor, borderRadius: theme.borderRadius.md, paddingHorizontal: theme.spacing.md, paddingVertical: 6, ...theme.shadows.sm }}>
             <MaterialCommunityIcons name={item.status === 'ready' ? 'check-circle' : 'progress-wrench'} size={16} color="#FFFFFF" style={{ marginRight: 5 }} />
             <Text style={[theme.typography.styles.body, { color: '#FFFFFF', fontWeight: theme.typography.weights.bold }]}>
               {getStatusLabel(item.status, item.category)}
