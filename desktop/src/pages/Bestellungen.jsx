@@ -169,7 +169,6 @@ export default function Bestellungen({ user }) {
     try { await api.patch(`/desktop/orders/${r.id}`, { status: done ? 'ordered' : 'open' }); setDetail(null); load(); }
     catch (e) { toast(e.message, { type: 'error' }); }
   };
-  const del = async (r) => { if (confirm('Bestellung löschen?')) { try { await api.del(`/desktop/orders/${r.id}`); setDetail(null); load(); } catch (e) { toast(e.message, { type: 'error' }); } } };
   const openProblem = (r) => { setDetail(null); setProblemText(r.problemNote || ''); setProblemFor(r); };
   const submitProblem = async () => {
     setBusy(true);
@@ -291,7 +290,6 @@ export default function Bestellungen({ user }) {
                   ? <button className="btn" onClick={() => check(detail, true)}>Erledigt ✓</button>
                   : <button className="btn ghost" onClick={() => check(detail, false)}>Zurück auf offen</button>)}
                 <button className="btn ghost" onClick={() => openProblem(detail)}>⚠ Problem</button>
-                <button className="btn ghost" onClick={() => del(detail)}>Löschen</button>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn ghost" onClick={() => openEdit(detail)}>Bearbeiten</button>
@@ -420,14 +418,8 @@ export default function Bestellungen({ user }) {
               </div>
             )}
             <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
-              <div>
-                {editingId && (
-                  <button className="btn ghost" style={{ color: '#a52834' }}
-                    onClick={async () => { if (confirm('Bestellung wirklich löschen?')) { try { await api.del(`/desktop/orders/${editingId}`); setShowForm(false); setEditingId(null); setDetail(null); load(); toast('Bestellung gelöscht'); } catch (e) { toast(e.message, { type: 'error' }); } } }}>
-                    🗑 Löschen
-                  </button>
-                )}
-              </div>
+              {/* Single orders can no longer be deleted - only done ones, by month */}
+              <div />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn ghost" onClick={() => setShowForm(false)}>Abbrechen</button>
                 <button className="btn" onClick={submit} disabled={busy || !form.handle.trim()}>Speichern</button>

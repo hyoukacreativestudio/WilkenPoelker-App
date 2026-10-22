@@ -13,6 +13,12 @@ function berlinNow(d = new Date()) {
 // "Tomorrow" reminders are not pushed in the middle of the night.
 const DAY_BEFORE_REMINDER_FROM = 9 * 60; // 09:00
 
+// Only customers get reminders. Appointments entered in the PC tool belong to the
+// department account (userId = staff), so their reminders landed in the PC tool.
+const CUSTOMER_APPOINTMENTS_ONLY = {
+  [Op.or]: [{ createdByStaff: false }, { createdByStaff: null }],
+};
+
 /**
  * Send appointment reminders for upcoming appointments.
  * - 24h reminder: sent once, the day before the appointment
@@ -33,6 +39,7 @@ async function sendAppointmentReminders() {
         date: tomorrowStr,
         status: { [Op.in]: ['confirmed', 'pending'] },
         reminderSent24h: false,
+        ...CUSTOMER_APPOINTMENTS_ONLY,
       },
     });
 
@@ -71,6 +78,7 @@ async function sendAppointmentReminders() {
         status: { [Op.in]: ['confirmed', 'pending'] },
         reminderSent1h: false,
         startTime: { [Op.not]: null },
+        ...CUSTOMER_APPOINTMENTS_ONLY,
       },
     });
 
