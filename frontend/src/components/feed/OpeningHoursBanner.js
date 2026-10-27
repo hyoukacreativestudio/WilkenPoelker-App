@@ -9,10 +9,8 @@ import { settingsApi } from '../../api/settings';
 
 function isWinterSeason(date = new Date()) {
   const month = date.getMonth();
-  const day = date.getDate();
   if (month >= 10) return true;
-  if (month === 0) return true;
-  if (month === 1 && day === 1) return true;
+  if (month === 0) return true; // winter ends on 31.01.
   return false;
 }
 

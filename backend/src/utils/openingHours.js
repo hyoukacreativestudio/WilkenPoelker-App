@@ -29,18 +29,15 @@ const DAY_NAMES = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'F
 
 /**
  * Determine the current season based on date.
- * Winter: 1. November through 1. February (inclusive)
- * Standard: 2. February through 31. October
+ * Winter: 1. November through 31. January
+ * Standard: 1. February through 31. October
  */
 function getSeason(date) {
   const month = date.getMonth() + 1; // 1-based
-  const day = date.getDate();
   // November and December are always winter
   if (month >= 11) return 'winter';
-  // January is always winter
+  // January is winter; from 1. February on it is standard again
   if (month === 1) return 'winter';
-  // 1. February is still winter
-  if (month === 2 && day === 1) return 'winter';
   // Everything else is standard
   return 'standard';
 }

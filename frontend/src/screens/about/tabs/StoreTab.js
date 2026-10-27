@@ -85,10 +85,8 @@ const DEFAULT_CONTACT = {
 // ---------------------------------------------------------------------------
 function isWinterSeason(date = new Date()) {
   const month = date.getMonth();
-  const day = date.getDate();
   if (month >= 10) return true;
-  if (month === 0) return true;
-  if (month === 1 && day === 1) return true;
+  if (month === 0) return true; // winter ends on 31.01.
   return false;
 }
 
@@ -604,7 +602,7 @@ export default function StoreTab({ isEditMode, registerSave }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: theme.spacing.sm, paddingTop: theme.spacing.xs }}>
             <MaterialCommunityIcons name="snowflake" size={14} color={theme.colors.info || '#1976D2'} style={{ marginRight: 6 }} />
             <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary, fontStyle: 'italic' }]}>
-              {t('store.hours.winterNote', 'Winter\u00f6ffnungszeiten (01.11. \u2013 01.02.)')}
+              {t('store.hours.winterNote', 'Winter\u00f6ffnungszeiten (01.11. \u2013 31.01.)')}
             </Text>
           </View>
         )}

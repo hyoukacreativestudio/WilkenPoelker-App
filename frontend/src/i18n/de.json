@@ -129,7 +129,7 @@
       "contact": "Kontakt & Anfahrt",
       "openingHours": "Öffnungszeiten",
       "closed": "Geschlossen",
-      "winterNote": "Winteröffnungszeiten (01.11. – 01.02.)"
+      "winterNote": "Winteröffnungszeiten (01.11. – 31.01.)"
     },
     "qmf": {
       "title": "QMF-zertifizierter Fachhändler",
@@ -337,7 +337,7 @@
     "monFri": "Mo - Fr",
     "sat": "Sa",
     "and": "und",
-    "winterHours": "Winteröffnungszeiten (01.11. – 01.02.)",
+    "winterHours": "Winteröffnungszeiten (01.11. – 31.01.)",
     "title": "Aktuelle Öffnungszeiten:"
   },
   "service": {
@@ -381,7 +381,7 @@
       "warrantyQuestion": "Welche Garantie gibt es auf Reparaturen?",
       "warrantyAnswer": "Auf unsere Reparaturarbeiten geben wir 6 Monate Garantie. Auf eingebaute Ersatzteile gilt die jeweilige Herstellergarantie.",
       "openingHoursQuestion": "Wann haben Sie geöffnet?",
-      "openingHoursAnswer": "Montag bis Freitag 08:00–13:00 und 14:00–18:00 Uhr, Samstag 09:00–13:00 Uhr. Im Winter (01.11.–01.02.) schließen wir unter der Woche bereits um 17:00 Uhr.",
+      "openingHoursAnswer": "Montag bis Freitag 08:00–13:00 und 14:00–18:00 Uhr, Samstag 09:00–13:00 Uhr. Im Winter (01.11.–31.01.) schließen wir unter der Woche bereits um 17:00 Uhr.",
       "costQuestion": "Was kostet eine Inspektion?",
       "costAnswer": "Eine Standard-Inspektion kostet ab 49,- Euro inkl. MwSt. Den genauen Preis erfahren Sie nach einer Einschätzung vor Ort."
     },
@@ -395,8 +395,8 @@
     "mondayFriday": "Montag - Freitag",
     "saturday": "Samstag",
     "sunday": "Sonntag",
-    "winterHours": "Winteröffnungszeiten (01.11. – 01.02.)",
-    "standardHours": "Standardöffnungszeiten (02.02. – 31.10.)",
+    "winterHours": "Winteröffnungszeiten (01.11. – 31.01.)",
+    "standardHours": "Standardöffnungszeiten (01.02. – 31.10.)",
     "assignedTo": "Zugewiesen an",
     "confirmAppointment": "Termin bestätigen",
     "notifications": "Sie bekommen eine Benachrichtigung, sobald wir Ihre Anfrage bearbeitet haben.",
@@ -1496,7 +1496,7 @@
     "hours": {
       "closed": "Geschlossen",
       "title": "Öffnungszeiten",
-      "winterNote": "Winteröffnungszeiten (01.11. – 01.02.)"
+      "winterNote": "Winteröffnungszeiten (01.11. – 31.01.)"
     },
     "services": {
       "title": "Unsere Leistungen"

@@ -129,7 +129,7 @@
       "contact": "Contact & Directions",
       "openingHours": "Opening Hours",
       "closed": "Closed",
-      "winterNote": "Winter opening hours (Nov 1 – Feb 1)"
+      "winterNote": "Winter opening hours (Nov 1 – Jan 31)"
     },
     "qmf": {
       "title": "QMF-Certified Dealer",
@@ -337,7 +337,7 @@
     "monFri": "Mon - Fri",
     "sat": "Sat",
     "and": "and",
-    "winterHours": "Winter hours (Nov 1 – Feb 1)",
+    "winterHours": "Winter hours (Nov 1 – Jan 31)",
     "title": "Current opening hours:"
   },
   "service": {
@@ -381,7 +381,7 @@
       "warrantyQuestion": "What warranty is there on repairs?",
       "warrantyAnswer": "We provide a 6-month warranty on our repair work. Installed spare parts are covered by the manufacturer's warranty.",
       "openingHoursQuestion": "When are you open?",
-      "openingHoursAnswer": "Monday to Friday 8am–1pm and 2pm–6pm, Saturday 9am–1pm. In winter (Nov 1–Feb 1) we close at 5pm on weekdays.",
+      "openingHoursAnswer": "Monday to Friday 8am–1pm and 2pm–6pm, Saturday 9am–1pm. In winter (Nov 1–Jan 31) we close at 5pm on weekdays.",
       "costQuestion": "How much does a service cost?",
       "costAnswer": "A standard service starts from 49 EUR incl. VAT. The exact price depends on an on-site assessment."
     },
@@ -395,8 +395,8 @@
     "mondayFriday": "Monday - Friday",
     "saturday": "Saturday",
     "sunday": "Sunday",
-    "winterHours": "Winter opening hours (Nov 1 – Feb 1)",
-    "standardHours": "Standard opening hours (Feb 2 – Oct 31)",
+    "winterHours": "Winter opening hours (Nov 1 – Jan 31)",
+    "standardHours": "Standard opening hours (Feb 1 – Oct 31)",
     "assignedTo": "Assigned to",
     "confirmAppointment": "Confirm appointment",
     "notifications": "You will receive a notification once we have processed your request.",
@@ -1510,7 +1510,7 @@
     "hours": {
       "closed": "Closed",
       "title": "Opening hours",
-      "winterNote": "Winter opening hours (1 Nov – 1 Feb)"
+      "winterNote": "Winter opening hours (1 Nov – 31 Jan)"
     },
     "services": {
       "title": "Our services"

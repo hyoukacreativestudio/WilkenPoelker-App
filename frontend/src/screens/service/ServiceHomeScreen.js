@@ -54,8 +54,7 @@ export default function ServiceHomeScreen({ navigation }) {
   const openingHours = useMemo(() => {
     const now = new Date();
     const month = now.getMonth();
-    const day = now.getDate();
-    const isWinter = month >= 10 || month === 0 || (month === 1 && day === 1);
+    const isWinter = month >= 10 || month === 0; // 01.11. - 31.01.
     const closeTime = isWinter ? '17:00' : '18:00';
     return [
       { day: t('common.days.monday'), hours: `08:00 - 13:00 | 14:00 - ${closeTime}` },
