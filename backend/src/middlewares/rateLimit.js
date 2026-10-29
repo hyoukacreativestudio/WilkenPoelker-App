@@ -22,10 +22,10 @@ const loginLimiter = createLimiter(
   'Too many login attempts. Please try again in 15 minutes.'
 );
 
-// Registration: 10 attempts per hour
+// Registration: 50 attempts per hour (customers signing up in the shop share its WLAN IP)
 const registerLimiter = createLimiter(
   60 * 60 * 1000,
-  10,
+  50,
   'Too many registration attempts. Please try again later.'
 );
 
