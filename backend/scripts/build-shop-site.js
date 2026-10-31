@@ -34,12 +34,18 @@ async function getJson(url) {
   }
 }
 
-async function saveImage(url, file) {
+// Large pictures are scaled to 1000 px for the website (webspace + load time).
+async function saveImage(url, file, maxSize) {
   if (fs.existsSync(file)) return;
   const res = await fetch(url.startsWith('http') ? url : `${API}${url}`);
   if (!res.ok) return;
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+  let buf = Buffer.from(await res.arrayBuffer());
+  if (maxSize) {
+    buf = await require('sharp')(buf).resize({ width: maxSize, height: maxSize, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 76 }).toBuffer();
+  }
+  fs.writeFileSync(file, buf);
 }
 
 function head(title, description, depth) {
@@ -277,7 +283,7 @@ async function main() {
     for (const [i, img] of (p.images || []).entries()) {
       const big = `img/${p.slug}/${i + 1}.webp`;
       const small = `img/${p.slug}/${i + 1}-k.webp`;
-      await saveImage(img.url, path.join(OUT, big));
+      await saveImage(img.url, path.join(OUT, big), 1000);
       await saveImage(img.thumb || img.url, path.join(OUT, small));
       imgs.push({ big, small });
     }
