@@ -21,6 +21,7 @@ import Termine from './pages/Termine.jsx';
 import Reparaturen from './pages/Reparaturen.jsx';
 import Tickets from './pages/Tickets.jsx';
 import Bestellungen from './pages/Bestellungen.jsx';
+import Kundenbestellungen from './pages/Kundenbestellungen.jsx';
 import Lager from './pages/Lager.jsx';
 import Kundennummern from './pages/Kundennummern.jsx';
 import RobbyKunden from './pages/RobbyKunden.jsx';
@@ -30,7 +31,7 @@ import ReparaturenHeute from './pages/ReparaturenHeute.jsx';
 import Quellen from './pages/Quellen.jsx';
 import HiddenTools from './pages/HiddenTools.jsx';
 
-const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturenheute: ReparaturenHeute, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, quellen: Quellen, lager: Lager };
+const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturenheute: ReparaturenHeute, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, kundenbestellungen: Kundenbestellungen, quellen: Quellen, lager: Lager };
 
 const SUBTITLES = {
   uebersicht: 'Überblick für deine Abteilung',
@@ -43,6 +44,7 @@ const SUBTITLES = {
   robbykunden: 'Alle Kunden mit einem Robby',
   kundennummern: 'Kundennummer-Anfragen bearbeiten',
   bestellungen: 'Bestellungen sammeln und aufgeben',
+  kundenbestellungen: 'Teil da → Kunde erreicht → abgeholt',
   quellen: 'Doppelte Quellen zusammenführen',
   lager: 'Was aus dem Lager nach vorne soll',
 };

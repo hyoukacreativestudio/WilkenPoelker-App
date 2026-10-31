@@ -25,6 +25,14 @@ router.patch('/orders/:id/problem', authenticate, authorize(...STAFF), desktop.s
 router.delete('/orders/done', authenticate, authorize('admin', 'super_admin', 'orders_manager', 'service_manager'), desktop.purgeDoneOrders);
 router.delete('/orders/:id', authenticate, authorize(...STAFF), desktop.deleteOrder);
 
+// ── Kundenbestellungen ──
+// Only Bestellungen + Service (and admins) work the customer-order list; every
+// department can still write orders (and gets the number shown).
+const CUSTOMER_ORDER_ROLES = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
+router.get('/customer-orders', authenticate, authorize(...CUSTOMER_ORDER_ROLES), desktop.listCustomerOrders);
+router.patch('/customer-orders/:year/:number', authenticate, authorize(...CUSTOMER_ORDER_ROLES), desktop.setCustomerOrderStatus);
+router.get('/customer-lookup', authenticate, authorize(...STAFF), desktop.lookupCustomer);
+
 // ── Lager ──
 router.get('/warehouse', authenticate, authorize(...STAFF), desktop.listWarehouse);
 router.post('/warehouse', authenticate, authorize('sales_manager', 'admin', 'super_admin'), desktop.createWarehouseItem);

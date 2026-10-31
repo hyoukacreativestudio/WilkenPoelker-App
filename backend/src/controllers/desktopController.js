@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const models = require('../models');
 const { Order, WarehouseItem, User, Appointment, Ticket, ChatMessage, RobbyCustomer } = models;
 const serviceService = require('../services/serviceService');
+const customerOrderService = require('../services/customerOrderService');
 const appointmentService = require('../services/appointmentService');
 
 // ── Passwordless department login (desktop tool on trusted company PCs) ──
@@ -114,7 +115,7 @@ const listOrders = asyncHandler(async (req, res) => {
 });
 
 const createOrder = asyncHandler(async (req, res) => {
-  const { sourceText, link, articleNumber, refNumber, description, customerName, customerNumber, quantity, quantityForStock, notes, handle } = req.body;
+  const { sourceText, link, articleNumber, refNumber, repairNumber, saleNumber, description, customerName, customerNumber, customerPhone, groupId, quantity, quantityForStock, notes, handle } = req.body;
   // Only the Kürzel is mandatory (shared login → who wrote it). Everything else
   // may be left blank; description falls back to a dash.
   if (!handle || !String(handle).trim()) {
@@ -131,9 +132,14 @@ const createOrder = asyncHandler(async (req, res) => {
     link: link || null,
     articleNumber: articleNumber || null,
     refNumber: refNumber || null,
+    repairNumber: (repairNumber && String(repairNumber).trim()) || null,
+    saleNumber: (saleNumber && String(saleNumber).trim()) || null,
     description: (description && String(description).trim()) || '—',
     customerName: customerName || null,
     customerNumber: customerNumber || null,
+    customerPhone: (customerPhone && String(customerPhone).trim())
+      || (await customerOrderService.lookupCustomerPhone({ customerNumber, customerName })) || null,
+    groupId: groupId ? String(groupId).slice(0, 64) : null,
     quantity: quantity != null ? parseInt(quantity, 10) || 1 : 1,
     quantityForStock: quantityForStock != null ? parseInt(quantityForStock, 10) || 0 : 0,
     notes: notes || null,
@@ -142,6 +148,7 @@ const createOrder = asyncHandler(async (req, res) => {
     createdByName: creatorName(req.user),
     handle: String(handle).trim(),
   });
+  await customerOrderService.assignNumberIfNeeded(order);
   res.status(201).json({ success: true, data: { order } });
 });
 
@@ -163,13 +170,19 @@ const updateOrder = asyncHandler(async (req, res) => {
     if (status === 'ordered') { updates.orderedBy = req.user.id; updates.orderedAt = new Date(); }
     else if (status === 'open') { updates.orderedBy = null; updates.orderedAt = null; }
   }
-  for (const f of ['articleNumber', 'refNumber', 'description', 'customerName', 'customerNumber', 'link', 'sourceText', 'notes', 'handle']) {
+  for (const f of ['articleNumber', 'refNumber', 'repairNumber', 'saleNumber', 'description', 'customerName', 'customerNumber', 'customerPhone', 'link', 'sourceText', 'notes', 'handle']) {
     if (req.body[f] !== undefined) updates[f] = req.body[f];
   }
   if (req.body.quantity !== undefined) updates.quantity = parseInt(req.body.quantity, 10) || 1;
   if (req.body.quantityForStock !== undefined) updates.quantityForStock = parseInt(req.body.quantityForStock, 10) || 0;
 
   await order.update(updates);
+  // Customer data added later: fill the phone, and number it if it still has no Rep-/VK-Nr.
+  if (!order.customerPhone && (order.customerNumber || order.customerName)) {
+    const phone = await customerOrderService.lookupCustomerPhone(order);
+    if (phone) await order.update({ customerPhone: phone });
+  }
+  await customerOrderService.assignNumberIfNeeded(order);
   res.json({ success: true, data: { order } });
 });
 
@@ -222,8 +235,60 @@ const purgeDoneOrders = asyncHandler(async (req, res) => {
   const year = parseInt(m[1], 10);
   const month = parseInt(m[2], 10); // 1-12
   const upper = new Date(Date.UTC(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1));
-  const deleted = await Order.destroy({ where: { status: 'ordered', createdAt: { [Op.lt]: upper } } });
+  // Customer orders still waiting for pickup are kept (their number stays taken).
+  const deleted = await Order.destroy({
+    where: {
+      status: 'ordered',
+      createdAt: { [Op.lt]: upper },
+      [Op.or]: [{ customerOrderNumber: null }, { customerOrderStatus: 'picked_up' }],
+    },
+  });
   res.json({ success: true, data: { deleted } });
+});
+
+// ── Kundenbestellungen ────────────────────────────────────────────────
+// Orders that got an automatic customer-order number, by pickup status.
+// Same department scoping as the orders list.
+
+function customerOrderScope(req) {
+  if (SEE_ALL_ROLES.includes(req.user.role)) {
+    return req.query.department && req.query.department !== 'all' ? { department: req.query.department } : {};
+  }
+  return { department: departmentForRole(req.user.role) || '__none__' };
+}
+
+const listCustomerOrders = asyncHandler(async (req, res) => {
+  const status = customerOrderService.STATUSES.includes(req.query.status) ? req.query.status : 'waiting';
+  const orders = await Order.findAll({
+    where: { ...customerOrderScope(req), customerOrderNumber: { [Op.ne]: null }, customerOrderStatus: status },
+    order: [['customerOrderYear', 'ASC'], ['customerOrderNumber', 'ASC'], ['createdAt', 'ASC']],
+  });
+  res.json({ success: true, data: { orders } });
+});
+
+// Move a whole customer order (all its articles) to another status.
+const setCustomerOrderStatus = asyncHandler(async (req, res) => {
+  const year = parseInt(req.params.year, 10);
+  const number = parseInt(req.params.number, 10);
+  const { status } = req.body;
+  if (!year || !number) throw new AppError('Ungültige Nummer', 400, 'BAD_NUMBER');
+  if (!customerOrderService.STATUSES.includes(status)) throw new AppError('Ungültiger Status', 400, 'BAD_STATUS');
+  const where = { ...customerOrderScope({ ...req, query: {} }), customerOrderYear: year, customerOrderNumber: number };
+  const [updated] = await Order.update({
+    customerOrderStatus: status,
+    customerOrderStatusAt: new Date(),
+    customerOrderStatusBy: (req.body.handle && String(req.body.handle).trim()) || null,
+  }, { where });
+  if (!updated) throw new NotFoundError('Kundenbestellung');
+  res.json({ success: true, data: { updated } });
+});
+
+// Phone lookup for the order form (customer already in our data?).
+const lookupCustomer = asyncHandler(async (req, res) => {
+  const phone = await customerOrderService.lookupCustomerPhone({
+    customerNumber: req.query.customerNumber, customerName: req.query.customerName,
+  });
+  res.json({ success: true, data: { phone } });
 });
 
 // Distinct order sources with counts (across all departments) for the
@@ -746,6 +811,7 @@ module.exports = {
   lookupGeo,
   listRobbyCustomers, createRobbyCustomer, updateRobbyCustomer, deleteRobbyCustomer,
   listOrders, createOrder, updateOrder, deleteOrder, setOrderProblem, purgeDoneOrders,
+  listCustomerOrders, setCustomerOrderStatus, lookupCustomer,
   listOrderSources, mergeOrderSources,
   listWarehouse, createWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
   listAppointments, createAppointment, updateAppointment, deleteAppointment,

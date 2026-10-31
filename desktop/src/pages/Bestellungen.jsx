@@ -12,7 +12,17 @@ const CHECKOFF = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
 const deptLabel = (key) => ORDER_DEPARTMENTS.find((d) => d.key === key)?.label || key;
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('de-DE') : '—');
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
-const emptyForm = () => ({ sourceText: 'Shop', link: '', articleNumber: '', refNumber: '', description: '', customerName: '', customerNumber: '', quantity: 1, quantityForStock: 0, notes: '', handle: savedHandle() });
+const emptyForm = () => ({ sourceText: 'Shop', link: '', articleNumber: '', refNumber: '', repairNumber: '', saleNumber: '', description: '', customerName: '', customerNumber: '', customerPhone: '', quantity: 1, quantityForStock: 0, notes: '', handle: savedHandle() });
+const newGroupId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+// "Rep 123" / "VK 456" / old combined number / automatic customer-order number
+export function orderNumberLabels(r) {
+  const out = [];
+  if (r.repairNumber) out.push(`Rep ${r.repairNumber}`);
+  if (r.saleNumber) out.push(`VK ${r.saleNumber}`);
+  if (r.refNumber) out.push(`Rep/VK ${r.refNumber}`);
+  if (r.customerOrderNumber) out.push(`Nr. ${r.customerOrderNumber}`);
+  return out;
+}
 // One article line for the multi-article create form (shared customer/Kürzel).
 const emptyArticle = () => ({ sourceText: 'Shop', articleNumber: '', description: '', quantity: 1, quantityForStock: 0, link: '', notes: '' });
 
@@ -129,6 +139,8 @@ export default function Bestellungen({ user }) {
     setEditingId(r.id);
     setForm({
       sourceText: r.sourceText || 'Shop', link: r.link || '', articleNumber: r.articleNumber || '', refNumber: r.refNumber || '',
+      repairNumber: r.repairNumber || '', saleNumber: r.saleNumber || '', customerPhone: r.customerPhone || '',
+      customerOrderNumber: r.customerOrderNumber || null,
       description: r.description || '', customerName: r.customerName || '', customerNumber: r.customerNumber || '',
       quantity: r.quantity ?? 1, quantityForStock: r.quantityForStock ?? 0, notes: r.notes || '',
       handle: r.handle || savedHandle(),
@@ -150,20 +162,35 @@ export default function Bestellungen({ user }) {
         // One order per article; customer + Kürzel are shared across them.
         const arts = articles.filter((a) => (a.description || a.articleNumber || a.sourceText || '').trim());
         if (arts.length === 0) { toast('Bitte mindestens einen Artikel angeben', { type: 'error' }); setBusy(false); return; }
+        const groupId = newGroupId(); // all articles of this form share one customer-order number
+        let number = null;
         for (const a of arts) {
           const payload = {
-            sourceText: a.sourceText, articleNumber: a.articleNumber, refNumber: form.refNumber, description: a.description,
+            sourceText: a.sourceText, articleNumber: a.articleNumber, description: a.description,
+            repairNumber: form.repairNumber, saleNumber: form.saleNumber, groupId,
             quantity: a.quantity, quantityForStock: a.quantityForStock, link: a.link, notes: a.notes,
-            customerName: form.customerName, customerNumber: form.customerNumber, handle: form.handle.trim(),
+            customerName: form.customerName, customerNumber: form.customerNumber, customerPhone: form.customerPhone,
+            handle: form.handle.trim(),
           };
           if (isManager && dept !== 'all') payload.department = dept;
           rememberSource(a.sourceText);
-          await api.post('/desktop/orders', payload);
+          const created = unwrap(await api.post('/desktop/orders', payload));
+          number = created.order?.customerOrderNumber || number;
         }
-        toast(arts.length > 1 ? `${arts.length} Bestellungen gespeichert` : 'Bestellung gespeichert');
+        const saved = arts.length > 1 ? `${arts.length} Bestellungen gespeichert` : 'Bestellung gespeichert';
+        toast(number ? `${saved} – Kundenbestellung Nr. ${number}` : saved, { duration: number ? 8000 : 4000 });
       }
       setShowForm(false); setEditingId(null); setForm(emptyForm()); setArticles([emptyArticle()]); load();
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
+  // Known customer? Fill in the phone number (only if the field is still empty).
+  const fillPhone = async () => {
+    if (form.customerPhone || (!form.customerNumber.trim() && !form.customerName.trim())) return;
+    try {
+      const q = new URLSearchParams({ customerNumber: form.customerNumber.trim(), customerName: form.customerName.trim() });
+      const { phone } = unwrap(await api.get(`/desktop/customer-lookup?${q.toString()}`));
+      if (phone) setForm((f) => (f.customerPhone ? f : { ...f, customerPhone: phone }));
+    } catch { /* lookup is optional */ }
   };
   const check = async (r, done) => {
     try { await api.patch(`/desktop/orders/${r.id}`, { status: done ? 'ordered' : 'open' }); setDetail(null); load(); }
@@ -243,7 +270,11 @@ export default function Bestellungen({ user }) {
                   {r.problemNote ? <div style={{ color: '#c53030', fontWeight: 800 }}>⚠ {r.problemNote}{r.problemBy ? ` (${r.problemBy})` : ''}</div> : null}
                   {r.notes ? <div className="muted">{r.notes}</div> : null}
                 </td>
-                <td>{r.customerName || '—'}{r.customerNumber ? <div className="muted">Kd {r.customerNumber}</div> : null}{r.refNumber ? <div className="muted" style={{ fontSize: 12 }}>Rep/Verk {r.refNumber}</div> : null}</td>
+                <td>
+                  {r.customerName || '—'}{r.customerNumber ? <div className="muted">Kd {r.customerNumber}</div> : null}
+                  {r.customerPhone ? <div className="muted" style={{ fontSize: 12 }}>☎ {r.customerPhone}</div> : null}
+                  {orderNumberLabels(r).length ? <div style={{ fontSize: 12, fontWeight: 700 }}>{orderNumberLabels(r).join(' · ')}</div> : null}
+                </td>
                 <td className="right">{r.quantity}</td>
                 <td className="right">{r.quantityForStock || 0}</td>
                 <td>{r.handle || '—'}</td>
@@ -277,7 +308,8 @@ export default function Bestellungen({ user }) {
               <span className="muted">Artikel-Nr.</span><span>{detail.articleNumber || '—'}</span>
               <span className="muted">Was</span><span><strong>{detail.description}</strong></span>
               <span className="muted">Für wen</span><span>{detail.customerName || '—'}{detail.customerNumber ? ` (Kd ${detail.customerNumber})` : ''}</span>
-              <span className="muted">Rep-/Verk-Nr.</span><span>{detail.refNumber || '—'}</span>
+              <span className="muted">Telefon</span><span>{detail.customerPhone ? <a href={`tel:${detail.customerPhone}`}>{detail.customerPhone}</a> : '—'}</span>
+              <span className="muted">Nummer</span><span>{orderNumberLabels(detail).join(' · ') || '—'}</span>
               <span className="muted">Anzahl</span><span>{detail.quantity}{detail.quantityForStock ? ` · davon fürs Lager: ${detail.quantityForStock}` : ''}</span>
               <span className="muted">Kürzel</span><span>{detail.handle || '—'}</span>
               <span className="muted">Datum</span><span>{fmtDate(detail.createdAt)}</span>
@@ -330,15 +362,31 @@ export default function Bestellungen({ user }) {
                 <input className="input" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="z. B. MK" autoFocus />
               </label>
               <label className="field">Kundenname
-                <input className="input" value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} />
+                <input className="input" value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} onBlur={fillPhone} />
               </label>
               <label className="field">Kundennummer
-                <input className="input" value={form.customerNumber} onChange={(e) => setForm({ ...form, customerNumber: e.target.value })} />
+                <input className="input" value={form.customerNumber} onChange={(e) => setForm({ ...form, customerNumber: e.target.value })} onBlur={fillPhone} />
               </label>
-              <label className="field">Reparatur-/Verkaufsnr.
-                <input className="input" value={form.refNumber} onChange={(e) => setForm({ ...form, refNumber: e.target.value })} />
+              <label className="field">Telefon
+                <input className="input" value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} placeholder="wird bei bekannten Kunden ergänzt" />
               </label>
+              <label className="field">Reparaturnr.
+                <input className="input" value={form.repairNumber} onChange={(e) => setForm({ ...form, repairNumber: e.target.value })} />
+              </label>
+              <label className="field">Verkaufsnr.
+                <input className="input" value={form.saleNumber} onChange={(e) => setForm({ ...form, saleNumber: e.target.value })} />
+              </label>
+              {form.refNumber ? (
+                <label className="field">Alte Rep-/VK-Nr.
+                  <input className="input" value={form.refNumber} onChange={(e) => setForm({ ...form, refNumber: e.target.value })} title="Aus der Zeit vor der Aufteilung - bitte in Reparatur- oder Verkaufsnr. übertragen" />
+                </label>
+              ) : null}
             </div>
+            {form.customerOrderNumber ? (
+              <div className="muted" style={{ fontSize: 13, margin: '-4px 0 10px' }}>Kundenbestellung <strong>Nr. {form.customerOrderNumber}</strong></div>
+            ) : (!form.repairNumber.trim() && !form.saleNumber.trim() && !form.refNumber.trim() && (form.customerName.trim() || form.customerNumber.trim())) ? (
+              <div className="muted" style={{ fontSize: 13, margin: '-4px 0 10px' }}>Ohne Reparatur- und Verkaufsnr. bekommt die Bestellung automatisch eine Kundenbestellungs-Nummer.</div>
+            ) : null}
 
             {editingId ? (
               /* Edit = a single order */

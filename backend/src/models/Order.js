@@ -34,8 +34,41 @@ const Order = sequelize.define('Order', {
   articleNumber: {
     type: DataTypes.STRING,
   },
-  // Optional Reparatur-/Verkaufsnummer this order belongs to.
+  // Legacy combined Reparatur-/Verkaufsnummer (old rows only; new orders use
+  // repairNumber / saleNumber).
   refNumber: {
+    type: DataTypes.STRING,
+  },
+  repairNumber: {
+    type: DataTypes.STRING,
+  },
+  saleNumber: {
+    type: DataTypes.STRING,
+  },
+  // Customer phone - filled automatically from our customer data when known.
+  customerPhone: {
+    type: DataTypes.STRING,
+  },
+  // Articles entered together in one form share a groupId (and one number).
+  groupId: {
+    type: DataTypes.STRING,
+  },
+  // "Kundenbestellung": a customer order without Rep-/VK-Nr. gets its own
+  // number, counting from 1 every year (see services/customerOrderService.js).
+  customerOrderYear: {
+    type: DataTypes.INTEGER,
+  },
+  customerOrderNumber: {
+    type: DataTypes.INTEGER,
+  },
+  // waiting -> arrived (Teil da) -> reached (Kunde erreicht) -> picked_up (abgeholt)
+  customerOrderStatus: {
+    type: DataTypes.STRING,
+  },
+  customerOrderStatusAt: {
+    type: DataTypes.DATE,
+  },
+  customerOrderStatusBy: {
     type: DataTypes.STRING,
   },
   description: {
