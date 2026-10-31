@@ -1501,5 +1501,53 @@
     "services": {
       "title": "Unsere Leistungen"
     }
+  },
+  "shop": {
+    "title": "Produkte",
+    "searchPlaceholder": "Produkt, Hersteller oder Art.-Nr. suchen",
+    "filters": "Filter",
+    "onlyAvailable": "Nur verfügbar",
+    "onlyOffers": "Nur Angebote",
+    "resetFilters": "Zurücksetzen",
+    "sort": "Sortierung",
+    "sorts": {
+      "relevance": "Empfohlen",
+      "price_asc": "Preis aufsteigend",
+      "price_desc": "Preis absteigend",
+      "name": "Name A–Z"
+    },
+    "group": "Warengruppe",
+    "category": "Gerät",
+    "brand": "Hersteller",
+    "drive": "Antrieb",
+    "batterySystem": "Akku-System",
+    "priceRange": "Preis (€)",
+    "from": "ab",
+    "to": "bis",
+    "showAll": "Alle {{count}} anzeigen",
+    "showLess": "Weniger anzeigen",
+    "showResults": "{{count}} Produkte anzeigen",
+    "resultCount": "{{count}} Produkte",
+    "emptyTitle": "Keine passenden Produkte",
+    "emptyMessage": "Ändern Sie die Suche oder die Filter. Gern beraten wir Sie auch persönlich.",
+    "loadError": "Die Produkte konnten nicht geladen werden.",
+    "offer": "Angebot",
+    "uvp": "UVP",
+    "ourPrice": "Unser Preis",
+    "inclVat": "inkl. MwSt.",
+    "priceOnRequest": "Preis auf Anfrage",
+    "available": "Verfügbar",
+    "notAvailable": "Nicht vorrätig",
+    "availableInStore": "Bei uns im Laden verfügbar",
+    "notAvailableHint": "Derzeit nicht vorrätig – wir bestellen gern für Sie",
+    "artNr": "Art.-Nr.",
+    "variant": "Ausführung",
+    "call": "Anrufen",
+    "inquire": "Anfragen",
+    "inquirySubject": "Produktanfrage",
+    "inquiryBody": "Guten Tag,\n\nich interessiere mich für {{product}} (Art.-Nr. {{artNr}}).\n\nMit freundlichen Grüßen\n",
+    "details": "Ausstattung",
+    "manufacturerData": "Technische Daten des Herstellers",
+    "source": "Quelle: {{source}}"
   }
 }

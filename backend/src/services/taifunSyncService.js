@@ -282,4 +282,4 @@ async function getStatus() {
   };
 }
 
-module.exports = { importXml, getStatus };
+module.exports = { importXml, getStatus, decodeXmlBuffer };

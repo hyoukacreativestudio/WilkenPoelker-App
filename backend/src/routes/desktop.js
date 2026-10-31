@@ -33,6 +33,21 @@ router.get('/customer-orders', authenticate, authorize(...CUSTOMER_ORDER_ROLES),
 router.patch('/customer-orders/:year/:number', authenticate, authorize(...CUSTOMER_ORDER_ROLES), desktop.setCustomerOrderStatus);
 router.get('/customer-lookup', authenticate, authorize(...STAFF), desktop.lookupCustomer);
 
+// ── Produkte (Taifun stock -> app + website product pages) ──
+const shopAdmin = require('../controllers/shopAdminController');
+const SHOP_ADMIN = ['admin', 'super_admin', 'sales_manager'];
+router.get('/shop/products', authenticate, authorize(...SHOP_ADMIN), shopAdmin.listProducts);
+router.patch('/shop/products/:id', authenticate, authorize(...SHOP_ADMIN), shopAdmin.updateProduct);
+router.post('/shop/products/:id/enrich', authenticate, authorize(...SHOP_ADMIN), shopAdmin.enrichNow);
+router.post('/shop/products/:id/images', authenticate, authorize(...SHOP_ADMIN), shopAdmin.addImage);
+router.delete('/shop/products/:id/images/:index', authenticate, authorize(...SHOP_ADMIN), shopAdmin.removeImage);
+router.post('/shop/articles/:id/regroup', authenticate, authorize(...SHOP_ADMIN), shopAdmin.regroupArticle);
+router.get('/shop/brands', authenticate, authorize(...SHOP_ADMIN), shopAdmin.listBrands);
+router.post('/shop/brands', authenticate, authorize(...SHOP_ADMIN), shopAdmin.saveBrand);
+router.put('/shop/brands/:id', authenticate, authorize(...SHOP_ADMIN), shopAdmin.saveBrand);
+router.post('/shop/import', authenticate, authorize(...SHOP_ADMIN), shopAdmin.runImport);
+router.post('/shop/enrich-all', authenticate, authorize(...SHOP_ADMIN), shopAdmin.enrichAll);
+
 // ── Lager ──
 router.get('/warehouse', authenticate, authorize(...STAFF), desktop.listWarehouse);
 router.post('/warehouse', authenticate, authorize('sales_manager', 'admin', 'super_admin'), desktop.createWarehouseItem);

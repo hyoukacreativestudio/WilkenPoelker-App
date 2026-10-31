@@ -1515,5 +1515,53 @@
     "services": {
       "title": "Our services"
     }
+  },
+  "shop": {
+    "title": "Products",
+    "searchPlaceholder": "Search product, brand or item no.",
+    "filters": "Filters",
+    "onlyAvailable": "In stock only",
+    "onlyOffers": "Offers only",
+    "resetFilters": "Reset",
+    "sort": "Sort",
+    "sorts": {
+      "relevance": "Recommended",
+      "price_asc": "Price low to high",
+      "price_desc": "Price high to low",
+      "name": "Name A–Z"
+    },
+    "group": "Product group",
+    "category": "Type",
+    "brand": "Brand",
+    "drive": "Power",
+    "batterySystem": "Battery system",
+    "priceRange": "Price (€)",
+    "from": "from",
+    "to": "to",
+    "showAll": "Show all {{count}}",
+    "showLess": "Show less",
+    "showResults": "Show {{count}} products",
+    "resultCount": "{{count}} products",
+    "emptyTitle": "No matching products",
+    "emptyMessage": "Change your search or filters. We are also happy to advise you in person.",
+    "loadError": "The products could not be loaded.",
+    "offer": "Offer",
+    "uvp": "RRP",
+    "ourPrice": "Our price",
+    "inclVat": "incl. VAT",
+    "priceOnRequest": "Price on request",
+    "available": "In stock",
+    "notAvailable": "Not in stock",
+    "availableInStore": "Available in our store",
+    "notAvailableHint": "Currently not in stock – we will gladly order it for you",
+    "artNr": "Item no.",
+    "variant": "Version",
+    "call": "Call",
+    "inquire": "Enquire",
+    "inquirySubject": "Product enquiry",
+    "inquiryBody": "Hello,\n\nI am interested in {{product}} (item no. {{artNr}}).\n\nKind regards\n",
+    "details": "Features",
+    "manufacturerData": "Manufacturer technical data",
+    "source": "Source: {{source}}"
   }
 }

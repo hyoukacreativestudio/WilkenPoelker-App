@@ -13,12 +13,14 @@ import RepairsStack from './RepairsStack';
 import ProfileStack from './ProfileStack';
 import MoreStack from './MoreStack';
 import ServiceStack from './ServiceStack';
+import ShopStack from './ShopStack';
 
 // Wrap each stack in a screen-level ErrorBoundary so one tab crash doesn't kill the whole app
 const SafeFeedStack = (props) => (<ErrorBoundary level="screen" name="FeedStack"><FeedStack {...props} /></ErrorBoundary>);
 const SafeAppointmentsStack = (props) => (<ErrorBoundary level="screen" name="AppointmentsStack"><AppointmentsStack {...props} /></ErrorBoundary>);
 const SafeRepairsStack = (props) => (<ErrorBoundary level="screen" name="RepairsStack"><RepairsStack {...props} /></ErrorBoundary>);
 const SafeProfileStack = (props) => (<ErrorBoundary level="screen" name="ProfileStack"><ProfileStack {...props} /></ErrorBoundary>);
+const SafeShopStack = (props) => (<ErrorBoundary level="screen" name="ShopStack"><ShopStack {...props} /></ErrorBoundary>);
 const SafeMoreStack = (props) => (<ErrorBoundary level="screen" name="MoreStack"><MoreStack {...props} /></ErrorBoundary>);
 // React Navigation 7 dropped unmountOnBlur: the hidden Service tab is only rendered
 // while focused, so it starts fresh each time (its state is cleared on unmount) and
@@ -63,7 +65,7 @@ export default function MainTabs() {
             );
           }
           return (
-            <MaterialCommunityIcons name="dots-horizontal" size={26} color={color} />
+            <MaterialCommunityIcons name={route.name === 'Shop' ? 'storefront-outline' : 'dots-horizontal'} size={route.name === 'Shop' ? 28 : 26} color={color} />
           );
         },
         tabBarActiveTintColor: theme.colors.primary,
@@ -94,13 +96,13 @@ export default function MainTabs() {
         })}
       />
       <Tab.Screen
-        name="Appointments"
-        component={SafeAppointmentsStack}
-        options={{ tabBarLabel: t('appointments.title') }}
+        name="Shop"
+        component={SafeShopStack}
+        options={{ tabBarLabel: t('shop.title') }}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('Appointments', { screen: 'AppointmentsList', pop: true });
+            navigation.navigate('Shop', { screen: 'ShopList', pop: true });
           },
         })}
       />
@@ -141,6 +143,12 @@ export default function MainTabs() {
         name="Service"
         component={SafeServiceStack}
         options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
+      />
+      {/* Termine moved under "Mehr" (its own tab slot went to the products) */}
+      <Tab.Screen
+        name="Appointments"
+        component={SafeAppointmentsStack}
+        options={{ tabBarLabel: t('appointments.title'), tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
       />
     </Tab.Navigator>
   );

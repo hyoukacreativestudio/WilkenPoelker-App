@@ -33,6 +33,10 @@ const WarehouseItem = require('./WarehouseItem');
 const RobbyCustomer = require('./RobbyCustomer');
 const TimeClock = require('./TimeClock');
 const RepairJob = require('./RepairJob');
+const ShopArticle = require('./ShopArticle');
+const ShopProduct = require('./ShopProduct');
+const ShopBrand = require('./ShopBrand');
+const ShopGroup = require('./ShopGroup');
 
 // ==========================================
 // ASSOCIATIONS
@@ -187,6 +191,10 @@ Order.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 User.hasMany(WarehouseItem, { foreignKey: 'createdBy', as: 'warehouseItems' });
 WarehouseItem.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 
+// Shop product page -> its Taifun articles (variants)
+ShopProduct.hasMany(ShopArticle, { foreignKey: 'productId', as: 'articles' });
+ShopArticle.belongsTo(ShopProduct, { foreignKey: 'productId', as: 'product' });
+
 module.exports = {
   sequelize,
   User,
@@ -221,4 +229,8 @@ module.exports = {
   RobbyCustomer,
   TimeClock,
   RepairJob,
+  ShopArticle,
+  ShopProduct,
+  ShopBrand,
+  ShopGroup,
 };

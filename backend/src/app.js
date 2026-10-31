@@ -99,6 +99,7 @@ const aboutRoutes = require('./routes/about');
 const customerNumberRoutes = require('./routes/customerNumber');
 const syncRoutes = require('./routes/sync');
 const desktopRoutes = require('./routes/desktop');
+const shopRoutes = require('./routes/shop');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -117,6 +118,7 @@ app.use('/api/about', aboutRoutes);
 app.use('/api/customer-number', customerNumberRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/desktop', desktopRoutes);
+app.use('/api/shop', shopRoutes);
 
 // Public privacy policy of the app (URL for App Store / Google Play).
 app.use(['/datenschutz', '/privacy'], require('./routes/legal'));
@@ -388,6 +390,27 @@ cron.schedule('*/5 * * * *', async () => {
     }
   } catch (err) {
     logger.error('Cron: Taifun inbox scan failed', { error: err.message });
+  }
+});
+
+// Taifun stock exports (SFTP folder /Bestand): articles + reservations ->
+// product pages for app and website. Every 5 minutes, offset from the orders scan.
+cron.schedule('2-59/5 * * * *', async () => {
+  try {
+    const { scanAndImport } = require('./services/shop/shopStockImport');
+    await scanAndImport();
+  } catch (err) {
+    logger.error('Cron: shop stock import failed', { error: err.message });
+  }
+});
+
+// Nightly: manufacturer pictures + technical data for products that have none yet.
+cron.schedule('40 2 * * *', async () => {
+  try {
+    const { enrichMissing } = require('./services/shop/enrich');
+    await enrichMissing({ limit: 300 });
+  } catch (err) {
+    logger.error('Cron: shop enrich failed', { error: err.message });
   }
 });
 

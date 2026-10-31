@@ -18,6 +18,7 @@ export default defineConfig({
     host: true, // reachable from other PCs on the network
     proxy: {
       '/api': { target, changeOrigin: true, secure: false },
+      '/uploads': { target, changeOrigin: true, secure: false },
     },
   },
   preview: {
@@ -25,6 +26,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': { target, changeOrigin: true, secure: false },
+      '/uploads': { target, changeOrigin: true, secure: false },
     },
   },
 });

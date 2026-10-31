@@ -48,6 +48,12 @@ const linking = {
               Chat: 'service/chat/:ticketId',
             },
           },
+          Shop: {
+            screens: {
+              ShopList: 'shop',
+              ShopDetail: 'shop/:slug',
+            },
+          },
           Repairs: {
             screens: {
               RepairsList: 'repairs',
