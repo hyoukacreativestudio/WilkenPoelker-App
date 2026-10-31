@@ -183,9 +183,10 @@ export default function Bestellungen({ user }) {
       setShowForm(false); setEditingId(null); setForm(emptyForm()); setArticles([emptyArticle()]); load();
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
-  // Known customer? Fill in the phone number (only if the field is still empty).
+  // Known customer (name AND customer number match)? Fill in the phone number
+  // (only if the field is still empty).
   const fillPhone = async () => {
-    if (form.customerPhone || (!form.customerNumber.trim() && !form.customerName.trim())) return;
+    if (form.customerPhone || !form.customerNumber.trim() || !form.customerName.trim()) return;
     try {
       const q = new URLSearchParams({ customerNumber: form.customerNumber.trim(), customerName: form.customerName.trim() });
       const { phone } = unwrap(await api.get(`/desktop/customer-lookup?${q.toString()}`));
@@ -368,7 +369,7 @@ export default function Bestellungen({ user }) {
                 <input className="input" value={form.customerNumber} onChange={(e) => setForm({ ...form, customerNumber: e.target.value })} onBlur={fillPhone} />
               </label>
               <label className="field">Telefon
-                <input className="input" value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} placeholder="wird bei bekannten Kunden ergänzt" />
+                <input className="input" value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} placeholder="kommt automatisch, wenn Name + Kd-Nr. passen" />
               </label>
               <label className="field">Reparaturnr.
                 <input className="input" value={form.repairNumber} onChange={(e) => setForm({ ...form, repairNumber: e.target.value })} />

@@ -77,30 +77,30 @@ async function assignNumberIfNeeded(order) {
   return order;
 }
 
-const normName = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+// Name as a sorted word set, so "Julia Schmidt" == "schmidt,  julia".
+const nameKey = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g, ' ').trim()
+  .split(' ').filter(Boolean).sort().join(' ');
 
-// Phone number of a customer we already know: by customer number (app account,
-// Taifun, Robby list), else by a full name that matches exactly ONE Taifun
-// customer. Returns '' when nothing reliable is found.
+// Phone number of a customer we already know. Customer number AND name must
+// both match the same record (app account, Taifun, Robby list) - otherwise a
+// typo in the number could attach a stranger's phone. Returns '' if unsure.
 async function lookupCustomerPhone({ customerNumber, customerName }) {
   const { User, TaifunCustomer, RobbyCustomer } = models;
   const nr = String(customerNumber || '').trim();
-  if (nr) {
-    const user = await User.findOne({ where: { customerNumber: nr, phone: { [Op.ne]: null } } });
-    if (user && !blank(user.phone)) return user.phone.trim();
-    const taifun = await TaifunCustomer.findOne({ where: { kdNr: nr } });
-    const tPhone = taifun && (taifun.mobile || taifun.phone);
-    if (!blank(tPhone)) return tPhone.trim();
-    const robby = await RobbyCustomer.findOne({ where: { customerNumber: nr } });
-    if (robby && !blank(robby.phone)) return robby.phone.trim();
-  }
-  const name = normName(customerName);
-  if (name.includes(' ')) {
-    const { fn, col, where } = require('sequelize');
-    const hits = await TaifunCustomer.findAll({ where: where(fn('lower', col('name2')), name), limit: 2 });
-    const phone = hits.length === 1 && (hits[0].mobile || hits[0].phone);
-    if (!blank(phone)) return phone.trim();
-  }
+  const name = nameKey(customerName);
+  if (!nr || !name) return '';
+
+  const users = await User.findAll({ where: { customerNumber: nr } });
+  const user = users.find((u) => nameKey(`${u.firstName || ''} ${u.lastName || ''}`) === name && !blank(u.phone));
+  if (user) return user.phone.trim();
+
+  const taifuns = await TaifunCustomer.findAll({ where: { kdNr: nr } });
+  const taifun = taifuns.find((t) => nameKey(t.name2) === name && !blank(t.mobile || t.phone));
+  if (taifun) return (taifun.mobile || taifun.phone).trim();
+
+  const robbys = await RobbyCustomer.findAll({ where: { customerNumber: nr } });
+  const robby = robbys.find((r) => nameKey(r.name) === name && !blank(r.phone));
+  if (robby) return robby.phone.trim();
   return '';
 }
 
