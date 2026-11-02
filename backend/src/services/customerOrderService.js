@@ -18,11 +18,35 @@ function currentYear(now = new Date()) {
   return parseInt(now.toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 4), 10);
 }
 
+// A customer order has a customer number and is not entirely for stock
+// ("fürs Lager"). A name alone is not enough.
+function isForCustomer(order) {
+  const quantity = Number(order.quantity ?? 1);
+  const forStock = Number(order.quantityForStock ?? 0);
+  return !blank(order.customerNumber) && forStock < quantity;
+}
+
 // Only customer orders without any Rep-/VK-Nr. (old combined refNumber counts too).
 function needsCustomerOrderNumber(order) {
   if (order.customerOrderNumber) return false;
   if (!blank(order.repairNumber) || !blank(order.saleNumber) || !blank(order.refNumber)) return false;
-  return !blank(order.customerName) || !blank(order.customerNumber);
+  return isForCustomer(order);
+}
+
+// After an edit: an order that became stock-only or lost its customer number
+// leaves the Kundenbestellungen again; otherwise it gets a number if it needs one.
+async function syncCustomerOrderNumber(order) {
+  if (order.customerOrderNumber && !isForCustomer(order)) {
+    await order.update({
+      customerOrderYear: null,
+      customerOrderNumber: null,
+      customerOrderStatus: null,
+      customerOrderStatusAt: null,
+      customerOrderStatusBy: null,
+    });
+    return order;
+  }
+  return assignNumberIfNeeded(order);
 }
 
 async function nextNumber(year, transaction) {
@@ -107,7 +131,9 @@ async function lookupCustomerPhone({ customerNumber, customerName }) {
 module.exports = {
   STATUSES,
   currentYear,
+  isForCustomer,
   needsCustomerOrderNumber,
   assignNumberIfNeeded,
+  syncCustomerOrderNumber,
   lookupCustomerPhone,
 };

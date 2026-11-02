@@ -182,7 +182,7 @@ const updateOrder = asyncHandler(async (req, res) => {
     const phone = await customerOrderService.lookupCustomerPhone(order);
     if (phone) await order.update({ customerPhone: phone });
   }
-  await customerOrderService.assignNumberIfNeeded(order);
+  await customerOrderService.syncCustomerOrderNumber(order);
   res.json({ success: true, data: { order } });
 });
 

@@ -385,8 +385,9 @@ export default function Bestellungen({ user }) {
             </div>
             {form.customerOrderNumber ? (
               <div className="muted" style={{ fontSize: 13, margin: '-4px 0 10px' }}>Kundenbestellung <strong>Nr. {form.customerOrderNumber}</strong></div>
-            ) : (!form.repairNumber.trim() && !form.saleNumber.trim() && !form.refNumber.trim() && (form.customerName.trim() || form.customerNumber.trim())) ? (
-              <div className="muted" style={{ fontSize: 13, margin: '-4px 0 10px' }}>Ohne Reparatur- und Verkaufsnr. bekommt die Bestellung automatisch eine Kundenbestellungs-Nummer.</div>
+            ) : (!form.repairNumber.trim() && !form.saleNumber.trim() && !form.refNumber.trim() && form.customerNumber.trim()
+              && (editingId ? +form.quantityForStock < +form.quantity : articles.some((a) => +a.quantityForStock < +a.quantity))) ? (
+              <div className="muted" style={{ fontSize: 13, margin: '-4px 0 10px' }}>Mit Kundennummer und ohne Reparatur- und Verkaufsnr. bekommt die Bestellung automatisch eine Kundenbestellungs-Nummer (außer alles ist fürs Lager).</div>
             ) : null}
 
             {editingId ? (
