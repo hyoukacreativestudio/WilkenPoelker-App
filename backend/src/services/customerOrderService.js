@@ -101,29 +101,36 @@ async function assignNumberIfNeeded(order) {
   return order;
 }
 
-// Name as a sorted word set, so "Julia Schmidt" == "schmidt,  julia".
-const nameKey = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g, ' ').trim()
-  .split(' ').filter(Boolean).sort().join(' ');
+const nameWords = (s) => String(s || '').toLowerCase()
+  .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+  .split(/[^a-z0-9]+/).filter(Boolean);
+
+// Staff usually type just the surname, Taifun has "Vorname Nachname": every
+// typed word must appear in the customer's name (order and case do not matter).
+function nameFits(typed, known) {
+  const words = nameWords(typed);
+  const knownWords = new Set(nameWords(known));
+  return words.some((w) => w.length >= 3) && words.every((w) => knownWords.has(w));
+}
 
 // Phone number of a customer we already know. Customer number AND name must
-// both match the same record (app account, Taifun, Robby list) - otherwise a
-// typo in the number could attach a stranger's phone. Returns '' if unsure.
+// fit the same record (app account, Taifun, Robby list) - otherwise a typo in
+// the number could attach a stranger's phone. Returns '' if unsure.
 async function lookupCustomerPhone({ customerNumber, customerName }) {
   const { User, TaifunCustomer, RobbyCustomer } = models;
   const nr = String(customerNumber || '').trim();
-  const name = nameKey(customerName);
-  if (!nr || !name) return '';
+  if (!nr || blank(customerName)) return '';
 
   const users = await User.findAll({ where: { customerNumber: nr } });
-  const user = users.find((u) => nameKey(`${u.firstName || ''} ${u.lastName || ''}`) === name && !blank(u.phone));
+  const user = users.find((u) => nameFits(customerName, `${u.firstName || ''} ${u.lastName || ''}`) && !blank(u.phone));
   if (user) return user.phone.trim();
 
   const taifuns = await TaifunCustomer.findAll({ where: { kdNr: nr } });
-  const taifun = taifuns.find((t) => nameKey(t.name2) === name && !blank(t.mobile || t.phone));
+  const taifun = taifuns.find((t) => nameFits(customerName, `${t.name1 || ''} ${t.name2 || ''}`) && !blank(t.mobile || t.phone));
   if (taifun) return (taifun.mobile || taifun.phone).trim();
 
   const robbys = await RobbyCustomer.findAll({ where: { customerNumber: nr } });
-  const robby = robbys.find((r) => nameKey(r.name) === name && !blank(r.phone));
+  const robby = robbys.find((r) => nameFits(customerName, r.name) && !blank(r.phone));
   if (robby) return robby.phone.trim();
   return '';
 }
@@ -135,5 +142,6 @@ module.exports = {
   needsCustomerOrderNumber,
   assignNumberIfNeeded,
   syncCustomerOrderNumber,
+  nameFits,
   lookupCustomerPhone,
 };

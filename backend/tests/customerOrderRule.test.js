@@ -1,4 +1,23 @@
-const { isForCustomer, needsCustomerOrderNumber } = require('../src/services/customerOrderService');
+const { isForCustomer, needsCustomerOrderNumber, nameFits } = require('../src/services/customerOrderService');
+
+describe('name check for the phone number', () => {
+  const known = 'Herr Julia Müller-Schmidt';
+
+  test('surname, first name or both fit, in any order and spelling case', () => {
+    expect(nameFits('Müller-Schmidt', known)).toBe(true);
+    expect(nameFits('mueller schmidt', known)).toBe(true);
+    expect(nameFits('schmidt, julia', known)).toBe(true);
+    expect(nameFits('JULIA', known)).toBe(true);
+  });
+
+  test('another name or only initials do not fit', () => {
+    expect(nameFits('Meyer', known)).toBe(false);
+    expect(nameFits('Julia Meyer', known)).toBe(false);
+    expect(nameFits('J', known)).toBe(false);
+    expect(nameFits('', known)).toBe(false);
+    expect(nameFits('Julia', '')).toBe(false);
+  });
+});
 
 describe('Kundenbestellungen rule', () => {
   const base = { customerNumber: '42146', customerName: 'Max Muster', quantity: 2, quantityForStock: 0 };
