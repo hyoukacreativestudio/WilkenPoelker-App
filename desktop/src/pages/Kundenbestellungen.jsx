@@ -4,14 +4,15 @@ import { ORDER_DEPARTMENTS } from '../config.js';
 import { useToast } from '../toast.jsx';
 
 // Customer orders = orders without Rep-/VK-Nr. that got an automatic number.
-// Flow: Offen -> "Teil da" -> "Erreicht" -> "Abgeholt" (then it disappears).
+// Flow: Offen -> "Teil da" -> "Erreicht" -> "Abgeholt" (kept there, can be undone).
 const MANAGER = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
 const STEPS = [
   { key: 'waiting', label: 'Offen', empty: 'Keine Kundenbestellungen, die auf Teile warten.', next: 'arrived', action: 'Teil da ✓' },
   { key: 'arrived', label: 'Teile da', empty: 'Keine Teile da – niemand muss angerufen werden.', next: 'reached', action: 'Erreicht ✓', prev: 'waiting' },
   { key: 'reached', label: 'Erreicht', empty: 'Keine erreichten Kunden, die noch abholen müssen.', next: 'picked_up', action: 'Abgeholt ✓', prev: 'arrived' },
+  { key: 'picked_up', label: 'Abgeholt', empty: 'Noch keine abgeholten Kundenbestellungen.', prev: 'reached' },
 ];
-const STEP_DONE_TEXT = { arrived: 'nach „Teile da“ verschoben', reached: 'nach „Erreicht“ verschoben', picked_up: 'als abgeholt erledigt' };
+const STEP_DONE_TEXT = { arrived: 'nach „Teile da“ verschoben', reached: 'nach „Erreicht“ verschoben', picked_up: 'nach „Abgeholt“ verschoben' };
 const deptLabel = (key) => ORDER_DEPARTMENTS.find((d) => d.key === key)?.label || key;
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('de-DE') : '—');
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
@@ -44,7 +45,7 @@ export default function Kundenbestellungen({ user }) {
       map.get(k).items.push(r);
     });
     const q = search.trim().toLowerCase();
-    return [...map.values()]
+    const list = [...map.values()]
       .map((g) => ({
         ...g,
         customerName: firstSet(g.items, 'customerName'),
@@ -58,7 +59,10 @@ export default function Kundenbestellungen({ user }) {
       }))
       .filter((g) => !q || [g.number, g.customerName, g.customerNumber, g.customerPhone, ...g.items.map((i) => `${i.description} ${i.articleNumber || ''} ${i.sourceText || ''}`)]
         .join(' ').toLowerCase().includes(q));
-  }, [rows, search]);
+    // Most recently picked up first
+    if (step === 'picked_up') list.sort((a, b) => new Date(b.statusAt || 0) - new Date(a.statusAt || 0));
+    return list;
+  }, [rows, search, step]);
 
   const move = async (g, status, { silent } = {}) => {
     setBusyKey(g.key);
@@ -136,8 +140,8 @@ export default function Kundenbestellungen({ user }) {
                   {step !== 'waiting' && g.statusAt ? <div className="muted" style={{ fontSize: 12 }}>{current.label}: {fmtDate(g.statusAt)}{g.statusBy ? ` (${g.statusBy})` : ''}</div> : null}
                 </td>
                 <td className="right nowrap no-print">
-                  <button className="btn sm" disabled={busyKey === g.key} onClick={() => move(g, current.next)}>{current.action}</button>
-                  {current.prev ? <>{' '}<button className="btn sm ghost" disabled={busyKey === g.key} onClick={() => move(g, current.prev)} title="Einen Schritt zurück">↩</button></> : null}
+                  {current.next ? <button className="btn sm" disabled={busyKey === g.key} onClick={() => move(g, current.next)}>{current.action}</button> : null}
+                  {current.prev ? <>{' '}<button className="btn sm ghost" disabled={busyKey === g.key} onClick={() => move(g, current.prev)} title="Einen Schritt zurück">{current.next ? '↩' : '↩ Zurück zu „Erreicht“'}</button></> : null}
                 </td>
               </tr>
             ))}

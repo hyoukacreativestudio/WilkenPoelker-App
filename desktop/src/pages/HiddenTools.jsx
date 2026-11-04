@@ -13,7 +13,13 @@ const deDate = (s) => { const d = parseISO(s); return `${pad(d.getDate())}.${pad
 const WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const wd = (d) => WD[d.getDay()];
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-const fmtH = (h) => (h ? `${(Math.round(h * 100) / 100).toString().replace('.', ',')} h` : '–');
+// Hours as "7 Std. 05 Min." (never as a decimal number)
+const toWholeMinutes = (h) => Math.round(h * 60) / 60;
+const fmtH = (h) => {
+  if (!h) return '–';
+  const minutes = Math.round(h * 60);
+  return `${Math.floor(minutes / 60)} Std. ${pad(minutes % 60)} Min.`;
+};
 
 // ISO week number + its year.
 function isoWeek(date) {
@@ -182,10 +188,10 @@ function Auswertung() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
             {nowRunning.map((e) => {
               const el = Math.max(0, tick - new Date(e.clockIn).getTime());
-              const es = `${pad(Math.floor(el / 3600000))}:${pad(Math.floor(el / 60000) % 60)}`;
+              const es = fmtH(el / 3600000) === '–' ? '0 Std. 00 Min.' : fmtH(el / 3600000);
               return (
                 <span key={e.id} className="badge" style={{ background: '#1f7a45', color: '#fff' }}>
-                  {e.personName} · {es} h (seit {new Date(e.clockIn).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })})
+                  {e.personName} · {es} (seit {new Date(e.clockIn).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })})
                 </span>
               );
             })}
@@ -286,8 +292,10 @@ function buildReport(entries, from, to) {
       const wk = `${year}-${pad(week)}`;
       if (!weeks.has(wk)) { const mon = mondayOf(d); weeks.set(wk, { week, year, start: iso(mon), end: iso(addDays(mon, 6)), rows: [], total: 0 }); }
       const w = weeks.get(wk);
-      w.rows.push({ date: k, wd: wd(d), hours: hoursByDay[k], activity: activityByDay[k] || 'App-Entwicklung', note: noteByDay[k] || '' });
-      w.total += hoursByDay[k];
+      // Whole minutes per day, so the shown days add up exactly to the week's sum
+      const dayHours = toWholeMinutes(hoursByDay[k]);
+      w.rows.push({ date: k, wd: wd(d), hours: dayHours, activity: activityByDay[k] || 'App-Entwicklung', note: noteByDay[k] || '' });
+      w.total += dayHours;
     }
     d = addDays(d, 1);
   }
