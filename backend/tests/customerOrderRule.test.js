@@ -1,4 +1,9 @@
-const { isForCustomer, needsCustomerOrderNumber, nameFits } = require('../src/services/customerOrderService');
+const { firstNumberFor, isForCustomer, needsCustomerOrderNumber, nameFits } = require('../src/services/customerOrderService');
+
+test('2026 continues at 1101, later years start at 1 again', () => {
+  expect(firstNumberFor(2026)).toBe(1101);
+  expect(firstNumberFor(2027)).toBe(1);
+});
 
 describe('name check for the phone number', () => {
   const known = 'Herr Julia Müller-Schmidt';

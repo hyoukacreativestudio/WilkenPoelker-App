@@ -11,6 +11,9 @@ const models = require('../models');
 const STATUSES = ['waiting', 'arrived', 'reached', 'picked_up'];
 // Arbitrary constant for the Postgres advisory lock around number allocation.
 const NUMBER_LOCK_KEY = 70210;
+// The shop wants 2026 to continue at 1101. Every later year starts at 1 again.
+const FIRST_NUMBER_BY_YEAR = { 2026: 1101 };
+const firstNumberFor = (year) => FIRST_NUMBER_BY_YEAR[year] || 1;
 
 const blank = (v) => !v || !String(v).trim();
 
@@ -62,7 +65,7 @@ async function nextNumber(year, transaction) {
     transaction,
   });
   const blocked = new Set(held.map((o) => o.customerOrderNumber));
-  let n = (maxThisYear || 0) + 1;
+  let n = Math.max((maxThisYear || 0) + 1, firstNumberFor(year));
   while (blocked.has(n)) n += 1;
   return n;
 }
@@ -138,6 +141,7 @@ async function lookupCustomerPhone({ customerNumber, customerName }) {
 module.exports = {
   STATUSES,
   currentYear,
+  firstNumberFor,
   isForCustomer,
   needsCustomerOrderNumber,
   assignNumberIfNeeded,
