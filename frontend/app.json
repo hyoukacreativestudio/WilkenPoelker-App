@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#163A1E"
+      "backgroundColor": "#43AC34"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -34,7 +34,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundImage": "./assets/adaptive-icon-background.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
-        "backgroundColor": "#1A4223"
+        "backgroundColor": "#43AC34"
       },
       "package": "com.hyoukacreativestudios.wilkenpoelker",
       "versionCode": 2,
