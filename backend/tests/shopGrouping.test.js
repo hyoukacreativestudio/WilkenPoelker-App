@@ -98,6 +98,7 @@ describe('Taifun stock export', () => {
     expect(size('Stromerzeuger', 'Max. Leistung (kW)', '2,8')).toEqual(['2,8 kW']);
     expect(size('Stromerzeuger', 'Leistung max.', '2.200 W')).toEqual(['2,2 kW']);
     expect(size('Spritzgeräte', 'Behälterinhalt', '4,50 gal')).toEqual([]);
+    expect(size('Hochdruckreiniger', 'Max. Druck', '100 bar 1)')).toEqual(['100 bar']);
     expect(size('Laubbläser & Laubsauger', 'Gewicht', '5 kg')).toEqual([]);
   });
 

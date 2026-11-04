@@ -54,7 +54,7 @@ const toNumber = (s) => Number(/^\d{1,3}\.\d{3}$/.test(s) ? s.replace('.', '') :
 // "45 / 60 cm" -> [45, 60]; "Max. 4 cm" as mm -> [40]; "35 cm (42 cm)" -> [35]
 function readSizes(value, label, cfg) {
   const factors = TO_BASE[cfg.unit];
-  const text = String(value).toLowerCase().replace(/\(.*$/, ' ');
+  const text = String(value).toLowerCase().replace(/\(.*$/, ' ').replace(/\b\d+\)/g, ' '); // "(42 cm)", footnote "1)"
   const unitInLabel = String(label).toLowerCase().match(/\((\w+)\)/)?.[1];
   const found = [...text.matchAll(/(\d+(?:[.,]\d+)?)\s*([a-zä]*)/g)];
   const unit = found.map((m) => m[2]).find((u) => factors[u]) || (factors[unitInLabel] ? unitInLabel : null);
