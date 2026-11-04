@@ -417,7 +417,7 @@ export default function FeedScreen({ navigation }) {
             </View>
           )}
           contentContainerStyle={
-            posts.length === 0 ? { flex: 1, alignItems: 'center' } : { paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.xxl }
+            posts.length === 0 ? { flexGrow: 1 } : { paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.xxl }
           }
           refreshControl={
             <RefreshControl
@@ -431,6 +431,7 @@ export default function FeedScreen({ navigation }) {
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmpty}
+          ListEmptyComponentStyle={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
         />
       )}

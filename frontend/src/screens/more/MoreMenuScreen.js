@@ -145,16 +145,9 @@ export default function MoreMenuScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Section 1: Appointments & Notifications */}
+        {/* Section 1: Notifications */}
         <View style={s.section}>
           <View style={s.card}>
-            <MenuRow
-              icon="calendar-month-outline"
-              label={t('more.appointments')}
-              onPress={() => navigation.navigate('Appointments', { screen: 'AppointmentsList', pop: true })}
-              theme={theme}
-            />
-            <Divider style={{ marginVertical: 0 }} />
             <MenuRow
               icon="bell-outline"
               label={t('more.notifications')}

@@ -118,13 +118,13 @@ export default function MainTabs() {
         })}
       />
       <Tab.Screen
-        name="Profile"
-        component={SafeProfileStack}
-        options={{ tabBarLabel: t('profile.title') }}
+        name="Appointments"
+        component={SafeAppointmentsStack}
+        options={{ tabBarLabel: t('appointments.title') }}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('Profile', { screen: 'ProfileMain', pop: true });
+            navigation.navigate('Appointments', { screen: 'AppointmentsList', pop: true });
           },
         })}
       />
@@ -144,11 +144,11 @@ export default function MainTabs() {
         component={SafeServiceStack}
         options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
       />
-      {/* Termine moved under "Mehr" (its own tab slot went to the products) */}
+      {/* The profile opens from "Mehr"; kept as a hidden tab for links into it */}
       <Tab.Screen
-        name="Appointments"
-        component={SafeAppointmentsStack}
-        options={{ tabBarLabel: t('appointments.title'), tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
+        name="Profile"
+        component={SafeProfileStack}
+        options={{ tabBarLabel: t('profile.title'), tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
       />
     </Tab.Navigator>
   );

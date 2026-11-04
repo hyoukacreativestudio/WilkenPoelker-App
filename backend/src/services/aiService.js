@@ -4,36 +4,21 @@ const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const { generateTicketNumber } = require('../utils/crypto');
 const logger = require('../utils/logger');
 
-// Fachbereiche, zu denen die KI antworten darf
-const ALLOWED_TOPICS = [
-  'fahrrad', 'e-bike', 'ebike', 'bike', 'rad', 'pedelec', 'leasing', 'reparatur', 'inspektion',
-  'reinigung', 'hochdruckreiniger', 'staubsauger', 'dampfreiniger', 'fenstersauger', 'kaercher', 'kärcher', 'nilfisk', 'stihl',
-  'motor', 'motorsaege', 'motorsäge', 'rasenmaeher', 'rasenmäher', 'haecksler', 'häcksler', 'schneefraese', 'schneefräse',
-  'laubblaeser', 'laubbläser', 'heckenschere', 'maehroboter', 'mähroboter', 'freischneider', 'trimmer',
-  'termin', 'oeffnungszeiten', 'öffnungszeiten', 'standort', 'adresse', 'service', 'garantie', 'preis', 'angebot',
-  'werkstatt', 'wartung', 'akku', 'batterie', 'kette', 'bremse', 'reifen', 'schlauch',
-  'wilkenpoelker', 'wilken', 'poelker',
-];
-
-// Prueft ob eine Nachricht fachbezogen ist
-function isTopicAllowed(message) {
-  const lower = message.toLowerCase();
-  return ALLOWED_TOPICS.some((topic) => lower.includes(topic));
-}
+const OFF_TOPIC_REPLY = 'Das liegt leider außerhalb meines Fachbereichs. Ich kann Ihnen bei Fragen zu Fahrrädern, Reinigungsgeräten und Motorgeräten weiterhelfen. Wie kann ich Ihnen in diesen Bereichen behilflich sein?';
 
 const TOPIC_GUARD = `
-WICHTIG: Du darfst NUR Fragen beantworten, die sich auf folgende Fachbereiche beziehen:
-- Fahrräder, E-Bikes, Pedelecs, Fahrrad-Zubehoer, Fahrrad-Leasing und Fahrrad-Reparaturen
-- Reinigungsgeräte (Hochdruckreiniger, Staubsauger, Dampfreiniger, Fenstersauger etc.)
-- Motorgeräte (Motorsaegen, Rasenmaeher, Heckenscheren, Laubblaeser, Maehroboter, Freischneider etc.)
-- Allgemeine Fragen zu WilkenPoelker (Öffnungszeiten, Standort, Services, Termine)
+ZUSTAENDIGKEIT: Du beantwortest Fragen zu ALLEN drei Bereichen, ganz egal aus welcher Kategorie der Kunde schreibt:
+- Fahrraeder und E-Bikes aller Marken (auch KTM, Kalkhoff, Bulls, Cube usw.) und aller Antriebe und Displays (z. B. Bosch Smart System, Shimano), inklusive Bedienung, Einstellungen, Akku, Zubehoer, Leasing und Reparatur
+- Reinigungsgeraete aller Marken
+- Motor- und Gartengeraete aller Marken
+- Alles rund um WilkenPoelker (Oeffnungszeiten, Standort, Services, Termine)
+Auch Fragen zur Bedienung (z. B. Tageskilometer oder Tour zuruecksetzen) gehoeren dazu. Im Zweifel gehoert eine Frage dazu: Beantworte sie.
 
-Wenn eine Frage NICHT zu diesen Themen gehoert, antworte freundlich:
-"Das liegt leider außerhalb meines Fachbereichs. Ich kann Ihnen bei Fragen zu Fahrrädern, Reinigungsgeräten und Motorgeräten weiterhelfen. Wie kann ich Ihnen in diesen Bereichen behilflich sein?"
+Lehne NUR ab, was offensichtlich nichts mit diesen Themen zu tun hat (z. B. Kochrezepte, Politik, Hausaufgaben). Nur dann antworte: "${OFF_TOPIC_REPLY}"
 
 Sprich Kunden immer mit "Sie" an, niemals mit "du".
 
-Erfinde KEINE Informationen. Wenn du dir bei Preisen oder Verfuegbarkeiten unsicher bist, verweise auf den direkten Kontakt mit dem Geschaeft.`;
+Erfinde KEINE Informationen. Wenn du einen Bedienschritt nicht sicher weisst, sage das offen und verweise auf die Anleitung des Herstellers oder biete an: "Ich verbinde Sie mit einem Mitarbeiter." Bei Preisen und Verfuegbarkeit verweise auf das Geschaeft.`;
 
 const REPAIR_HINT = `
 WERKZEUG-REGEL: Wenn der Kunde ein Problem beschreibt, das Spezialwerkzeug, Fachwissen oder eine Werkstatt erfordert, empfiehl ihm eine Reparatur bei WilkenPoelker. Sage z.B.:
@@ -129,21 +114,6 @@ async function chat(userId, { category, message, sessionId, images = [] }) {
     });
   }
 
-  // Check if message is related to allowed topics (extra guard on top of system prompt)
-  const isFirstMessage = !session.messages || session.messages.length === 0;
-  if (isFirstMessage && !isTopicAllowed(message)) {
-    // For first messages that are clearly off-topic, respond immediately without calling the API
-    const offTopicReply = 'Das liegt leider außerhalb meines Fachbereichs. Ich kann Ihnen bei Fragen zu Fahrrädern, Reinigungsgeräten und Motorgeräten weiterhelfen. Wie kann ich Ihnen in diesen Bereichen behilflich sein?';
-    const messages = [
-      { role: 'user', content: message, timestamp: new Date().toISOString() },
-      { role: 'assistant', content: offTopicReply, timestamp: new Date().toISOString() },
-    ];
-    session.messages = messages;
-    session.changed('messages', true);
-    await session.save();
-    return { reply: offTopicReply, sessionId: session.id, needsHuman: false };
-  }
-
   // Build conversation messages
   const conversationHistory = session.messages || [];
   const userEntry = { role: 'user', content: message, timestamp: new Date().toISOString() };
@@ -155,7 +125,8 @@ async function chat(userId, { category, message, sessionId, images = [] }) {
   // Build OpenAI messages array
   const openaiMessages = [
     { role: 'system', content: SYSTEM_PROMPTS[category] },
-    ...conversationHistory.map((m) => {
+    // An earlier refusal must not talk the model into refusing the next question too
+    ...conversationHistory.filter((m) => m.content !== OFF_TOPIC_REPLY).map((m) => {
       // For the current message with images, use multimodal content
       if (m.role === 'user' && m === userEntry && images.length > 0) {
         const content = [{ type: 'text', text: m.content }];
@@ -190,7 +161,7 @@ async function chat(userId, { category, message, sessionId, images = [] }) {
         model: config.openai.model || 'gpt-4o-mini',
         messages: openaiMessages,
         max_tokens: 300,
-        temperature: 0.7,
+        temperature: 0.3,
       });
 
       reply = completion.choices[0].message.content;
