@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useDebounce } from '../../hooks/useDebounce';
 import { shopApi, shopImageUrl } from '../../api/shop';
 import { formatPrice } from '../../utils/formatters';
+import { offerOnDark } from '../../theme/colors';
 import SearchBar from '../../components/ui/SearchBar';
 import Chip from '../../components/ui/Chip';
 import EmptyState from '../../components/ui/EmptyState';
@@ -20,7 +21,8 @@ const PAGE = 40;
 export default function ShopListScreen({ navigation, route }) {
   const safeEdges = useScreenEdges();
   const { t } = useTranslation();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
+  const offerColor = isDark ? offerOnDark : theme.colors.primary;
   const { width } = useWindowDimensions();
   const columns = width >= 700 ? 3 : 2;
   const gap = theme.spacing.sm;
@@ -117,7 +119,7 @@ export default function ShopListScreen({ navigation, route }) {
         <View style={{ flex: 1 }} />
         <View style={{ marginTop: theme.spacing.xs }}>
           {item.price != null ? (
-            <Text style={[theme.typography.styles.h6, { color: item.isOffer ? theme.colors.primary : theme.colors.text }]}>
+            <Text style={[theme.typography.styles.h6, { color: item.isOffer ? offerColor : theme.colors.text }]}>
               {item.variantCount > 1 ? `${t('shop.from')} ` : ''}{formatPrice(item.price)}
             </Text>
           ) : (

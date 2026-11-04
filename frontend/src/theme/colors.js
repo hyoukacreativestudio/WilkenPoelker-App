@@ -70,4 +70,7 @@ const notification = {
   system: '#757575',
 };
 
-export { accentColors, light, dark, semantic, notification };
+// Discount prices on dark backgrounds: the normal green is too dark to read there.
+const offerOnDark = '#7CD66C';
+
+export { accentColors, light, dark, semantic, notification, offerOnDark };

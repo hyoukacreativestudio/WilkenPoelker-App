@@ -6,12 +6,14 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { shopApi, shopImageUrl } from '../../api/shop';
 import { formatPrice } from '../../utils/formatters';
+import { offerOnDark } from '../../theme/colors';
 
 // Current discounts on the home screen. Comes straight from the stock data, so a
 // new discount appears here by itself, the strongest reductions first.
 export default function OfferStrip({ refreshKey }) {
   const { t } = useTranslation();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
+  const offerColor = isDark ? offerOnDark : theme.colors.primary;
   const navigation = useNavigation();
   const [items, setItems] = useState([]);
 
@@ -38,8 +40,8 @@ export default function OfferStrip({ refreshKey }) {
           style={styles.more}
           accessibilityRole="button"
         >
-          <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.primary, fontWeight: '600' }]}>{t('shop.offersAll')}</Text>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={theme.colors.primary} />
+          <Text style={[theme.typography.styles.bodySmall, { color: offerColor, fontWeight: '600' }]}>{t('shop.offersAll')}</Text>
+          <MaterialCommunityIcons name="chevron-right" size={18} color={offerColor} />
         </TouchableOpacity>
       </View>
       <FlatList
@@ -71,7 +73,7 @@ export default function OfferStrip({ refreshKey }) {
             <View style={{ padding: theme.spacing.sm, flex: 1 }}>
               <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.text, fontWeight: '600' }]} numberOfLines={2}>{item.title}</Text>
               <View style={{ flex: 1 }} />
-              <Text style={[theme.typography.styles.h6, { color: theme.colors.primary, marginTop: 4 }]}>
+              <Text style={[theme.typography.styles.h6, { color: offerColor, marginTop: 4 }]}>
                 {item.variantCount > 1 ? `${t('shop.from')} ` : ''}{formatPrice(item.price)}
               </Text>
             </View>

@@ -10,6 +10,7 @@ import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { useTheme } from '../../hooks/useTheme';
 import { shopApi, shopImageUrl, SHOP_PHONE, SHOP_PHONE_LABEL } from '../../api/shop';
 import { formatPrice } from '../../utils/formatters';
+import { offerOnDark } from '../../theme/colors';
 import Chip from '../../components/ui/Chip';
 import EmptyState from '../../components/ui/EmptyState';
 
@@ -17,7 +18,7 @@ export default function ShopDetailScreen({ route, navigation }) {
   const { slug } = route.params || {};
   const safeEdges = useScreenEdges();
   const { t } = useTranslation();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -141,7 +142,7 @@ export default function ShopDetailScreen({ route, navigation }) {
                     {t('shop.uvp')} <Text style={{ textDecorationLine: 'line-through' }}>{formatPrice(variant.uvp)}</Text>
                   </Text>
                 ) : null}
-                <Text style={[theme.typography.styles.h2, { color: variant.isOffer ? theme.colors.primary : theme.colors.text }]}>
+                <Text style={[theme.typography.styles.h2, { color: variant.isOffer ? (isDark ? offerOnDark : theme.colors.primary) : theme.colors.text }]}>
                   {variant.isOffer ? `${t('shop.ourPrice')} ` : ''}{formatPrice(variant.price)}
                 </Text>
                 <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary }]}>{t('shop.inclVat')}</Text>
