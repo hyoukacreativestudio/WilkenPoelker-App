@@ -117,8 +117,25 @@ const DEVICE_GROUPS = [
   [/pumpe/, 'Pumpen'],
   [/einachs/, 'Einachser'],
   [/radialbesen/, 'Radialbesen'],
-  [/e-bike|ebike|bike|fahrrad|pedelec/, 'Fahrräder & E-Bikes'],
+  [/e-bike|ebike|pedelec/, 'E-Bikes'],
+  [/mountain|mtb/, 'Mountainbikes'],
+  [/bike|fahrrad|trekking|citybike/, 'Fahrräder'],
 ];
+
+// The first filter level: what kind of thing is it? Fixed order, accessories last.
+const MAIN_GROUPS = [
+  ['Sägen & Holz', ['Motorsägen', 'Hochentaster', 'Gehölzschneider & Astscheren', 'Holzspalter']],
+  ['Rasen & Wiese', ['Rasenmäher & Balkenmäher', 'Mähroboter', 'Rasentraktoren', 'Rasentrimmer', 'Freischneider & Motorsensen', 'Vertikutierer & Lüfter']],
+  ['Hecke & Garten', ['Heckenscheren', 'Häcksler', 'Motorhacken & Bodenfräsen', 'Einachser', 'Spritzgeräte', 'Kombigeräte']],
+  ['Laub, Kehren & Winter', ['Laubbläser & Laubsauger', 'Kehrmaschinen', 'Radialbesen', 'Wildkrautentfernung', 'Schneefräsen & Räumschilder']],
+  ['Reinigen', ['Hochdruckreiniger', 'Sauger', 'Boden- & Dampfreiniger']],
+  ['Bau & Werkstatt', ['Trennschleifer', 'Rüttelplatten', 'Kompressoren', 'Stromerzeuger', 'Pumpen', 'Erdbohrer']],
+  ['Fahrräder', ['E-Bikes', 'Mountainbikes', 'Fahrräder']],
+  ['Zubehör', ['Zubehör & Sonstiges']],
+];
+const MAIN_OF = new Map(MAIN_GROUPS.flatMap(([main, devices]) => devices.map((d) => [d, main])));
+const mainGroup = (device) => MAIN_OF.get(device) || 'Zubehör';
+const MAIN_ORDER = MAIN_GROUPS.map(([main]) => main);
 
 function deviceGroup(category) {
   const text = String(category || '').toLowerCase()
@@ -218,5 +235,5 @@ function variantLabels(articles) {
 
 module.exports = {
   nameLines, detectBrand, extractModel, extractCategory, baseCategory, categoryKey, baseModel, modelKey,
-  groupKeyFor, singleArticleKey, deviceGroup, slugify, parseSpecs, detectDrive, detectBatterySystem, variantLabels,
+  groupKeyFor, singleArticleKey, deviceGroup, mainGroup, MAIN_ORDER, slugify, parseSpecs, detectDrive, detectBatterySystem, variantLabels,
 };

@@ -1564,7 +1564,11 @@
     "priceUpTo": "bis {{to}} €",
     "priceFrom": "ab {{from}} €",
     "priceBetween": "{{from}} bis {{to}} €",
-    "removeFilter": "Filter {{name}} entfernen"
+    "removeFilter": "Filter {{name}} entfernen",
+    "mainCategory": "Kategorie",
+    "allCategories": "Alle Kategorien",
+    "allInCategory": "Alle anzeigen",
+    "color": "Farbe"
   },
   "feedback": {
     "title": "Feedback",
@@ -1574,5 +1578,15 @@
     "send": "Feedback senden",
     "thanks": "Vielen Dank für Ihr Feedback!",
     "error": "Das Feedback konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+  },
+  "search": {
+    "open": "Suche öffnen",
+    "placeholder": "Produkte, Marken, Bereiche suchen",
+    "categories": "Produkte nach Kategorie",
+    "areas": "In der App",
+    "inCategory": "Passende Kategorien",
+    "products": "Produkte",
+    "allProducts": "Alle {{count}} Produkte anzeigen",
+    "nothing": "Zu „{{term}}“ wurde nichts gefunden."
   }
 }

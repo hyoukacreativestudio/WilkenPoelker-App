@@ -4,7 +4,8 @@ const fs = require('fs');
 // Manufacturer data researched once on the official manufacturer websites, for
 // brands whose pages cannot be matched automatically (Honda, Stiga, Kress ...).
 // Matched by the Taifun article number. File: src/data/shopOfficialData.json
-// [{ artNrs: [], officialUrl, officialName, images: [urls], specs: [[k, v]] }]
+// [{ artNrs: [], officialUrl, officialName, images: [urls], specs: [[k, v]], match? }]
+// match: 'model' = same type, but the manufacturer's number could not be confirmed
 const FILE = path.resolve(__dirname, '../../../data/shopOfficialData.json');
 
 let byArtNr = null;
@@ -25,7 +26,7 @@ async function findOfficial(product, articles) {
   for (const a of articles) {
     const e = map.get(String(a.artNr).toUpperCase());
     if (e) {
-      return { url: e.officialUrl, name: e.officialName || null, images: (e.images || []).slice(0, 8), specs: e.specs || [] };
+      return { url: e.officialUrl, name: e.officialName || null, images: (e.images || []).slice(0, 8), specs: e.specs || [], match: e.match };
     }
   }
   return null;

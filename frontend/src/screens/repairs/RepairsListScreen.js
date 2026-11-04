@@ -24,6 +24,7 @@ import OfflineBanner from '../../components/ui/OfflineBanner';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import NoCustomerNumberGate from '../../components/shared/NoCustomerNumberGate';
 import { repairNumberLabelKey, repairOrderDate, separateOrderNumber } from '../../utils/repairDisplay';
+import SearchButton from '../../components/shared/SearchButton';
 
 // Ampelfarben: Rot = In Bearbeitung, Gelb = Fertig, Grün = Abholbereit
 const STATUS_COLORS = {
@@ -1011,6 +1012,7 @@ export default function RepairsListScreen({ navigation }) {
       {/* Header */}
       <View style={s.header}>
         <Text style={s.headerTitle}>{t('repairs.title')}</Text>
+        <SearchButton />
       </View>
 
       {/* Category tabs: Reparatur / Neu / Leasing */}

@@ -1,4 +1,5 @@
 const { politeFetch } = require('./http');
+const { deviceGroup } = require('../productGrouping');
 
 // STIHL: the Taifun article number is "STI-" + the STIHL material number
 // (e.g. STI-MA032000085). stihl.de product pages list the material numbers of
@@ -22,13 +23,31 @@ function materialNumber(artNr) {
   return m ? m[1].replace(/[^A-Z0-9]/g, '') : null;
 }
 
-// "MSA 220 C-B" -> "msa-220": the type designation used in stihl.de slugs
-function slugToken(model) {
-  const words = String(model || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue')
-    .split(/[^a-z0-9]+/).filter(Boolean);
-  if (!words.length) return null;
-  const take = /\d/.test(words[0]) ? 1 : 2;
-  return words.slice(0, take).join('-');
+const plain = (s) => String(s || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+
+// "MS 500 i Centennial Edition" -> ['ms', '500', 'i']; "FSA 60R" -> ['fsa', '60', 'r']:
+// the type designation in parts, without words like "Sägen" behind it.
+function designationParts(model) {
+  const parts = plain(model).match(/[a-z]+|\d+/g) || [];
+  const num = parts.findIndex((p) => /\d/.test(p));
+  if (num !== 1 && num !== 0) return [];
+  let end = num + 1;
+  while (end < parts.length && /^[a-z]{1,2}$/.test(parts[end])) end += 1;
+  return parts.slice(0, end);
+}
+
+// stihl.de writes the same type as ms-500i, wp600 or sea-50-l: compares without separators.
+function slugHasType(url, type) {
+  const tokens = decodeURIComponent(url.split('/').pop()).toLowerCase().split('-');
+  return tokens.some((_, i) => {
+    let joined = '';
+    for (let j = i; j < tokens.length && j < i + 5; j += 1) {
+      joined += tokens[j];
+      if (joined === type) return true;
+      if (joined.length >= type.length) return false;
+    }
+    return false;
+  });
 }
 
 const pageCache = new Map();
@@ -124,10 +143,27 @@ async function findOfficial(product, articles) {
   if (!numbers.length) return null;
   // No "Modell:" line in Taifun: take the type designation from the name ("BGA 60")
   const designation = product.model || (String(product.title || '').match(/\b([A-Za-z]{2,4}[ -]?\d{2,4})\b/) || [])[1];
-  const token = slugToken(designation);
-  if (!token) return null;
-  const re = new RegExp(`[/-]${token.replace(/[-]/g, '-')}-`);
-  const urls = (await productUrls()).filter((u) => re.test(u.split('/').pop()));
+  const all = await productUrls();
+  const accessory = deviceGroup(product.category) === 'Zubehör & Sonstiges';
+
+  // Accessories have no type in their address: look by their name, the number decides.
+  if (accessory) {
+    const word = plain(product.category).split(/[^a-z0-9]+/).sort((x, y) => y.length - x.length)[0] || '';
+    if (word.length < 5) return null;
+    const urls = all.filter((u) => u.includes('/ap/') && decodeURIComponent(u.split('/').pop()).toLowerCase().includes(word));
+    for (const url of urls.slice(0, 15)) {
+      const page = await readPage(url);
+      if (numbers.some((nr) => page.skus.has(nr))) return { ...page, match: 'number' };
+    }
+    return null;
+  }
+
+  const parts = designationParts(designation);
+  const base = parts.slice(0, /\d/.test(parts[0] || '') ? 1 : 2).join('');
+  if (!base) return null;
+  const full = parts.join('');
+  // Full type first (ms500i), then the base type: the page of "FS 56" also lists the "FS 56 R"
+  const urls = [...new Set([...all.filter((u) => slugHasType(u, full)), ...all.filter((u) => slugHasType(u, base))])];
   // Product pages (/p/) before accessories (/ap/)
   urls.sort((a, b) => (a.includes('/ap/') - b.includes('/ap/')));
   const pages = [];
@@ -136,11 +172,13 @@ async function findOfficial(product, articles) {
     if (numbers.some((nr) => page.skus.has(nr))) return { ...page, match: 'number' };
     pages.push(page);
   }
+  // Special editions look different: only an exact article number counts for them
+  if (/edition|sondermodell|jubil/i.test(String(designation))) return null;
   // Older/other build of the same device (different material number): accept a
   // product page (not accessories) that names exactly this type designation.
-  const want = new RegExp(`(^|[^a-z0-9])${designation.toLowerCase().replace(/[^a-z0-9]+/g, '[^a-z0-9]*')}($|[^a-z0-9])`);
-  const same = pages.find((p) => p.url.includes('/de/p/') && [p.name, ...p.variantNames].some((n) => want.test(String(n || '').toLowerCase())));
+  const want = new RegExp(`(^|[^a-z0-9])${parts.join('[^a-z0-9]*')}($|[^a-z0-9])`);
+  const same = pages.find((p) => p.url.includes('/de/p/') && [p.name, ...p.variantNames].some((n) => want.test(plain(n))));
   return same ? { ...same, match: 'model' } : null;
 }
 
-module.exports = { brand: 'STIHL', findOfficial, materialNumber, slugToken, parsePage, clearCache };
+module.exports = { brand: 'STIHL', findOfficial, materialNumber, designationParts, slugHasType, parsePage, clearCache };

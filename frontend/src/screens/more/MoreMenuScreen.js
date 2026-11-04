@@ -21,6 +21,7 @@ import { getInitials } from '../../utils/helpers';
 import { getServerUrl } from '../../api/client';
 import Badge from '../../components/ui/Badge';
 import Divider from '../../components/ui/Divider';
+import SearchButton from '../../components/shared/SearchButton';
 
 function MenuRow({ icon, label, onPress, color, badge, theme }) {
   const textColor = color || theme.colors.text;
@@ -132,16 +133,19 @@ export default function MoreMenuScreen({ navigation }) {
                 {t('more.subGreeting')}
               </Text>
             </View>
-            {user?.profilePicture ? (
-              <Image
-                source={{ uri: `${getServerUrl()}${user.profilePicture}` }}
-                style={s.avatarImage}
-              />
-            ) : (
-              <View style={s.avatar}>
-                <Text style={s.avatarText}>{initials}</Text>
-              </View>
-            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <SearchButton style={{ padding: 4, marginRight: theme.spacing.md }} />
+              {user?.profilePicture ? (
+                <Image
+                  source={{ uri: `${getServerUrl()}${user.profilePicture}` }}
+                  style={s.avatarImage}
+                />
+              ) : (
+                <View style={s.avatar}>
+                  <Text style={s.avatarText}>{initials}</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 

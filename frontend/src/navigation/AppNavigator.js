@@ -7,6 +7,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useOffline } from '../hooks/useOffline';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
+import GlobalSearchScreen from '../screens/search/GlobalSearchScreen';
 import ImageViewerScreen from '../screens/shared/ImageViewerScreen';
 import CustomerProfileScreen from '../screens/service/CustomerProfileScreen';
 import ConnectionErrorScreen from '../components/shared/ConnectionErrorScreen';
@@ -84,6 +85,11 @@ export default function AppNavigator() {
                 headerTitleStyle: { color: theme.colors.text },
                 animation: 'slide_from_right',
               }}
+            />
+            <RootStack.Screen
+              name="GlobalSearch"
+              component={GlobalSearchScreen}
+              options={{ animation: 'fade_from_bottom' }}
             />
             <RootStack.Screen
               name="ImageViewer"

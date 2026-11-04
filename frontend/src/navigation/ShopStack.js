@@ -43,7 +43,7 @@ export default function ShopStack() {
       <Stack.Screen
         name="ShopList"
         component={ShopListScreen}
-        options={{ title: t('shop.title'), headerRight: () => <NotificationBell /> }}
+        options={{ title: t('shop.title'), headerRight: () => <NotificationBell noSearch /> }}
       />
       <Stack.Screen
         name="ShopDetail"

@@ -11,7 +11,7 @@ export default function Chip({
   color,
   size = 'medium',
 }) {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const chipColor = color || theme.colors.primary;
   const isSmall = size === 'small';
@@ -31,7 +31,14 @@ export default function Chip({
         textColor: chipColor,
       };
     }
-    // filled but not selected
+    // filled but not selected: the brand green is too dark to read on the dark theme
+    if (isDark && !color) {
+      return {
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'transparent',
+        textColor: theme.colors.text,
+      };
+    }
     return {
       backgroundColor: chipColor + '15',
       borderColor: 'transparent',

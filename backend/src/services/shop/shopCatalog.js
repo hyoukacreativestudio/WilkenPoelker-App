@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { sequelize, ShopArticle, ShopProduct, ShopBrand, ShopGroup } = require('../../models');
 const G = require('./productGrouping');
+const F = require('./productFacets');
 const { uvpFromExport, priceInfo } = require('./prices');
 const { ensureShopSeed } = require('./shopSeed');
 const { isKaercherFileName } = require('./taifunArticleParser');
@@ -194,6 +195,7 @@ function productOut(p, articles, groupName, { detail = false } = {}) {
   const variants = sorted.map((a) => variantOut(a, labels.get(a.artNr)));
   // Rounded down so the page never promises more than the real discount.
   const discounts = variants.map((v) => discountOf(v)).filter((d) => d > 0);
+  const device = G.deviceGroup(p.category);
   const out = {
     slug: p.slug,
     title: p.title,
@@ -201,11 +203,12 @@ function productOut(p, articles, groupName, { detail = false } = {}) {
     model: p.model,
     category: p.category,
     categoryKey: p.categoryKey,
-    device: G.deviceGroup(p.category),
+    main: G.mainGroup(device),
+    device,
     whg: p.whg,
     group: groupName,
-    drive: p.drive,
-    batterySystem: p.batterySystem,
+    drive: p.drive || F.driveFromSpecs(p.officialSpecs),
+    batterySystem: p.batterySystem || F.systemFromSpecs(p.officialSpecs),
     price: n(p.price),
     uvp: n(p.uvp),
     isOffer: !!p.hasOffer,
@@ -236,7 +239,21 @@ async function loadCatalog() {
   const visible = products.filter(isVisible);
   cache = {
     groups,
-    list: visible.map((p) => ({ raw: p, out: productOut(p, p.articles, groupNames.get(p.whg)), search: p.searchText || '' })),
+    list: visible.map((p) => {
+      const out = productOut(p, p.articles, groupNames.get(p.whg));
+      const specLists = [...p.articles.map((a) => G.parseSpecs(a).specs), p.officialSpecs];
+      // Found with or without umlauts and spaces: "motorsaege", "ms261"
+      const search = F.plain(`${p.searchText || ''} ${out.device}`);
+      return {
+        raw: p,
+        out,
+        search,
+        compact: search.replace(/[^a-z0-9]+/g, ''),
+        title: F.plain(p.title).replace(/[^a-z0-9]+/g, ''),
+        sizes: F.sizesOf(out.device, specLists),
+        colors: F.colorsOf(p.title, specLists),
+      };
+    }),
     bySlug: new Map(visible.map((p) => [p.slug, p])),
     groupNames,
   };
@@ -246,13 +263,13 @@ async function loadCatalog() {
 
 const many = (v) => (v == null || v === '' ? [] : String(v).split(',').map((s) => s.trim()).filter(Boolean));
 
-// query: q, whg, category, brand, drive, system, available, offer, minPrice, maxPrice, sort, page, limit
+// query: q, main, category, whg, brand, drive, system, size, color, available, offer, minPrice, maxPrice, sort, page, limit
 async function listProducts(query = {}) {
   const c = await loadCatalog();
-  const words = String(query.q || '').toLowerCase().split(/\s+/).filter(Boolean);
+  const words = F.plain(query.q).split(/[^a-z0-9]+/).filter(Boolean);
   const f = {
-    whg: many(query.whg).map(Number), category: many(query.category), brand: many(query.brand),
-    drive: many(query.drive), system: many(query.system),
+    whg: many(query.whg).map(Number), main: many(query.main), category: many(query.category), brand: many(query.brand),
+    drive: many(query.drive), system: many(query.system), size: many(query.size), color: many(query.color),
   };
   const minP = query.minPrice != null && query.minPrice !== '' ? Number(query.minPrice) : null;
   const maxP = query.maxPrice != null && query.maxPrice !== '' ? Number(query.maxPrice) : null;
@@ -260,12 +277,15 @@ async function listProducts(query = {}) {
   // Each facet counts what the OTHER filters leave over, so options never dead-end.
   const pass = (e, skip) => {
     const o = e.out;
-    if (words.length && !words.every((w) => e.search.includes(w))) return false;
+    if (words.length && !words.every((w) => e.search.includes(w) || e.compact.includes(w))) return false;
+    if (skip !== 'main' && f.main.length && !f.main.includes(o.main)) return false;
     if (skip !== 'whg' && f.whg.length && !f.whg.includes(o.whg)) return false;
-    if (skip !== 'category' && f.category.length && !f.category.includes(o.device)) return false;
+    if (skip !== 'main' && skip !== 'category' && f.category.length && !f.category.includes(o.device)) return false;
     if (skip !== 'brand' && f.brand.length && !f.brand.includes(o.brand)) return false;
     if (skip !== 'drive' && f.drive.length && !f.drive.includes(o.drive)) return false;
     if (skip !== 'system' && f.system.length && !f.system.includes(o.batterySystem)) return false;
+    if (skip !== 'size' && f.size.length && !e.sizes.values.some((s) => f.size.includes(s.value))) return false;
+    if (skip !== 'color' && f.color.length && !e.colors.some((x) => f.color.includes(x))) return false;
     if (query.available === '1' && !o.available) return false;
     if (query.offer === '1' && !o.isOffer) return false;
     if (minP != null && (o.price == null || o.price < minP)) return false;
@@ -284,14 +304,18 @@ async function listProducts(query = {}) {
     return [...m.values()].sort((a, b) => b.count - a.count || String(a.label).localeCompare(String(b.label)));
   };
 
-  let items = c.list.filter((e) => pass(e)).map((e) => e.out);
+  // Searching: what has the words in its name comes before what only mentions them
+  const inTitle = (e) => (words.length && words.every((w) => e.title.includes(w)) ? 1 : 0);
+  const matches = c.list.filter((e) => pass(e));
+  const titleHit = new Map(matches.map((e) => [e.out, inTitle(e)]));
+  let items = matches.map((e) => e.out);
   const sort = query.sort || 'relevance';
   const byName = (a, b) => a.title.localeCompare(b.title, 'de');
   if (sort === 'price_asc') items.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
   else if (sort === 'price_desc') items.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
   else if (sort === 'name') items.sort(byName);
   // Strongly reduced articles first, by percent
-  else items.sort((a, b) => (b.discountPercent - a.discountPercent) || (b.available - a.available) || (!!b.image - !!a.image) || byName(a, b));
+  else items.sort((a, b) => (titleHit.get(b) - titleHit.get(a)) || (b.discountPercent - a.discountPercent) || (b.available - a.available) || (!!b.image - !!a.image) || byName(a, b));
 
   const total = items.length;
   const limit = Math.min(Math.max(parseInt(query.limit, 10) || 48, 1), 500);
@@ -299,14 +323,39 @@ async function listProducts(query = {}) {
   items = items.slice((page - 1) * limit, page * limit);
 
   const prices = c.list.filter((e) => pass(e, 'price')).map((e) => e.out.price).filter((p) => p != null);
+
+  // Size is device-specific, so it only exists once one device is chosen
+  const sizeOptions = new Map();
+  let sizeLabel = null;
+  if (f.category.length === 1) {
+    c.list.filter((e) => pass(e, 'size')).forEach((e) => {
+      sizeLabel = sizeLabel || e.sizes.label;
+      e.sizes.values.forEach((s) => {
+        const cur = sizeOptions.get(s.value) || { ...s, count: 0 };
+        cur.count += 1;
+        sizeOptions.set(s.value, cur);
+      });
+    });
+  }
+  const colorOptions = new Map();
+  c.list.filter((e) => pass(e, 'color')).forEach((e) => e.colors.forEach((x) => {
+    const cur = colorOptions.get(x) || { value: x, label: x, count: 0 };
+    cur.count += 1;
+    colorOptions.set(x, cur);
+  }));
+  const mainFacet = facet('main', (o) => o.main, (o) => o.main)
+    .sort((a, b) => G.MAIN_ORDER.indexOf(a.value) - G.MAIN_ORDER.indexOf(b.value));
   return {
     total, page, limit, items,
     facets: {
+      main: mainFacet,
       whg: facet('whg', (o) => o.whg, (o) => o.group || `Warengruppe ${o.whg}`),
-      category: facet('category', (o) => o.device, (o) => o.device),
+      category: facet('category', (o) => o.device, (o) => o.device).map((c) => ({ ...c, main: G.mainGroup(c.value) })),
       brand: facet('brand', (o) => o.brand, (o) => o.brand),
       drive: facet('drive', (o) => o.drive, (o) => ({ akku: 'Akku', benzin: 'Benzin', elektro: 'Elektro', diesel: 'Diesel' }[o.drive] || o.drive)),
       system: facet('system', (o) => o.batterySystem, (o) => `${o.batterySystem}-System`),
+      size: { label: sizeLabel, options: [...sizeOptions.values()].sort((a, b) => a.sort - b.sort) },
+      color: [...colorOptions.values()].sort((a, b) => a.label.localeCompare(b.label, 'de')),
       available: c.list.filter((e) => pass(e) && e.out.available).length,
       offer: c.list.filter((e) => pass(e) && e.out.isOffer).length,
       price: prices.length ? { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) } : null,

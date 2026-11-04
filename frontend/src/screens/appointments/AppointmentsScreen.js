@@ -31,6 +31,7 @@ import CalendarScreen from './CalendarScreen';
 import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import Badge from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
+import SearchButton from '../../components/shared/SearchButton';
 
 // Platform-safe alert that works on web too
 const showAlert = (title, message, buttons) => {
@@ -263,6 +264,7 @@ export default function AppointmentsScreen({ navigation }) {
           <Text style={s.headerTitle}>{t('appointments.title')}</Text>
         </View>
         <View style={s.headerActions}>
+          <SearchButton style={{ padding: 4, marginRight: 8 }} />
           <TouchableOpacity
             onPress={() => navigation.navigate('Notifications')}
             activeOpacity={0.7}

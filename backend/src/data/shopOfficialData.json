@@ -4244,81 +4244,6 @@
  },
  {
   "artNrs": [
-   "ZIP-COM50E"
-  ],
-  "title": "Kompressor Zipper COM50E",
-  "officialUrl": "https://www.zipper-maschinen.at/DE/Kompressor-4851",
-  "officialName": "Kompressor ZI-COM50E",
-  "images": [],
-  "specs": [
-   [
-    "Motorleistung S1",
-    "1100 W"
-   ],
-   [
-    "Spannung",
-    "230V 50Hz"
-   ],
-   [
-    "Drehzahl",
-    "2850 min-1"
-   ],
-   [
-    "Schutzklasse",
-    "IP 20"
-   ],
-   [
-    "Maximaldruck",
-    "8 bar"
-   ],
-   [
-    "Ansaugleistung",
-    "165 l/min"
-   ],
-   [
-    "Dauer Kesselfüllung",
-    "190 s"
-   ],
-   [
-    "Kesselvolumen",
-    "50 l"
-   ],
-   [
-    "Schall-Leistungspegel",
-    "97 dB(A)"
-   ],
-   [
-    "Schall-Druckpegel",
-    "73,4 dB(A)"
-   ],
-   [
-    "Bruttogewicht",
-    "28.50 kg"
-   ],
-   [
-    "Nettogewicht",
-    "26.50 kg"
-   ],
-   [
-    "Verpackungsbreite",
-    "315 mm"
-   ],
-   [
-    "Verpackungslänge",
-    "775 mm"
-   ],
-   [
-    "Verpackungshöhe",
-    "625 mm"
-   ],
-   [
-    "EAN Code",
-    "9120039232645"
-   ]
-  ]
- },
- {
-  "artNrs": [
    "ZIP-RPE120GYN"
   ],
   "title": "Rüttelplatte Zipper RPE120GYN",
@@ -5993,69 +5918,6 @@
  },
  {
   "artNrs": [
-   "CRA-1490428"
-  ],
-  "title": "Kehrmaschine Remarc KM Domus X Honda",
-  "officialUrl": "https://www.remarc.eu/gartengeraete/kehrmaschinen/km-domus-x",
-  "officialName": "Kehrmaschine KM Domus X (Artikelnummer 1490428)",
-  "images": [],
-  "specs": [
-   [
-    "Motor",
-    "Honda GCV 170"
-   ],
-   [
-    "Leistung",
-    "3,6 kW / 4,8 PS / 3.000-¹"
-   ],
-   [
-    "Arbeitsbreite",
-    "70 cm"
-   ],
-   [
-    "Kehrbürste",
-    "Ø 300 mm"
-   ],
-   [
-    "Reifengröße",
-    "Stützräder: vorne 1x Ø 125 hinten 2x 300/100"
-   ],
-   [
-    "Radantrieb",
-    "Schneckengetriebe"
-   ],
-   [
-    "Bürstenantrieb",
-    "VF 44"
-   ],
-   [
-    "Arbeitsgeschwindigkeit",
-    "2,4 km/h"
-   ],
-   [
-    "Schwenkbereich Bürste",
-    "einstellbar (links, mitte, rechts)"
-   ],
-   [
-    "Lenk-/Tastrad",
-    "360° frei drehbar"
-   ],
-   [
-    "Maße (L/B/H)",
-    "132/71/109 cm"
-   ],
-   [
-    "Gewicht",
-    "63 kg"
-   ],
-   [
-    "Artikel-Nr.",
-    "1490428"
-   ]
-  ]
- },
- {
-  "artNrs": [
    "TIE-AD-380-240TS",
    "TIE-AD-381-540TS",
    "TIE-ZU-001-152"
@@ -6645,6 +6507,701 @@
    [
     "Zubehör",
     "Ersatz-Drahtzöpfe"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "AS-G90900103"
+  ],
+  "title": "AS-Motor LOSI Mähbalken (Anbaugerät)",
+  "officialUrl": "https://www.as-motor.de/wp-content/uploads/2025/10/W11000097_AS-Motor_Katalog_2026_DE_1.2.pdf",
+  "officialName": "LOSI Mähbalken",
+  "images": [],
+  "specs": [
+   [
+    "Arbeitsbreite",
+    "117 cm"
+   ],
+   [
+    "Schnitthöhe",
+    "4 – 12 cm"
+   ],
+   [
+    "Arbeitshöhen-Verstellung",
+    "stufenlos über Gleitkufen"
+   ],
+   [
+    "Messersystem",
+    "Doppelmesser 85/42,5 gezahnt"
+   ],
+   [
+    "Gewicht",
+    "49 kg"
+   ],
+   [
+    "Bestell-Nr.",
+    "G90900103"
+   ],
+   [
+    "Messerhub",
+    "relativ 85 mm"
+   ],
+   [
+    "Zahnabstand",
+    "85/42,5 mm, gezahnt"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "ROE-122-0001-10"
+  ],
+  "title": "Röder VD 60 BMS Mobiler Betonrüttler",
+  "officialUrl": "https://www.roeder-maschinenbau.de/shop/mobiler-betonruettler/stihl-2-takt-motor-vd40bms1/",
+  "officialName": "Mobiler Betonrüttler VD60BMS1",
+  "images": [
+   "https://www.roeder-maschinenbau.de/wp-content/uploads/2024/09/mobiler-betronruettler-bms-60mm.jpg"
+  ],
+  "specs": [
+   [
+    "Schwingung min. ca.",
+    "10600"
+   ],
+   [
+    "Leistung m³/h",
+    "20"
+   ],
+   [
+    "Flaschen-ø mm",
+    "60"
+   ],
+   [
+    "Flaschen-Länge mm",
+    "360"
+   ],
+   [
+    "max.Eintauchtiefe m",
+    "1,1"
+   ],
+   [
+    "Gewicht kg",
+    "10"
+   ],
+   [
+    "Benzinmotor",
+    "Stihl FS 50"
+   ],
+   [
+    "Max.Leistung kW/PS",
+    "0,8 / 1,1"
+   ],
+   [
+    "Tankbefüllung",
+    "1:25 / 1:50"
+   ],
+   [
+    "Hubraum",
+    "27,2 cm³"
+   ],
+   [
+    "Garantierter Schallpegel (nach Richtlinie 2002/49/EG) dB(A)",
+    "110"
+   ],
+   [
+    "Gemessener Schalldruckpegel dB(A)",
+    "95"
+   ]
+  ],
+  "match": "model"
+ },
+ {
+  "artNrs": [
+   "TEL-912307601"
+  ],
+  "title": "Herkules Bodenfräse 50 cm für UE 400/500/510",
+  "officialUrl": "https://www.herkules-garten.de/de/herkules-bodenfraese-p44068/",
+  "officialName": "Herkules Bodenfräse 50 cm für UE 400/ 500 / 510",
+  "images": [
+   "https://www.herkules-garten.de/userdata/dcshop/images/normal/163973__118a7805.png",
+   "https://www.herkules-garten.de/userdata/dcshop/images/normal/2299.jpg"
+  ],
+  "specs": [
+   [
+    "Artikel-Nr.",
+    "912307601"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "TEL-912350956"
+  ],
+  "title": "Herkules Kehrmaschine für Modell UE 510",
+  "officialUrl": "https://www.herkules-garten.de/de/herkules-kehrmaschine-100cm-p44257/",
+  "officialName": "Herkules Kehrmaschine 100cm f. UE 400/510 m. Sammelbehält.",
+  "images": [
+   "https://www.herkules-garten.de/userdata/dcshop/images/normal/2297.jpg",
+   "https://www.herkules-garten.de/userdata/dcshop/images/normal/2298.jpg"
+  ],
+  "specs": [
+   [
+    "Artikel-Nr.",
+    "912350956"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "MTD-41AE3TDT650"
+  ],
+  "title": "MTD Rasentrimmer 350 W, 2-Fadentechnik, Tipp-Automatik, Teleskopstiel",
+  "officialUrl": "https://www.wolf-garten.com/nl/producten/expert/zitmaaiers/detail?tx_mtdproducts_mdtproductsproducts%5Bproduct%5D=4008423913491&cHash=fe6bcc74d011262afc0a34eea67f9521",
+  "officialName": "WOLF-Garten LYCOS E/350 T",
+  "images": [
+   "https://www.wolf-garten.com/fileadmin/productdata/products/user_images/Lycos_E350T.jpg"
+  ],
+  "specs": [
+   [
+    "Modell",
+    "LYCOS E/350 T"
+   ],
+   [
+    "EAN-Code",
+    "4008423913491"
+   ],
+   [
+    "Modell-Nr.",
+    "41AE3TDT650"
+   ],
+   [
+    "Schnittbreite",
+    "25 cm"
+   ],
+   [
+    "Motor",
+    "350 W"
+   ],
+   [
+    "Fadentechnik",
+    "2-Fadentechnik mit Tipp-Automatik"
+   ],
+   [
+    "Stiel",
+    "Teleskopstiel"
+   ],
+   [
+    "Funktionen",
+    "Trimmen und Kantenschneiden, verstellbarer Schneidkopf"
+   ],
+   [
+    "Trimmerfaden",
+    "1,2 mm Ø (GT-RT, Art. 6070095)"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "ZIP-COM50E"
+  ],
+  "title": "Zipper Kompressor COM50E",
+  "officialUrl": "https://www.zipper-maschinen.at/DE/Kompressor-4851",
+  "officialName": "Kompressor ZI-COM50E",
+  "images": [
+   "https://www.zipper-maschinen.at/uploadPim/4851/ZI_COM50E_web_2.gif"
+  ],
+  "specs": [
+   [
+    "Motorleistung S1 in W",
+    "1100"
+   ],
+   [
+    "Spannung",
+    "230V 50Hz"
+   ],
+   [
+    "Drehzahl in min-1",
+    "2850"
+   ],
+   [
+    "Schutzklasse",
+    "IP 20"
+   ],
+   [
+    "Maximaldruck in bar",
+    "8"
+   ],
+   [
+    "Ansaugleistung in l/min",
+    "165"
+   ],
+   [
+    "Dauer Kesselfüllung in s",
+    "190"
+   ],
+   [
+    "Kesselvolumen in l",
+    "50"
+   ],
+   [
+    "Schall-Leistungspegel in dB(A)",
+    "97"
+   ],
+   [
+    "Schall-Druckpegel in dB(A)",
+    "73,4"
+   ],
+   [
+    "Bruttogewicht in kg",
+    "28.50"
+   ],
+   [
+    "Nettogewicht in kg",
+    "26.50"
+   ],
+   [
+    "Verpackungsbreite in mm",
+    "315"
+   ],
+   [
+    "Verpackungslänge in mm",
+    "775"
+   ],
+   [
+    "Verpackungshöhe in mm",
+    "625"
+   ],
+   [
+    "EAN Code",
+    "9120039232645"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "ZIP-COM100-2V5"
+  ],
+  "title": "Zipper Kompressor COM100-2v5",
+  "officialUrl": "https://www.zipper-maschinen.at/datasheet.cfm?artikelID=13709&sprache=DE",
+  "officialName": "Kompressor ZI-COM100-2V5",
+  "images": [
+   "https://www.zipper-maschinen.at/uploadPim/13709/001_zi-com100-2v5.jpg",
+   "https://www.zipper-maschinen.at/uploadPim/13709/002_zi-com100-2v5.jpg",
+   "https://www.zipper-maschinen.at/uploadPim/13709/003_zi-com100-2v5.jpg"
+  ],
+  "specs": [
+   [
+    "Motorleistung S1 in W",
+    "2200"
+   ],
+   [
+    "Spannung",
+    "230V / 50Hz"
+   ],
+   [
+    "Aufstellmaß in mm",
+    "1090 x 385 x 830"
+   ],
+   [
+    "Maximaldruck in bar",
+    "8"
+   ],
+   [
+    "Ansaugleistung in l/min",
+    "392"
+   ],
+   [
+    "Dauer Kesselfüllung in s",
+    "196"
+   ],
+   [
+    "Kesselvolumen in l",
+    "97"
+   ],
+   [
+    "Schall-Leistungspegel in dB(A)",
+    "96"
+   ],
+   [
+    "Schall-Druckpegel in dB(A)",
+    "76"
+   ],
+   [
+    "Bruttogewicht in kg",
+    "58"
+   ],
+   [
+    "Nettogewicht in kg",
+    "54"
+   ],
+   [
+    "Verpackungsbreite in mm",
+    "380"
+   ],
+   [
+    "Verpackungslänge in mm",
+    "1.080"
+   ],
+   [
+    "Verpackungshöhe in mm",
+    "800"
+   ],
+   [
+    "EAN Code",
+    "9120039234243"
+   ],
+   [
+    "Luftleistung @2bar",
+    "255 l/min"
+   ],
+   [
+    "Luftleistung @4bar",
+    "215 l/min"
+   ],
+   [
+    "Luftleistung @6bar",
+    "176 l/min"
+   ],
+   [
+    "Luftleistung @8bar",
+    "137 l/min"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "LVG-RP1400PRO"
+  ],
+  "title": "Lumag Rüttelplatte RP 1400 Pro",
+  "officialUrl": "https://www.lumag-maschinen.de/download/_Bedienungsanleitungen/RP1400PRO_manual_D.pdf",
+  "officialName": "Rüttelplatte RP-1400PRO",
+  "images": [
+   "https://www.lumag-maschinen.de/bilder/artikel/zoom_pb_rp1400pro-1.png",
+   "https://www.lumag-maschinen.de/bilder/artikel/zoom_pb_rp1400pro-2.png",
+   "https://www.lumag-maschinen.de/bilder/artikel/zoom_pb_rp1400pro-3.png",
+   "https://www.lumag-maschinen.de/bilder/artikel/zoom_pb_rp1400pro-4.png"
+  ],
+  "specs": [
+   [
+    "Modell",
+    "RP-1400PRO"
+   ],
+   [
+    "Antriebsmotor",
+    "1-Zylinder 4-Takt-OHV Benzinmotor"
+   ],
+   [
+    "Nennleistung P1/P2",
+    "4,8/4,1 kW"
+   ],
+   [
+    "Motordrehzahl",
+    "3600 1/min"
+   ],
+   [
+    "Kraftstoff",
+    "Bleifreies Normalbenzin"
+   ],
+   [
+    "Kraftstofftankinhalt",
+    "3,6 l"
+   ],
+   [
+    "Motoröl",
+    "SAE 10W-30 oder 10W-40"
+   ],
+   [
+    "Motorölinhalt",
+    "~ 0,6 l"
+   ],
+   [
+    "Zündkerze",
+    "F7TC oder andere gleichwertige Zündkerze"
+   ],
+   [
+    "Elektrodenabstand",
+    "0,7- 0,8 mm"
+   ],
+   [
+    "Plattengröße (L x B)",
+    "585 x 450 mm"
+   ],
+   [
+    "Baumaße mit Führungsbügel (L x B x H)",
+    "940 x 450 x 660 mm"
+   ],
+   [
+    "Baumaße mit geklapptem Führungsbügel (L x B x H)",
+    "610 x 450 x 660 mm"
+   ],
+   [
+    "Frequenz",
+    "70 Hz"
+   ],
+   [
+    "Zentrifugalkraft",
+    "20 kN"
+   ],
+   [
+    "Verdichtungstiefe",
+    "ca. 30 cm"
+   ],
+   [
+    "Flächenleistung",
+    "182 m²/h"
+   ],
+   [
+    "Max. Vorschub",
+    "19 m/min"
+   ],
+   [
+    "Vibrationsstöße/min",
+    "4200 VPM"
+   ],
+   [
+    "Max. zulässige Schräglage des Motors",
+    "20°"
+   ],
+   [
+    "Gewicht",
+    "130 kg"
+   ],
+   [
+    "Garantierter Schallleistungspegel LWA",
+    "108 dB(A)"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "CRA-1429481"
+  ],
+  "title": "Remarc Laubsauger LS XP 5.0",
+  "officialUrl": "https://www.remarc.eu/gartengeraete/universalsauger-und-blaeser/laubsauger-ls-xp-50",
+  "officialName": "Laubsauger LS XP 5.0",
+  "images": [
+   "https://www.remarc.eu/fileadmin/_processed_/2/e/csm_IMG_9119_-_xp_50_-_Katalog_1_-_mth04_8e0c200c21.png"
+  ],
+  "specs": [
+   [
+    "Motor",
+    "HONDA GX 160 / 3,6 kW / 4,8 PS / 3600min-1"
+   ],
+   [
+    "Arbeitsbreite",
+    "80 cm"
+   ],
+   [
+    "Auffangsack",
+    "180 l"
+   ],
+   [
+    "Vorderräder (mm)",
+    "2 x 180/80"
+   ],
+   [
+    "Hinterräder (mm)",
+    "Ø 330"
+   ],
+   [
+    "Maße (L/B/H)",
+    "186/82/110 cm"
+   ],
+   [
+    "Gewicht",
+    "100,6 kg"
+   ],
+   [
+    "Bremse",
+    "ja"
+   ],
+   [
+    "Axiale Doppeldrucklager Vorderräder",
+    "serienmäßig"
+   ],
+   [
+    "Zentrale Höheneinstellung",
+    "serienmäßig"
+   ],
+   [
+    "Starbuck-Turbine",
+    "serienmäßig"
+   ],
+   [
+    "Verschleißbleche",
+    "serienmäßig"
+   ],
+   [
+    "Fangsack mit XP Entleerungstechnik",
+    "serienmäßig"
+   ]
+  ],
+  "match": "model"
+ },
+ {
+  "artNrs": [
+   "CRA-1490428"
+  ],
+  "title": "Remarc Kehrmaschine KM Domus X Honda",
+  "officialUrl": "https://www.remarc.eu/gartengeraete/kehrmaschinen/km-domus-x",
+  "officialName": "Kehrmaschine KM Domus X",
+  "images": [
+   "https://www.remarc.eu/fileadmin/_processed_/a/6/csm_IMG_9288_KM_Domus_X_-_Katalog_1_-_mth07_ac1b777037.png"
+  ],
+  "specs": [
+   [
+    "Motor",
+    "Honda GCV 170"
+   ],
+   [
+    "Leistung",
+    "3,6 kW / 4,8 PS / 3.000-¹"
+   ],
+   [
+    "Arbeitsbreite",
+    "70 cm"
+   ],
+   [
+    "Kehrbürste",
+    "Ø 300 mm"
+   ],
+   [
+    "Reifengröße",
+    "Stützräder: vorne 1x Ø 125; hinten 2x 300/100"
+   ],
+   [
+    "Radantrieb",
+    "Schneckengetriebe"
+   ],
+   [
+    "Bürstenantrieb",
+    "VF 44"
+   ],
+   [
+    "Arbeitsgeschwindigkeit",
+    "2,4 km/h"
+   ],
+   [
+    "Schwenkbereich Bürste",
+    "einstellbar (links, mitte, rechts)"
+   ],
+   [
+    "Lenk-/Tastrad",
+    "360° frei drehbar"
+   ],
+   [
+    "Maße (L/B/H)",
+    "132/71/109 cm"
+   ],
+   [
+    "Gewicht",
+    "63 kg"
+   ],
+   [
+    "Artikel-Nr.",
+    "1490428"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "WES-B100070"
+  ],
+  "title": "Westermann Radialbesen WR 870 Honda",
+  "officialUrl": "https://westermann-radialbesen.de/de/radialbesen/wr-870-honda-gcvx170",
+  "officialName": "WR 870 Honda GCVx170",
+  "images": [
+   "https://www.westermann-radialbesen.de/images/images/produkte/Westermann_Freisteller_WR%20870%20Honda%20GCVx170%20PPN.png",
+   "https://westermann-radialbesen.de/media/yootheme/cache/3a/Westermann_Freisteller_WR_870_Honda_GCVx170_PPN-Draht_original_copy_1-3aada5f5.png",
+   "https://westermann-radialbesen.de/media/yootheme/cache/82/Westermann_Freisteller_WR_870_Honda_GCVx170_Draht_original_copy_1-8230f6f0.png"
+  ],
+  "specs": [
+   [
+    "Antrieb",
+    "Honda GCVx170 OHC 4-Takt-Benzinmotor"
+   ],
+   [
+    "Einsatzdauer",
+    "durchgehend"
+   ],
+   [
+    "Bürste",
+    "Polypropylen-Bürste, Polypropylen-Draht-Mischbesatz, Draht-Bürste"
+   ],
+   [
+    "Drehrichtung Bürste",
+    "links/rechts"
+   ],
+   [
+    "Arbeitsbreite",
+    "870 mm"
+   ],
+   [
+    "Bürstentopfhöhe (inkl. Bürste)",
+    "18 cm"
+   ],
+   [
+    "Flächenleistung",
+    "2500 m2/h"
+   ],
+   [
+    "Gewicht",
+    "ca 83 kg"
+   ],
+   [
+    "Bereifung",
+    "luftbereift 260/85 mit Kugellagern (Rillenkugellager)"
+   ],
+   [
+    "Führungsrad / Tastrad",
+    "125er Vollgummirad"
+   ],
+   [
+    "Zubehör",
+    "Schwadformer"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "SOL-21101"
+  ],
+  "title": "Solo Gartenspritze 211",
+  "officialUrl": "https://shop.solo.global/media/5d/d8/69/1768381180/PSK_2026_DE_view.pdf",
+  "officialName": "SOLO 211",
+  "images": [],
+  "specs": [
+   [
+    "Modell",
+    "211"
+   ],
+   [
+    "Bestell-Nr.",
+    "21101"
+   ],
+   [
+    "Nennvolumen l",
+    "5,0"
+   ],
+   [
+    "Spritzdruck bar max.",
+    "3"
+   ],
+   [
+    "Leergewicht kg",
+    "1,2"
+   ],
+   [
+    "Schlauchlänge m",
+    "1,2"
+   ],
+   [
+    "Spritzrohr",
+    "Kunststoff, 50 cm"
+   ],
+   [
+    "Düsenausstattung",
+    "SOLO Universal-Hohlkegeldüse, verstellbar"
    ]
   ]
  }

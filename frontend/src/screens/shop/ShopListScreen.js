@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, FlatList, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, RefreshControl, useWindowDimensions,
+  View, Text, FlatList, ScrollView, Modal, TouchableOpacity, Image, StyleSheet, ActivityIndicator, RefreshControl, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,9 +14,10 @@ import { offerOnDark } from '../../theme/colors';
 import SearchBar from '../../components/ui/SearchBar';
 import Chip from '../../components/ui/Chip';
 import EmptyState from '../../components/ui/EmptyState';
-import ShopFilterSheet, { emptyShopFilters, countShopFilters, priceLabel } from './ShopFilterSheet';
+import ShopFilterSheet, { emptyShopFilters, countShopFilters, priceLabel, chooseMain, chooseDevice } from './ShopFilterSheet';
 
 const PAGE = 40;
+const SORTS = ['relevance', 'price_asc', 'price_desc', 'name'];
 
 export default function ShopListScreen({ navigation, route }) {
   const safeEdges = useScreenEdges();
@@ -32,6 +33,7 @@ export default function ShopListScreen({ navigation, route }) {
   const debounced = useDebounce(search, 350);
   const [filters, setFilters] = useState(emptyShopFilters);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [facets, setFacets] = useState(null);
   const [total, setTotal] = useState(0);
@@ -44,11 +46,13 @@ export default function ShopListScreen({ navigation, route }) {
 
   const params = useMemo(() => ({
     q: debounced || undefined,
-    whg: filters.whg.join(',') || undefined,
-    category: filters.category.join(',') || undefined,
+    main: filters.main || undefined,
+    category: filters.category || undefined,
     brand: filters.brand.join(',') || undefined,
     drive: filters.drive.join(',') || undefined,
     system: filters.system.join(',') || undefined,
+    size: filters.size.join(',') || undefined,
+    color: filters.color.join(',') || undefined,
     available: filters.available ? '1' : undefined,
     offer: filters.offer ? '1' : undefined,
     minPrice: filters.minPrice || undefined,
@@ -84,13 +88,23 @@ export default function ShopListScreen({ navigation, route }) {
     if (offersParam) setFilters({ ...emptyShopFilters, offer: true });
   }, [offersParam]);
 
+  // The app-wide search hands over a term and/or a category
+  const nonce = route?.params?.nonce;
+  useEffect(() => {
+    if (!nonce) return;
+    setFilters({ ...emptyShopFilters, main: route.params.main || '', category: route.params.category || '' });
+    setSearch(route.params.search || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nonce]);
+
   const activeCount = countShopFilters(filters);
 
   // What is switched on right now, each with a tap to remove it
   const activeTags = useMemo(() => {
-    const labelOf = (key, v) => facets?.[key]?.find((o) => o.value === v)?.label || String(v);
+    const options = (key) => (key === 'size' ? facets?.size?.options : facets?.[key]);
+    const labelOf = (key, v) => options(key)?.find((o) => o.value === v)?.label || String(v);
     const tags = [];
-    ['category', 'brand', 'drive', 'system', 'whg'].forEach((key) => {
+    ['drive', 'system', 'size', 'color', 'brand'].forEach((key) => {
       filters[key].forEach((v) => tags.push({
         id: `${key}-${v}`,
         label: labelOf(key, v),
@@ -158,11 +172,50 @@ export default function ShopListScreen({ navigation, route }) {
     </TouchableOpacity>
   );
 
+  // First level right above the list: main categories, then the devices inside one
+  // Largest group first, the chosen one always in view
+  const devices = useMemo(() => [...(facets?.category || [])]
+    .sort((a, b) => (b.value === filters.category) - (a.value === filters.category) || b.count - a.count), [facets, filters.category]);
+  const categoryBar = (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      style={{ flexGrow: 0, flexShrink: 0 }}
+      contentContainerStyle={{ paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.sm, gap: theme.spacing.xs, alignItems: 'center' }}
+    >
+      {filters.main ? (
+        <>
+          <TouchableOpacity
+            onPress={() => setFilters((f) => chooseMain(f, ''))}
+            style={[styles.crumb, { borderColor: theme.colors.border, borderRadius: theme.borderRadius.round }]}
+            accessibilityRole="button"
+            accessibilityLabel={t('shop.allCategories')}
+          >
+            <MaterialCommunityIcons name="chevron-left" size={18} color={theme.colors.text} />
+            <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.text, fontWeight: '600' }]}>{filters.main}</Text>
+          </TouchableOpacity>
+          {devices.length > 1 || filters.category ? devices.map((d) => (
+            <Chip
+              key={d.value}
+              size="small"
+              label={d.label}
+              selected={filters.category === d.value}
+              onPress={() => setFilters((f) => chooseDevice(f, f.category === d.value ? '' : d.value))}
+            />
+          )) : null}
+        </>
+      ) : (facets?.main || []).map((m) => (
+        <Chip key={m.value} size="small" label={m.label} onPress={() => setFilters((f) => chooseMain(f, m.value))} />
+      ))}
+    </ScrollView>
+  );
+
   const quickChips = (
     <View style={[styles.chips, { paddingHorizontal: theme.spacing.md, gap: theme.spacing.xs }]}>
       <Chip
         label={activeCount ? `${t('shop.filters')} (${activeCount})` : t('shop.filters')}
-        icon={<MaterialCommunityIcons name="tune-variant" size={14} color={activeCount > 0 ? '#FFFFFF' : theme.colors.primary} />}
+        icon={<MaterialCommunityIcons name="tune-variant" size={14} color={activeCount > 0 ? '#FFFFFF' : (isDark ? theme.colors.text : theme.colors.primary)} />}
         selected={activeCount > 0}
         onPress={() => setSheetOpen(true)}
         size="small"
@@ -177,28 +230,29 @@ export default function ShopListScreen({ navigation, route }) {
       <View style={{ paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.sm }}>
         <SearchBar value={search} onChangeText={setSearch} onClear={() => setSearch('')} placeholder={t('shop.searchPlaceholder')} />
       </View>
+      {categoryBar}
       {quickChips}
       {activeTags.length ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
+          style={{ flexGrow: 0, flexShrink: 0 }}
           contentContainerStyle={{ paddingHorizontal: theme.spacing.md, paddingBottom: theme.spacing.sm, gap: theme.spacing.xs, alignItems: 'center' }}
         >
           {activeTags.map((tag) => (
             <TouchableOpacity
               key={tag.id}
               onPress={() => setFilters(tag.remove)}
-              style={[styles.tag, { backgroundColor: theme.colors.primaryLight, borderRadius: theme.borderRadius.round }]}
+              style={[styles.tag, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : theme.colors.primaryLight, borderRadius: theme.borderRadius.round }]}
               accessibilityRole="button"
               accessibilityLabel={t('shop.removeFilter', { name: tag.label })}
             >
-              <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.primary, fontWeight: '600' }]} numberOfLines={1}>{tag.label}</Text>
-              <MaterialCommunityIcons name="close" size={15} color={theme.colors.primary} style={{ marginLeft: 4 }} />
+              <Text style={[theme.typography.styles.bodySmall, { color: isDark ? theme.colors.text : theme.colors.primary, fontWeight: '600' }]} numberOfLines={1}>{tag.label}</Text>
+              <MaterialCommunityIcons name="close" size={15} color={isDark ? theme.colors.text : theme.colors.primary} style={{ marginLeft: 4 }} />
             </TouchableOpacity>
           ))}
           {activeTags.length > 1 ? (
-            <TouchableOpacity onPress={() => setFilters((f) => ({ ...emptyShopFilters, sort: f.sort, available: f.available, offer: f.offer }))} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+            <TouchableOpacity onPress={() => setFilters((f) => ({ ...emptyShopFilters, main: f.main, category: f.category, sort: f.sort, available: f.available, offer: f.offer }))} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
               <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, textDecorationLine: 'underline' }]}>{t('shop.resetFilters')}</Text>
             </TouchableOpacity>
           ) : null}
@@ -218,9 +272,15 @@ export default function ShopListScreen({ navigation, route }) {
           columnWrapperStyle={{ gap }}
           contentContainerStyle={{ padding: theme.spacing.md, paddingTop: theme.spacing.xs, gap }}
           ListHeaderComponent={(
-            <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary, marginBottom: theme.spacing.xs }]}>
-              {t('shop.resultCount', { count: total })}
-            </Text>
+            <View style={[styles.listHead, { marginBottom: theme.spacing.xs }]}>
+              <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary }]}>
+                {t('shop.resultCount', { count: total })}
+              </Text>
+              <TouchableOpacity onPress={() => setSortOpen(true)} style={styles.sortButton} hitSlop={theme.hitSlop} accessibilityRole="button" accessibilityLabel={t('shop.sort')}>
+                <MaterialCommunityIcons name="sort" size={16} color={theme.colors.textSecondary} />
+                <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary, marginLeft: 4 }]}>{t(`shop.sorts.${filters.sort}`)}</Text>
+              </TouchableOpacity>
+            </View>
           )}
           ListEmptyComponent={(
             <EmptyState
@@ -237,6 +297,29 @@ export default function ShopListScreen({ navigation, route }) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load({ mode: 'refresh' })} tintColor={theme.colors.primary} />}
         />
       )}
+      <Modal visible={sortOpen} transparent animationType="fade" onRequestClose={() => setSortOpen(false)}>
+        <TouchableOpacity activeOpacity={1} style={styles.sortBackdrop} onPress={() => setSortOpen(false)}>
+          <View style={[styles.sortBox, { backgroundColor: theme.colors.card, borderRadius: theme.borderRadius.lg }]}>
+            <Text style={[theme.typography.styles.h5, { color: theme.colors.text, marginBottom: theme.spacing.xs }]}>{t('shop.sort')}</Text>
+            {SORTS.map((s) => (
+              <TouchableOpacity
+                key={s}
+                onPress={() => { setFilters((f) => ({ ...f, sort: s })); setSortOpen(false); }}
+                style={styles.sortRow}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: filters.sort === s }}
+              >
+                <MaterialCommunityIcons
+                  name={filters.sort === s ? 'radiobox-marked' : 'radiobox-blank'}
+                  size={22}
+                  color={filters.sort === s ? theme.colors.primary : theme.colors.textTertiary}
+                />
+                <Text style={[theme.typography.styles.body, { color: theme.colors.text, marginLeft: theme.spacing.sm }]}>{t(`shop.sorts.${s}`)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
       <ShopFilterSheet
         visible={sheetOpen}
         facets={facets}
@@ -251,6 +334,12 @@ export default function ShopListScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  crumb: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, height: 30, paddingLeft: 4, paddingRight: 10 },
+  listHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sortButton: { flexDirection: 'row', alignItems: 'center' },
+  sortBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 24 },
+  sortBox: { padding: 16 },
+  sortRow: { flexDirection: 'row', alignItems: 'center', minHeight: 46 },
   tag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 32, maxWidth: 240 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', paddingVertical: 8 },
   card: { overflow: 'hidden', elevation: 1, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },

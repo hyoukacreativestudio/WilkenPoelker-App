@@ -34,6 +34,7 @@ import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import CategoryBar from '../../components/feed/CategoryBar';
 import Badge from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
+import SearchButton from '../../components/shared/SearchButton';
 
 // Cross-platform confirm dialog
 function confirmAction(title, message, onConfirm) {
@@ -361,6 +362,7 @@ export default function FeedScreen({ navigation }) {
           />
         </TouchableOpacity>
         <View style={s.headerActions}>
+          <SearchButton size={20} color={theme.colors.textSecondary} style={[s.headerButton, { marginRight: 8 }]} />
           <TouchableOpacity
             onPress={toggleDarkMode}
             activeOpacity={0.7}
