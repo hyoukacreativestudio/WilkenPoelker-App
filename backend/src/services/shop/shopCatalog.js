@@ -171,7 +171,10 @@ async function rebuildProducts() {
 
 // ── Public data ─────────────────────────────────────────────────────────
 
+// Short-lived: pictures and data can also be written by another process.
+const CACHE_MS = 2 * 60 * 1000;
 let cache = null;
+let cacheAt = 0;
 function invalidate() { cache = null; }
 
 const isVisible = (p) => p.variantCount > 0 && p.visibility !== 'hide';
@@ -223,7 +226,7 @@ function productOut(p, articles, groupName, { detail = false } = {}) {
 }
 
 async function loadCatalog() {
-  if (cache) return cache;
+  if (cache && Date.now() - cacheAt < CACHE_MS) return cache;
   const [products, groups] = await Promise.all([
     ShopProduct.findAll({ include: [{ model: ShopArticle, as: 'articles' }] }),
     ShopGroup.findAll(),
@@ -236,6 +239,7 @@ async function loadCatalog() {
     bySlug: new Map(visible.map((p) => [p.slug, p])),
     groupNames,
   };
+  cacheAt = Date.now();
   return cache;
 }
 
