@@ -79,9 +79,12 @@ function baseModel(model) {
 }
 const modelKey = (m) => String(m || '').toLowerCase().replace(/[^a-z0-9äöüß]/g, '');
 
+// Own page for one article; article numbers are unique per Taifun account only
+const singleArticleKey = (article) => `art|${article.catalog === 'kaercher' ? 'k|' : ''}${article.artNr}`;
+
 function groupKeyFor(article, brand, model) {
   if (article.manualGroupKey) return article.manualGroupKey;
-  if (!model) return `art|${article.artNr}`;
+  if (!model) return singleArticleKey(article);
   return `${(brand?.name || 'unbekannt').toLowerCase()}|${modelKey(baseModel(model))}`;
 }
 
@@ -170,5 +173,5 @@ function variantLabels(articles) {
 
 module.exports = {
   nameLines, detectBrand, extractModel, extractCategory, baseCategory, categoryKey, baseModel, modelKey,
-  groupKeyFor, slugify, parseSpecs, detectDrive, detectBatterySystem, variantLabels,
+  groupKeyFor, singleArticleKey, slugify, parseSpecs, detectDrive, detectBatterySystem, variantLabels,
 };

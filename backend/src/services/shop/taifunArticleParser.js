@@ -3,9 +3,10 @@ const iconv = require('iconv-lite');
 const { decodeXmlBuffer } = require('../taifunSyncService');
 
 // Parses Bruno's Taifun stock exports from the SFTP folder /Bestand:
-//  - Art*.xml   <ArtList><Art>... one or many articles (two formats seen:
-//                with WHG/Nr/Kurztext, and the older one with ListeBrutto)
-//  - art-res*   reservations, CSV lines "GUID","ArtNr","1,00" (windows-1252)
+//  - XML with <ArtList><Art>... one or many articles (two formats seen: with
+//    WHG/Nr/Kurztext, and the older one with ListeBrutto)
+//  - text file with reservations, CSV lines "{GUID}","ArtNr","1,00" (windows-1252)
+// File names may change, so the content decides what a file is (classifyFile).
 
 const parser = new XMLParser({
   ignoreAttributes: true,
@@ -35,7 +36,8 @@ const guidOf = (v) => {
 function parseArticleXml(buffer) {
   const xml = decodeXmlBuffer(buffer);
   const doc = parser.parse(xml);
-  const list = doc?.ArtList?.Art || [];
+  if (!doc || !('ArtList' in doc)) throw new Error('Keine Artikeldatei: <ArtList> fehlt');
+  const list = doc.ArtList?.Art || [];
   const out = [];
   for (const a of list) {
     const udf = a.ArtUDF01 && typeof a.ArtUDF01 === 'object' ? a.ArtUDF01 : {};
@@ -67,7 +69,7 @@ function parseReservations(buffer) {
   const sums = new Map();
   for (const line of text.split(/\r?\n/)) {
     const cols = [...line.matchAll(/"([^"]*)"/g)].map((m) => m[1].trim());
-    if (cols.length < 3) continue;
+    if (cols.length < 3 || !/^\{[0-9a-f-]{20,}\}$/i.test(cols[0])) continue;
     const artNr = cols[1];
     const qty = num(cols[2]);
     if (!artNr || qty == null) continue;
@@ -76,4 +78,32 @@ function parseReservations(buffer) {
   return sums;
 }
 
-module.exports = { parseArticleXml, parseReservations };
+// 'articles', 'reservations' or null (not one of Bruno's stock files).
+function classifyFile(buffer) {
+  const start = buffer.slice(0, 300).toString('latin1').replace(/^\u00ef\u00bb\u00bf/, '').trimStart();
+  if (start.startsWith('<')) return 'articles';
+  return parseReservations(buffer).size > 0 ? 'reservations' : null;
+}
+
+// Kaercher is a separate Taifun account with its own files. It re-uses the group
+// numbers of the main account (101 is "CCE Hochdruckreiniger" there, "Akku-Geraete"
+// here), so its groups are stored with an offset and its articles under their own
+// catalog. Recognised by the file name (SHOP_KAERCHER_FILE_PATTERN once the name is
+// known) or because most of the file's articles are called Kaercher.
+const KAERCHER_WHG_OFFSET = 10000;
+const KAERCHER_NAME = /k(\u00e4|ae|a)rcher/i;
+
+function isKaercherFileName(fileName, pattern = process.env.SHOP_KAERCHER_FILE_PATTERN) {
+  if (KAERCHER_NAME.test(fileName || '')) return true;
+  return !!pattern && new RegExp(pattern, 'i').test(fileName || '');
+}
+
+function applyCatalog(list, fileName, pattern) {
+  const named = list.filter((a) => KAERCHER_NAME.test(`${a.text1 || ''} ${a.kurztext || ''}`)).length;
+  if (!isKaercherFileName(fileName, pattern) && named * 2 <= list.length) {
+    return list.map((a) => ({ ...a, catalog: 'main' }));
+  }
+  return list.map((a) => ({ ...a, catalog: 'kaercher', whg: a.whg == null ? null : a.whg + KAERCHER_WHG_OFFSET }));
+}
+
+module.exports = { parseArticleXml, parseReservations, classifyFile, applyCatalog, isKaercherFileName, KAERCHER_WHG_OFFSET };

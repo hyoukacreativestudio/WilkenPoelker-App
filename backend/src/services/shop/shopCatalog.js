@@ -3,6 +3,7 @@ const { sequelize, ShopArticle, ShopProduct, ShopBrand, ShopGroup } = require('.
 const G = require('./productGrouping');
 const { uvpFromExport, priceInfo } = require('./prices');
 const { ensureShopSeed } = require('./shopSeed');
+const { isKaercherFileName } = require('./taifunArticleParser');
 
 // Product catalog built from the Taifun stock export: stores articles, groups
 // them into product pages and serves the public data for app + website.
@@ -17,10 +18,12 @@ async function upsertArticles(list, sourceFile) {
   let updated = 0;
   const now = new Date();
   for (const a of list) {
+    const catalog = a.catalog || 'main';
     const or = [{ artNr: a.artNr }];
     if (a.guid) or.push({ guid: a.guid });
-    const existing = await ShopArticle.findOne({ where: { [Op.or]: or } });
+    const existing = await ShopArticle.findOne({ where: { catalog, [Op.or]: or } });
     const data = {
+      catalog,
       artNr: a.artNr,
       whg: a.whg ?? existing?.whg ?? null, // older exports have no WHG
       text1: a.text1 ?? existing?.text1 ?? null,
@@ -40,12 +43,24 @@ async function upsertArticles(list, sourceFile) {
   return { inserted, updated };
 }
 
-// The reservation file is the complete list of open reservations.
-async function applyReservations(sums) {
+// A reservation file is the complete list of open reservations of ONE Taifun
+// account: the other account's reservations must stay. The account is the one
+// that knows most of the listed article numbers (or the file name says Kaercher).
+async function catalogOfReservations(sums, fileName) {
+  if (isKaercherFileName(fileName)) return 'kaercher';
+  const hits = await ShopArticle.findAll({ attributes: ['catalog'], where: { artNr: [...sums.keys()] } });
+  if (!hits.length) return null;
+  const kaercher = hits.filter((h) => h.catalog === 'kaercher').length;
+  return kaercher * 2 > hits.length ? 'kaercher' : 'main';
+}
+
+async function applyReservations(sums, fileName) {
+  const catalog = await catalogOfReservations(sums, fileName);
+  if (!catalog) return { reservedArticles: 0 }; // none of these articles are known yet
   await sequelize.transaction(async (transaction) => {
-    await ShopArticle.update({ reserved: 0 }, { where: { reserved: { [Op.ne]: 0 } }, transaction });
+    await ShopArticle.update({ reserved: 0 }, { where: { catalog, reserved: { [Op.ne]: 0 } }, transaction });
     for (const [artNr, qty] of sums) {
-      await ShopArticle.update({ reserved: qty }, { where: { artNr }, transaction });
+      await ShopArticle.update({ reserved: qty }, { where: { catalog, artNr }, transaction });
     }
   });
   return { reservedArticles: sums.size };
@@ -63,7 +78,9 @@ async function uniqueSlug(base, ownId) {
 }
 
 function describe(article, brands) {
-  const brand = G.detectBrand(article, brands);
+  // Everything from the Kaercher file is Kaercher, even if the name does not say so
+  const brand = G.detectBrand(article, brands)
+    || (article.catalog === 'kaercher' ? brands.find((b) => b.name === 'Kärcher') : null);
   const model = G.extractModel(article);
   const category = G.extractCategory(article, brand);
   return { article, brand, model, category, key: G.groupKeyFor(article, brand, model) };

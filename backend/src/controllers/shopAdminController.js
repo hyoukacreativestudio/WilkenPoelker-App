@@ -3,6 +3,7 @@ const { asyncHandler, AppError, NotFoundError } = require('../middlewares/errorH
 const { ShopProduct, ShopArticle, ShopBrand, ShopGroup } = require('../models');
 const catalog = require('../services/shop/shopCatalog');
 const { uvpFromExport } = require('../services/shop/prices');
+const { singleArticleKey } = require('../services/shop/productGrouping');
 
 // PC tool "Produkte": everything about the product pages that the automatic
 // import cannot decide - visibility, pictures, variants, brand keywords.
@@ -98,7 +99,7 @@ const regroupArticle = asyncHandler(async (req, res) => {
   const a = await ShopArticle.findByPk(req.params.id);
   if (!a) throw new NotFoundError('Artikel');
   let key = null;
-  if (req.body.action === 'split') key = `art|${a.artNr}`;
+  if (req.body.action === 'split') key = singleArticleKey(a);
   else if (req.body.action === 'move') {
     const target = await ShopProduct.findOne({ where: { slug: String(req.body.slug || '') } });
     if (!target) throw new NotFoundError('Ziel-Produkt');

@@ -10,16 +10,21 @@ const ShopArticle = sequelize.define('ShopArticle', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
+  // Which Taifun account the article comes from: main | kaercher. Kaercher is a
+  // separate account, so its numbers are only unique within that account.
+  catalog: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'main',
+  },
   // Taifun article GUID (without braces). Missing for some articles - then the
   // article number is the key.
   guid: {
     type: DataTypes.STRING,
-    unique: true,
   },
   artNr: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
   },
   // Warengruppe (WHG), e.g. 100
   whg: {
@@ -72,6 +77,8 @@ const ShopArticle = sequelize.define('ShopArticle', {
 }, {
   tableName: 'shop_articles',
   indexes: [
+    { unique: true, fields: ['catalog', 'art_nr'] },
+    { unique: true, fields: ['catalog', 'guid'] },
     { fields: ['product_id'] },
     { fields: ['whg'] },
   ],

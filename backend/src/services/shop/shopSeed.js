@@ -1,4 +1,5 @@
 const { ShopBrand, ShopGroup } = require('../../models');
+const { KAERCHER_WHG_OFFSET: K } = require('./taifunArticleParser');
 
 // Warengruppen as listed by the shop (Taifun WHG numbers).
 const GROUPS = [
@@ -30,6 +31,19 @@ const GROUPS = [
   [205, 'Dreiräder & E-Scooter', 'fahrrad', null],
   [206, 'Fahrradanhänger', 'fahrrad', null],
   [500, 'Elektromobile', 'elektromobil', 'akku'],
+  // Kaercher (own file, same numbers as above, see applyCatalog).
+  // CCE = devices for private customers, CPE = professional devices.
+  [K + 100, 'Kärcher Privat – Allgemein', 'reinigung', null],
+  [K + 101, 'Kärcher Privat – Hochdruckreiniger', 'reinigung', null],
+  [K + 102, 'Kärcher Privat – Sauger', 'reinigung', null],
+  [K + 103, 'Kärcher Privat – Bodenreiniger', 'reinigung', null],
+  [K + 104, 'Kärcher Privat – Kehrmaschinen', 'reinigung', null],
+  [K + 200, 'Kärcher Profi – Allgemein', 'reinigung', null],
+  [K + 201, 'Kärcher Profi – Hochdruckreiniger', 'reinigung', null],
+  [K + 202, 'Kärcher Profi – Sauger', 'reinigung', null],
+  [K + 203, 'Kärcher Profi – Boden- & Dampfreiniger', 'reinigung', null],
+  [K + 204, 'Kärcher Profi – Kehrmaschinen & Unkrautbürsten', 'reinigung', null],
+  [K + 205, 'Kärcher Profi – Pumpen', 'reinigung', null],
 ];
 
 // Manufacturer keywords seen in the Taifun names, plus article-number prefixes.
@@ -59,8 +73,11 @@ const BRANDS = [
 ];
 
 async function ensureShopSeed() {
-  if ((await ShopGroup.count()) === 0) {
-    await ShopGroup.bulkCreate(GROUPS.map(([nr, name, area, drive]) => ({ nr, name, area, drive })));
+  // Adds groups that are missing; names changed in the database stay untouched
+  const known = new Set((await ShopGroup.findAll({ attributes: ['nr'] })).map((g) => g.nr));
+  const missing = GROUPS.filter(([nr]) => !known.has(nr));
+  if (missing.length) {
+    await ShopGroup.bulkCreate(missing.map(([nr, name, area, drive]) => ({ nr, name, area, drive })));
   }
   if ((await ShopBrand.count()) === 0) {
     await ShopBrand.bulkCreate(BRANDS.map(([name, keywords, prefixes, priority]) => ({ name, keywords, prefixes, priority })));

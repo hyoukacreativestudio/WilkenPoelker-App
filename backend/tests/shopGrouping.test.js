@@ -80,7 +80,8 @@ describe('Taifun stock export', () => {
   });
 
   test('reservations are summed per article number', () => {
-    const csv = '"{G1}","WP-900","1,00"\r\n"{G2}","WP-900","0,50"\r\n"{G3}","STI-1","2,00"\r\n';
+    const g = (n) => `{1DCEF177-AF80-4A68-AD8A-C827E709BF1${n}}`;
+    const csv = `"${g(1)}","WP-900","1,00"\r\n"${g(2)}","WP-900","0,50"\r\n"${g(3)}","STI-1","2,00"\r\n`;
     const sums = parseReservations(iconv.encode(csv, 'win1252'));
     expect(sums.get('WP-900')).toBe(1.5);
     expect(sums.get('STI-1')).toBe(2);
