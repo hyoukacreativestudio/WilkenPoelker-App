@@ -14,6 +14,9 @@ router.get('/opening-hours/status', settingsController.getOpeningStatus);
 // GET /api/settings/holidays - list holidays
 router.get('/holidays', settingsController.getHolidays);
 
+// GET /api/settings/closed-days - upcoming closed days (public, for the website)
+router.get('/closed-days', settingsController.getClosedDays);
+
 // PUT /api/settings/opening-hours - update opening hours (admin)
 router.put(
   '/opening-hours',

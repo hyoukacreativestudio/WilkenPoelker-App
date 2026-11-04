@@ -602,6 +602,8 @@ function seesAllTickets(role) {
 // is one of theirs, or (for old tickets without a department) its category is in
 // their category set.
 function canAccessTicket(role, ticket) {
+  // Product inquiries from the app: Verkauf + Admin only
+  if (ticket.productTitle) return ['admin', 'super_admin', 'sales_manager'].includes(role);
   if (seesAllTickets(role)) return true;
   if (ticket.department && deptsForTicketRole(role).includes(ticket.department)) return true;
   if (!ticket.department && ticketCategoriesForRole(role).includes(ticket.category)) return true;
@@ -616,7 +618,8 @@ const listTickets = asyncHandler(async (req, res) => {
     return res.json({ success: true, data: { tickets: [] } });
   }
 
-  const where = {};
+  // Product inquiries have their own page ("Anfragen")
+  const where = { productTitle: null };
   if (req.query.status && req.query.status !== 'all') where.status = req.query.status;
   if (!seesAllTickets(role)) {
     // Match by department (new tickets) OR by category when no department (old).
@@ -673,6 +676,15 @@ const addTicketMessage = asyncHandler(async (req, res) => {
   }
   const created = await ChatMessage.create({ ticketId: ticket.id, userId: req.user.id, message });
 
+  // A customer who has the chat open in the app sees the reply right away.
+  const io = req.app.get('io');
+  if (io) {
+    const full = await ChatMessage.findByPk(created.id, {
+      include: [{ model: User, as: 'sender', attributes: ['id', 'username', 'firstName', 'lastName', 'profilePicture'] }],
+    });
+    io.to(`ticket:${ticket.id}`).emit('newMessage', full);
+  }
+
   // Notify the customer of the reply.
   if (ticket.userId) {
     try {
@@ -692,10 +704,10 @@ const addTicketMessage = asyncHandler(async (req, res) => {
 });
 
 const updateTicket = asyncHandler(async (req, res) => {
-  const ticket = await Ticket.findByPk(req.params.id, { attributes: ['id', 'category', 'department'] });
+  const ticket = await Ticket.findByPk(req.params.id, { attributes: ['id', 'category', 'department', 'productTitle'] });
   if (!ticket) throw new NotFoundError('Ticket');
   assertTicketAccess(req.user.role, ticket);
-  const valid = ['open', 'in_progress', 'confirmed', 'completed', 'cancelled', 'closed'];
+  const valid =['open', 'in_progress', 'confirmed', 'completed', 'cancelled', 'closed'];
   if (!valid.includes(req.body.status)) throw new AppError('Ungültiger Status', 400, 'INVALID_STATUS');
   const updated = await serviceService.updateTicketStatus(req.params.id, req.body.status, req.user.id, models);
   res.json({ success: true, data: { ticket: updated } });

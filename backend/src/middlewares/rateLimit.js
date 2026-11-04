@@ -78,7 +78,23 @@ const fcmRegisterLimiter = createLimiter(
   'Too many device-registration attempts. Please try again later.'
 );
 
+// Product inquiries: 20 per hour per IP (customers in the shop share its WLAN IP)
+const inquiryLimiter = createLimiter(
+  60 * 60 * 1000,
+  20,
+  'Zu viele Anfragen. Bitte versuchen Sie es später erneut oder rufen Sie uns an: 04952 5304.'
+);
+
+// App feedback: 10 per hour per IP
+const feedbackLimiter = createLimiter(
+  60 * 60 * 1000,
+  10,
+  'Zu viele Nachrichten. Bitte versuchen Sie es später erneut.'
+);
+
 module.exports = {
+  inquiryLimiter,
+  feedbackLimiter,
   loginLimiter,
   registerLimiter,
   passwordResetLimiter,

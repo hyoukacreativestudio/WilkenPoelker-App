@@ -1,6 +1,6 @@
 const userService = require('../services/userService');
 const { asyncHandler } = require('../middlewares/errorHandler');
-const { User, Post, Comment, Like, Notification, FCMToken, AuditLog, Appointment, Repair, Ticket, ChatMessage, Favorite, ProductReview, ServiceRating, AISession } = require('../models');
+const { User, Post, Comment, Like, Notification, FCMToken, AuditLog, Appointment, Repair, Ticket, ChatMessage, Favorite, ProductReview, ServiceRating, AISession, AppFeedback } = require('../models');
 
 // ──────────────────────────────────────────────
 // Profile endpoints
@@ -152,7 +152,7 @@ const exportMyData = asyncHandler(async (req, res) => {
     AISession.findAll({ where: { userId }, attributes: ['id', 'category', 'messages', 'createdAt'] }),
   ]);
   // The service chats and notifications are personal data too (Art. 15)
-  const [chatMessages, notifications] = await Promise.all([
+  const [chatMessages, notifications, feedback] = await Promise.all([
     tickets.length
       ? ChatMessage.findAll({
         where: { ticketId: tickets.map((t) => t.id) },
@@ -161,6 +161,7 @@ const exportMyData = asyncHandler(async (req, res) => {
       })
       : [],
     Notification.findAll({ where: { userId }, attributes: ['id', 'title', 'message', 'type', 'read', 'createdAt'] }),
+    AppFeedback.findAll({ where: { userId }, attributes: ['id', 'message', 'createdAt'] }),
   ]);
 
   res.json({
@@ -176,6 +177,7 @@ const exportMyData = asyncHandler(async (req, res) => {
       tickets,
       chatMessages,
       notifications,
+      feedback,
       favorites,
       reviews,
       ratings,

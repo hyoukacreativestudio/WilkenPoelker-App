@@ -10,13 +10,14 @@ const FILTERS = [
   { key: 'no_image', label: 'Ohne Bild', count: 'noImage' },
   { key: 'hidden', label: 'Ausgeblendet', count: 'hidden' },
   { key: 'unknown_brand', label: 'Ohne Hersteller', count: 'unknownBrand' },
+  { key: 'review', label: 'Prüfen', count: 'review' },
 ];
 const VISIBILITY = [
   { key: 'auto', label: 'Automatisch' },
   { key: 'show', label: 'Immer anzeigen' },
   { key: 'hide', label: 'Ausblenden' },
 ];
-const ENRICH = { found: 'Herstellerdaten ✓', found_model: 'Herstellerdaten ✓ (Modell-Treffer)', not_found: 'nicht gefunden', error: 'Fehler beim Abruf', manual: 'von Hand', null: 'noch nicht gesucht' };
+const ENRICH = { found: 'Herstellerdaten ✓', found_model: 'Herstellerdaten ✓ (Modell-Treffer)', not_found: 'nicht gefunden', error: 'Fehler beim Abruf', manual: 'von Hand', review: 'beim Hersteller nicht mehr vorhanden, Bilder entfernt', null: 'noch nicht gesucht' };
 const euro = (v) => (v == null ? '—' : `${Number(v).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`);
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('de-DE') : '—');
 const qty = (v) => (v == null ? '—' : Number(v).toLocaleString('de-DE', { maximumFractionDigits: 2 }));
@@ -61,6 +62,12 @@ export default function Produkte() {
       load();
     } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
   };
+  const recheckNow = async () => {
+    try {
+      await api.post('/desktop/shop/recheck', {});
+      toast('Prüfung läuft im Hintergrund. Das Ergebnis kommt als Benachrichtigung.');
+    } catch (e) { toast(e.message, { type: 'error' }); }
+  };
 
   return (
     <div>
@@ -73,6 +80,7 @@ export default function Produkte() {
         <div className="spacer" />
         <input className="input" style={{ maxWidth: 260 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suchen: Name, Hersteller, Art.-Nr.…" />
         <button className="btn ghost" onClick={() => setShowBrands(true)}>🏷️ Hersteller</button>
+        <button className="btn ghost" onClick={recheckNow} title="Läuft sonst automatisch am ersten Sonntag im Monat">🔍 Bilder und Daten prüfen</button>
         <button className="btn" onClick={importNow} disabled={busy}>⟳ Bestand jetzt einlesen</button>
       </div>
 

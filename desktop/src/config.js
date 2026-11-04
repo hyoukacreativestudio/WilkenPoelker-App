@@ -61,6 +61,8 @@ export function modulesForRole(role) {
     { key: 'kundenbestellungen', label: 'Kundenbestellungen', icon: '🧾', show: all || role === 'orders_manager' || role === 'service_manager' },
     { key: 'quellen',      label: 'Quellenbearbeitung', icon: '🏷️', show: all || role === 'orders_manager' || role === 'service_manager' },
     { key: 'produkte',     label: 'Produkte',     icon: '🛒', show: all || role === 'sales_manager' },
+    { key: 'anfragen',     label: 'Anfragen',     icon: '✉️', show: all || role === 'sales_manager' },
+    { key: 'feedback',     label: 'Feedback',     icon: '💡', show: all },
     { key: 'lager',        label: 'Lager',        icon: '🏬', show: all || role === 'sales_manager' || role === 'warehouse_worker' || role === 'orders_manager' },
   ].filter((m) => m.show);
 }

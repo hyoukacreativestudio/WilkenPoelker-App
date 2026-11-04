@@ -47,6 +47,22 @@ router.post('/shop/brands', authenticate, authorize(...SHOP_ADMIN), shopAdmin.sa
 router.put('/shop/brands/:id', authenticate, authorize(...SHOP_ADMIN), shopAdmin.saveBrand);
 router.post('/shop/import', authenticate, authorize(...SHOP_ADMIN), shopAdmin.runImport);
 router.post('/shop/enrich-all', authenticate, authorize(...SHOP_ADMIN), shopAdmin.enrichAll);
+router.post('/shop/recheck', authenticate, authorize(...SHOP_ADMIN), shopAdmin.recheckNow);
+
+// ── Produktanfragen (app + website) ──
+const inquiries = require('../controllers/inquiryController');
+const INQUIRY_ROLES = ['admin', 'super_admin', 'sales_manager'];
+router.get('/inquiries/counts', authenticate, authorize(...INQUIRY_ROLES), inquiries.inquiryCounts);
+router.get('/inquiries/app', authenticate, authorize(...INQUIRY_ROLES), inquiries.listAppInquiries);
+router.get('/inquiries/website', authenticate, authorize(...INQUIRY_ROLES), inquiries.listWebInquiries);
+router.patch('/inquiries/website/:id', authenticate, authorize(...INQUIRY_ROLES), inquiries.updateWebInquiry);
+router.delete('/inquiries/website/:id', authenticate, authorize(...INQUIRY_ROLES), inquiries.deleteWebInquiry);
+
+// ── Feedback aus der App (nur Admin) ──
+const feedback = require('../controllers/feedbackController');
+router.get('/feedback', authenticate, authorize('admin', 'super_admin'), feedback.listFeedback);
+router.patch('/feedback/:id', authenticate, authorize('admin', 'super_admin'), feedback.markFeedback);
+router.delete('/feedback/:id', authenticate, authorize('admin', 'super_admin'), feedback.deleteFeedback);
 
 // ── Lager ──
 router.get('/warehouse', authenticate, authorize(...STAFF), desktop.listWarehouse);

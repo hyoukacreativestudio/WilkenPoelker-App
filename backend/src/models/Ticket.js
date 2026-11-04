@@ -49,6 +49,17 @@ const Ticket = sequelize.define('Ticket', {
     type: DataTypes.TEXT,
     allowNull: false,
   },
+  // Set on product inquiries from the app: they appear in the PC program under
+  // "Anfragen" (Verkauf + Admin) instead of the department's normal ticket list.
+  productTitle: {
+    type: DataTypes.STRING,
+  },
+  productSlug: {
+    type: DataTypes.STRING,
+  },
+  productArtNr: {
+    type: DataTypes.STRING,
+  },
   urgency: {
     type: DataTypes.ENUM('normal', 'urgent'),
     defaultValue: 'normal',

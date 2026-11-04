@@ -38,6 +38,9 @@ async function pruneArchive() {
 }
 
 async function scanAndImport() {
+  // Off until Bruno transfers live data: the folder holds test files until then,
+  // and those must not end up in front of customers.
+  if (process.env.SHOP_IMPORT_ENABLED !== 'true') return { scanned: 0, disabled: true };
   if (running) return { skipped: true };
   running = true;
   try {

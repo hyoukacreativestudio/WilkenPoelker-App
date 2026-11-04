@@ -37,7 +37,7 @@ function getTransporter() {
   return transporter;
 }
 
-async function sendEmail({ to, subject, html, text }) {
+async function sendEmail({ to, subject, html, text, replyTo }) {
   try {
     const transport = getTransporter();
     const info = await transport.sendMail({
@@ -46,6 +46,7 @@ async function sendEmail({ to, subject, html, text }) {
       subject,
       html,
       text,
+      ...(replyTo ? { replyTo } : {}),
     });
     logger.info('Email sent', { to, subject, messageId: info.messageId });
     return info;

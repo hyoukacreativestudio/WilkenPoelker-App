@@ -23,6 +23,8 @@ import Tickets from './pages/Tickets.jsx';
 import Bestellungen from './pages/Bestellungen.jsx';
 import Kundenbestellungen from './pages/Kundenbestellungen.jsx';
 import Produkte from './pages/Produkte.jsx';
+import Anfragen from './pages/Anfragen.jsx';
+import Feedback from './pages/Feedback.jsx';
 import Lager from './pages/Lager.jsx';
 import Kundennummern from './pages/Kundennummern.jsx';
 import RobbyKunden from './pages/RobbyKunden.jsx';
@@ -32,7 +34,7 @@ import ReparaturenHeute from './pages/ReparaturenHeute.jsx';
 import Quellen from './pages/Quellen.jsx';
 import HiddenTools from './pages/HiddenTools.jsx';
 
-const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturenheute: ReparaturenHeute, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, kundenbestellungen: Kundenbestellungen, produkte: Produkte, quellen: Quellen, lager: Lager };
+const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturenheute: ReparaturenHeute, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, kundenbestellungen: Kundenbestellungen, produkte: Produkte, anfragen: Anfragen, feedback: Feedback, quellen: Quellen, lager: Lager };
 
 const SUBTITLES = {
   uebersicht: 'Überblick für deine Abteilung',
@@ -47,6 +49,8 @@ const SUBTITLES = {
   bestellungen: 'Bestellungen sammeln und aufgeben',
   kundenbestellungen: 'Teil da → Kunde erreicht → abgeholt',
   produkte: 'Produktseiten für App und Website – automatisch aus Taifun',
+  anfragen: 'Produktanfragen aus App und Website',
+  feedback: 'Was Kunden in der App schreiben',
   quellen: 'Doppelte Quellen zusammenführen',
   lager: 'Was aus dem Lager nach vorne soll',
 };
@@ -118,7 +122,10 @@ export default function Shell({ user, onLogout }) {
   const notifTarget = (n) => {
     const c = `${n.category || ''} ${n.relatedType || ''} ${n.type || ''}`.toLowerCase();
     let key = 'uebersicht';
-    if (c.includes('appointment') || c.includes('termin')) key = 'termine';
+    if (/produktanfrage/i.test(n.title || '')) key = 'anfragen';
+    else if (c.includes('shop_recheck')) key = 'produkte';
+    else if (c.includes('app_feedback')) key = 'feedback';
+    else if (c.includes('appointment') || c.includes('termin')) key = 'termine';
     else if (c.includes('ticket') || c.includes('chat')) key = 'tickets';
     else if (c.includes('order') || c.includes('bestell')) key = 'bestellungen';
     else if (c.includes('warehouse') || c.includes('lager')) key = 'lager';

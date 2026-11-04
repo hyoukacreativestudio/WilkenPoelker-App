@@ -1,6 +1,6 @@
 const { OpeningHour, Holiday } = require('../models');
 const { asyncHandler, AppError, NotFoundError } = require('../middlewares/errorHandler');
-const { getCurrentOpeningStatus, getWeekSchedule, getSeason } = require('../utils/openingHours');
+const { getCurrentOpeningStatus, getWeekSchedule, getSeason, getUpcomingClosedDays } = require('../utils/openingHours');
 const logger = require('../utils/logger');
 
 /**
@@ -48,6 +48,16 @@ const getHolidays = asyncHandler(async (req, res) => {
     success: true,
     data: holidays,
   });
+});
+
+/**
+ * GET /api/settings/closed-days
+ * Upcoming closed days for the website (public). What the staff adds in the app
+ * under "Geschlossene Tage" shows up on wilpo.net by itself.
+ */
+const getClosedDays = asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json({ success: true, data: { days: await getUpcomingClosedDays() } });
 });
 
 /**
@@ -155,6 +165,7 @@ const removeHoliday = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getClosedDays,
   getOpeningHours,
   getOpeningStatus,
   getHolidays,

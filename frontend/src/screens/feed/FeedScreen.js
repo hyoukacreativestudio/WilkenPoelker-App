@@ -25,6 +25,7 @@ import PostCard from '../../components/feed/PostCard';
 import CreatePostModal from '../../components/feed/CreatePostModal';
 import EditPostModal from '../../components/feed/EditPostModal';
 import OpeningHoursBanner from '../../components/feed/OpeningHoursBanner';
+import OfferStrip from '../../components/feed/OfferStrip';
 import EmptyState from '../../components/ui/EmptyState';
 import OfflineBanner from '../../components/ui/OfflineBanner';
 import FloatingActionButton from '../../components/shared/FloatingActionButton';
@@ -142,11 +143,7 @@ export default function FeedScreen({ navigation }) {
       showToast({ type: 'success', message: t('feed.postCreatedSuccess') });
       return true;
     } catch (err) {
-      console.error('Feed upload error:', err);
-      // Show the actual backend/network error so we can debug production issues
-      const detail = err?.message || err?.response?.data?.error?.message || err?.response?.data?.message || 'unknown';
-      const status = err?.status || err?.response?.status || (err?.isNetworkError ? 'network' : '?');
-      showToast({ type: 'error', message: `${t('feed.createPostError')} [${status}] ${detail}` });
+      showToast({ type: 'error', message: t('feed.createPostError') });
       return false;
     }
   };
@@ -413,7 +410,12 @@ export default function FeedScreen({ navigation }) {
           data={posts}
           renderItem={renderPost}
           keyExtractor={(item) => String(item._id || item.id)}
-          ListHeaderComponent={<OpeningHoursBanner refreshKey={bannerRefreshKey} />}
+          ListHeaderComponent={(
+            <View style={{ alignSelf: 'stretch', width: '100%' }}>
+              <OpeningHoursBanner refreshKey={bannerRefreshKey} />
+              <OfferStrip refreshKey={bannerRefreshKey} />
+            </View>
+          )}
           contentContainerStyle={
             posts.length === 0 ? { flex: 1, alignItems: 'center' } : { paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.xxl }
           }

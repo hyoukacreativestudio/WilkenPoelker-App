@@ -172,6 +172,21 @@ export default function TicketDetailScreen({ route, navigation }) {
       <View style={s.card}>
         <Text style={s.cardTitle}>{t('service.details')}</Text>
 
+        {/* Product inquiry: which product it is about */}
+        {ticket.productTitle ? (
+          <TouchableOpacity
+            style={{ paddingBottom: theme.spacing.sm }}
+            disabled={!ticket.productSlug}
+            onPress={() => navigation.navigate('Shop', { screen: 'ShopDetail', params: { slug: ticket.productSlug }, initial: false })}
+            accessibilityRole="button"
+          >
+            <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary }]}>{t('shop.inquiryProduct')}</Text>
+            <Text style={[theme.typography.styles.body, { color: theme.colors.primary, fontWeight: theme.typography.weights.medium }]}>
+              {ticket.productTitle}{ticket.productArtNr ? ` (${t('shop.artNr')} ${ticket.productArtNr})` : ''}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
         {/* Type */}
         <View style={s.detailRow}>
           <View style={s.detailLabel}>

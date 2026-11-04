@@ -45,7 +45,7 @@ const DEPARTMENT_ROLES = {
 
 async function createTicket(data, userId, models) {
   const { Ticket, User, Notification } = models;
-  const { title, type, category, description, urgency, appointmentDate, alternativeDates, attachments, department } = data;
+  const { title, type, category, description, urgency, appointmentDate, alternativeDates, attachments, department, product } = data;
 
   const ticketNumber = generateTicketNumber();
   // Prefer the picked department; keep the category consistent with it.
@@ -64,6 +64,9 @@ async function createTicket(data, userId, models) {
     alternativeDates: alternativeDates || [],
     attachments: attachments || [],
     status: 'open',
+    productTitle: product?.title || null,
+    productSlug: product?.slug || null,
+    productArtNr: product?.artNr || null,
   });
 
   // Determine which managers to notify — by department if given, else category.
@@ -86,7 +89,7 @@ async function createTicket(data, userId, models) {
 
   const notifications = managers.map((manager) => ({
     userId: manager.id,
-    title: 'Neues Service-Ticket',
+    title: product ? 'Neue Produktanfrage aus der App' : 'Neues Service-Ticket',
     message: `Ticket ${ticketNumber} – ${title || type}: ${description.substring(0, 80)}...`,
     type: 'chat_message',
     category: 'chat',
@@ -205,6 +208,11 @@ async function getAdminTickets(user, query, models) {
   }
 
   const isAdminRole = user.role === 'admin' || user.role === 'super_admin';
+
+  // Product inquiries belong to Verkauf + Admin only
+  if (!isAdminRole && user.role !== 'sales_manager' && !(user.permissions || []).includes('sales_manager')) {
+    where.productTitle = null;
+  }
 
   // Filter by tab
   if (tab === 'open') {

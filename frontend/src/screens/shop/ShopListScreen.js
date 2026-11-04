@@ -17,7 +17,7 @@ import ShopFilterSheet, { emptyShopFilters, countShopFilters } from './ShopFilte
 
 const PAGE = 40;
 
-export default function ShopListScreen({ navigation }) {
+export default function ShopListScreen({ navigation, route }) {
   const safeEdges = useScreenEdges();
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -76,6 +76,12 @@ export default function ShopListScreen({ navigation }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // "Alle ansehen" on the home screen opens the list with only the discounts
+  const offersParam = route?.params?.offers;
+  useEffect(() => {
+    if (offersParam) setFilters({ ...emptyShopFilters, offer: true });
+  }, [offersParam]);
+
   const activeCount = countShopFilters(filters);
   const loadMore = () => {
     if (!loading && !loadingMore && items.length < total) load({ nextPage: page + 1, mode: 'more' });
@@ -96,8 +102,12 @@ export default function ShopListScreen({ navigation }) {
           <MaterialCommunityIcons name="image-off-outline" size={36} color="#9E9E9E" />
         )}
         {item.isOffer ? (
-          <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
-            <Text style={styles.badgeText}>{t('shop.offer')}</Text>
+          <View style={[styles.badge, { backgroundColor: theme.colors.primary }]}>
+            <Text style={styles.badgeText}>
+              {item.discountPercent > 0
+                ? `${item.discountUpTo ? `${t('shop.upTo')} ` : ''}${t('shop.discount', { percent: item.discountPercent })}`
+                : t('shop.offer')}
+            </Text>
           </View>
         ) : null}
       </View>
@@ -107,7 +117,7 @@ export default function ShopListScreen({ navigation }) {
         <View style={{ flex: 1 }} />
         <View style={{ marginTop: theme.spacing.xs }}>
           {item.price != null ? (
-            <Text style={[theme.typography.styles.h6, { color: item.isOffer ? theme.colors.error : theme.colors.text }]}>
+            <Text style={[theme.typography.styles.h6, { color: item.isOffer ? theme.colors.primary : theme.colors.text }]}>
               {item.variantCount > 1 ? `${t('shop.from')} ` : ''}{formatPrice(item.price)}
             </Text>
           ) : (

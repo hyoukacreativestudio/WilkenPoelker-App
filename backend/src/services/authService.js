@@ -73,6 +73,17 @@ async function tryAutoAssignCustomerNumber(user) {
   await user.save();
   logger.info('Auto-assigned customer number on check', { userId: user.id, customerNumber: kdNr });
 
+  // An open request is settled now, staff must not work on it any more.
+  try {
+    const { CustomerNumberRequest } = require('../models');
+    await CustomerNumberRequest.update(
+      { status: 'approved', assignedCustomerNumber: kdNr, reviewedAt: new Date(), reviewNote: 'Automatisch zugeordnet' },
+      { where: { userId: user.id, status: 'pending' } },
+    );
+  } catch (err) {
+    logger.warn('Closing open customer-number request failed', { userId: user.id, error: err.message });
+  }
+
   // Pull in any existing Taifun orders as repairs (non-blocking).
   try {
     const repairSync = require('./taifunRepairSync');
@@ -466,6 +477,7 @@ async function deleteUserCascade(user, models) {
   await sequelize.transaction(async (t) => {
     const opts = { where: { userId }, transaction: t };
     await Notification.destroy(opts);
+    if (models.AppFeedback) await models.AppFeedback.destroy(opts);
     await Repair.destroy(opts);
     await Appointment.destroy(opts);
     await Comment.destroy(opts);

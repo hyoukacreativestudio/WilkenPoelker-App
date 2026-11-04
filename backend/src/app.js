@@ -56,15 +56,6 @@ try {
 }
 
 // Body parsing
-// TEMPORARY DEBUG: log every incoming request BEFORE body-parsing so we can see
-// what actually reaches Express. Remove once mobile POST issue is diagnosed.
-app.use((req, res, next) => {
-  // Path only: query strings (search terms, reset tokens) and e-mail tokens stay out of the log
-  const safePath = req.path.replace(/\/(verify-email|reset-password|passwort-zuruecksetzen)\/[^/]+/, '/$1/…');
-  logger.info(`[REQ] ${req.method} ${safePath} UA=${(req.headers['user-agent'] || '').slice(0, 30)} CT=${req.headers['content-type'] || '-'} CL=${req.headers['content-length'] || '-'}`);
-  next();
-});
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -119,6 +110,7 @@ app.use('/api/customer-number', customerNumberRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/desktop', desktopRoutes);
 app.use('/api/shop', shopRoutes);
+app.use('/api/feedback', require('./routes/feedback'));
 
 // Public privacy policy of the app (URL for App Store / Google Play).
 app.use(['/datenschutz', '/privacy'], require('./routes/legal'));
@@ -414,6 +406,41 @@ cron.schedule('40 2 * * *', async () => {
   }
 });
 
+// Once a month (first Sunday): are the manufacturer pictures + technical data still
+// the current ones? We only hold a licence for the current pictures.
+cron.schedule('20 4 * * 0', async () => {
+  if (new Date().getDate() > 7) return;
+  try {
+    const { recheckAll } = require('./services/shop/enrich');
+    await recheckAll();
+  } catch (err) {
+    logger.error('Cron: shop monthly recheck failed', { error: err.message });
+  }
+});
+
+// Public holidays of this year and the next enter themselves (Easter moves every year).
+cron.schedule('55 3 * * *', async () => {
+  try {
+    const { ensureHolidays } = require('./services/holidayService');
+    await ensureHolidays();
+  } catch (err) {
+    logger.error('Cron: holidays failed', { error: err.message });
+  }
+});
+
+// Delete website product inquiries after 6 months (promised in the privacy policy).
+cron.schedule('50 3 * * *', async () => {
+  try {
+    const { Op } = require('sequelize');
+    const { WebInquiry } = require('./models');
+    const cutoff = new Date(Date.now() - 183 * 24 * 60 * 60 * 1000);
+    const deleted = await WebInquiry.destroy({ where: { createdAt: { [Op.lt]: cutoff } } });
+    if (deleted > 0) logger.info('Cron: deleted website inquiries older than 6 months', { deleted });
+  } catch (err) {
+    logger.error('Cron: web inquiry retention failed', { error: err.message });
+  }
+});
+
 // Delete AI chat histories after 90 days (promised in the app's privacy policy).
 cron.schedule('45 3 * * *', async () => {
   try {
@@ -541,11 +568,12 @@ async function startServer() {
   const { createPerformanceIndexes } = require('./config/indexes');
   await createPerformanceIndexes(sequelize);
 
-  // Auto-seed: load demo data if database is empty (first deployment)
+  // Auto-seed: load demo data if a development database is empty (never in production:
+  // the seed creates accounts with known passwords)
   try {
     const User = require('./models/User');
     const userCount = await User.count();
-    if (userCount === 0) {
+    if (userCount === 0 && !config.isProd) {
       logger.info('Empty database detected — running seed data...');
       const seedAll = require('./seeds');
       await seedAll();
@@ -553,6 +581,13 @@ async function startServer() {
     }
   } catch (seedErr) {
     logger.warn('Auto-seed skipped or failed:', seedErr.message);
+  }
+
+  try {
+    const { ensureHolidays } = require('./services/holidayService');
+    await ensureHolidays();
+  } catch (err) {
+    logger.warn('Holiday check on start failed', { error: err.message });
   }
 
   server.listen(config.port, () => {

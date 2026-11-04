@@ -17,6 +17,7 @@ import AdminScreen from '../screens/admin/AdminScreen';
 import AdminRequestsScreen from '../screens/admin/AdminRequestsScreen';
 import AdminOpenTicketsScreen from '../screens/admin/AdminOpenTicketsScreen';
 import ClosedDaysScreen from '../screens/admin/ClosedDaysScreen';
+import FeedbackScreen from '../screens/more/FeedbackScreen';
 import ImpressumScreen from '../screens/legal/ImpressumScreen';
 import DatenschutzScreen from '../screens/legal/DatenschutzScreen';
 import AGBScreen from '../screens/legal/AGBScreen';
@@ -69,6 +70,15 @@ export default function MoreStack() {
         name="MoreMenu"
         component={MoreMenuScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Feedback"
+        component={FeedbackScreen}
+        options={({ navigation }) => ({
+          title: t('feedback.title'),
+          headerLeft: () => backButton(navigation),
+          headerRight: () => <NotificationBell />,
+        })}
       />
       <Stack.Screen
         name="AboutUs"

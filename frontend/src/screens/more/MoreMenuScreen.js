@@ -264,9 +264,16 @@ export default function MoreMenuScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Section 5: Logout */}
+        {/* Section 5: Feedback + Logout */}
         <View style={s.section}>
           <View style={s.card}>
+            <MenuRow
+              icon="message-text-outline"
+              label={t('feedback.title')}
+              onPress={() => navigation.navigate('Feedback')}
+              theme={theme}
+            />
+            <Divider style={{ marginVertical: 0 }} />
             <MenuRow
               icon="logout"
               label={t('more.logout')}

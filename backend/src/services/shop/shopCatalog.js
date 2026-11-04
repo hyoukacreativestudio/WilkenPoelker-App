@@ -183,10 +183,14 @@ function variantOut(a, label) {
   return { artNr: a.artNr, label, price, uvp, isOffer, available: freeStock(a) > 0, specs, notes };
 }
 
+const discountOf = (v) => (v.isOffer && v.uvp ? Math.floor(((v.uvp - v.price) / v.uvp) * 100) : 0);
+
 function productOut(p, articles, groupName, { detail = false } = {}) {
   const sorted = [...articles].sort((x, y) => String(x.artNr).localeCompare(String(y.artNr)));
   const labels = G.variantLabels(sorted);
   const variants = sorted.map((a) => variantOut(a, labels.get(a.artNr)));
+  // Rounded down so the page never promises more than the real discount.
+  const discounts = variants.map((v) => discountOf(v)).filter((d) => d > 0);
   const out = {
     slug: p.slug,
     title: p.title,
@@ -201,6 +205,8 @@ function productOut(p, articles, groupName, { detail = false } = {}) {
     price: n(p.price),
     uvp: n(p.uvp),
     isOffer: !!p.hasOffer,
+    discountPercent: discounts.length ? Math.max(...discounts) : 0,
+    discountUpTo: new Set(discounts).size > 1 || (discounts.length > 0 && discounts.length < variants.length),
     available: !!p.available,
     variantCount: variants.length,
     image: p.images?.[0]?.thumb || p.images?.[0]?.url || null,
@@ -279,7 +285,8 @@ async function listProducts(query = {}) {
   if (sort === 'price_asc') items.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
   else if (sort === 'price_desc') items.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
   else if (sort === 'name') items.sort(byName);
-  else items.sort((a, b) => (b.available - a.available) || (!!b.image - !!a.image) || byName(a, b));
+  // Strongly reduced articles first, by percent
+  else items.sort((a, b) => (b.discountPercent - a.discountPercent) || (b.available - a.available) || (!!b.image - !!a.image) || byName(a, b));
 
   const total = items.length;
   const limit = Math.min(Math.max(parseInt(query.limit, 10) || 48, 1), 500);

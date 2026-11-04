@@ -57,32 +57,26 @@ function head(title, description, depth) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
-${TEST ? '<meta name="robots" content="noindex, nofollow">\n' : ''}<meta name="theme-color" content="#0f2916">
+${TEST ? '<meta name="robots" content="noindex, nofollow">\n' : ''}<meta name="theme-color" content="#1c3150">
 <link rel="icon" href="${up}${ROOT}favicon.ico" sizes="any">
 <link rel="stylesheet" href="${up}${ROOT}styles.css">
 <link rel="stylesheet" href="${up}shop.css">
-<script>document.documentElement.className += ' js';</script>
 </head>
 <body>
-<div class="topbar"><div class="wrap">
-  <span>📍 Langholter Straße 43, 26842 Ostrhauderfehn</span><span class="dot"></span>
-  <a href="tel:${PHONE}">${PHONE_LABEL}</a><span class="dot"></span><a href="mailto:${MAIL}">${MAIL}</a>
-  <span class="push">Familienbetrieb seit 1951</span>
-</div></div>
+<a class="skip" href="#main">Zum Inhalt springen</a>
 <header class="site" id="site"><div class="wrap">
-  <a href="${up}${ROOT}index.html" class="brand" aria-label="Wilken Poelker – zur Startseite">
-    <img class="logo-main" src="${up}${ROOT}img/logo.png" alt="Wilken Poelker" width="520" height="93">
-    <img class="logo-claim" src="${up}${ROOT}img/logo-claim.png" alt="Für jedermann – ob Privat oder Profi" width="340" height="116">
-  </a>
+  <a href="${up}${ROOT}index.html" class="brand" aria-label="Wilken Poelker, zur Startseite"><img class="logo-main" src="${up}${ROOT}img/logo.png" alt="Wilken Poelker" width="520" height="93"></a>
   <nav class="main" aria-label="Hauptnavigation">
-    <a href="${up}${ROOT}index.html">Start</a>
     <a href="${up}index.html" aria-current="page">Produkte</a>
+    <a href="${up}${ROOT}fahrraeder.html">Fahrräder</a>
     <a href="${up}${ROOT}service.html">Service</a>
     <a href="${up}${ROOT}ueber-uns.html">Über uns</a>
-    <a href="${up}${ROOT}index.html#kontakt" class="cta">Kontakt</a>
+    <a href="${up}${ROOT}app.html">App</a>
+    <a href="${up}${ROOT}index.html#kontakt">Kontakt</a>
   </nav>
+  <a class="head-tel" href="tel:${PHONE}">${PHONE_LABEL}</a>
 </div></header>
-${TEST ? '<div class="shop-testbar">Testseite – Produkte und Preise direkt aus dem Warenwirtschaftssystem (noch nicht öffentlich verlinkt)</div>\n' : ''}<main>`;
+${TEST ? '<div class="shop-testbar">Testseite – Produkte und Preise direkt aus dem Warenwirtschaftssystem (noch nicht öffentlich verlinkt)</div>\n' : ''}<main id="main">`;
 }
 
 function foot(depth) {
@@ -90,7 +84,8 @@ function foot(depth) {
   return `</main>
 <footer class="site-foot"><div class="wrap">
   <div class="legal">
-    <span>© ${new Date().getFullYear()} Wilken Poelker GmbH &amp; Co. KG · Alle Preise inkl. MwSt. · Stand ${new Date().toLocaleDateString('de-DE')}</span>
+    <span>© ${new Date().getFullYear()} Wilken Poelker GmbH &amp; Co. KG</span>
+    <span>Alle Preise inkl. MwSt., Stand ${new Date().toLocaleDateString('de-DE')}</span>
     <a href="${up}${ROOT}impressum.html" class="push">Impressum</a>
     <a href="${up}${ROOT}datenschutz.html">Datenschutz</a>
   </div>
@@ -110,11 +105,11 @@ function card(p, imgFile) {
   const data = {
     q: [p.title, p.brand, p.category, p.group].join(' ').toLowerCase(),
     whg: p.group || '', cat: p.category || '', brand: p.brand || '', drive: p.drive || '', sys: p.batterySystem || '',
-    price: p.price ?? '', avail: p.available ? 1 : 0, offer: p.isOffer ? 1 : 0, title: p.title,
+    price: p.price ?? '', avail: p.available ? 1 : 0, offer: p.isOffer ? 1 : 0, discount: p.discountPercent || 0, title: p.title,
   };
   const attrs = Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ');
   return `<a class="pcard" href="p/${esc(p.slug)}.html" ${attrs}>
-  <span class="pimg">${imgFile ? `<img src="${esc(imgFile)}" alt="${esc(p.title)}" loading="lazy" width="420" height="420">` : '<span class="noimg">Bild folgt</span>'}${p.isOffer ? '<span class="sbadge">Angebot</span>' : ''}</span>
+  <span class="pimg">${imgFile ? `<img src="${esc(imgFile)}" alt="${esc(p.title)}" loading="lazy" width="420" height="420">` : '<span class="noimg">Bild folgt</span>'}${p.isOffer ? `<span class="sbadge">${p.discountPercent ? `${p.discountUpTo ? 'bis ' : ''}-${p.discountPercent} %` : 'Angebot'}</span>` : ''}</span>
   <span class="pbody"><span class="pbrand">${esc(p.brand || '')}</span><span class="pname">${esc(p.title)}</span>
   ${priceHtml(p)}<span class="savail ${p.available ? 'yes' : 'no'}">${p.available ? 'Im Laden verfügbar' : 'Nicht vorrätig'}</span></span>
 </a>`;
@@ -164,7 +159,7 @@ const LIST_JS = `
       if (s === 'price_asc') return (isNaN(pa) ? 1e9 : pa) - (isNaN(pb) ? 1e9 : pb);
       if (s === 'price_desc') return (isNaN(pb) ? -1 : pb) - (isNaN(pa) ? -1 : pa);
       if (s === 'name') return a.dataset.title.localeCompare(b.dataset.title, 'de');
-      return (b.dataset.avail - a.dataset.avail) || a.dataset.title.localeCompare(b.dataset.title, 'de');
+      return (b.dataset.discount - a.dataset.discount) || (b.dataset.avail - a.dataset.avail) || a.dataset.title.localeCompare(b.dataset.title, 'de');
     });
     sorted.forEach(function (c) { grid.appendChild(c); });
     count.textContent = shown.length + ' Produkte';
@@ -223,43 +218,40 @@ const DETAIL_JS = `
 })();`;
 
 const CSS = `
-.shop-testbar{background:#fff3cd;color:#6b4e00;text-align:center;font-weight:700;font-size:14px;padding:8px 16px}
-.shop-layout{display:grid;grid-template-columns:270px 1fr;gap:28px;align-items:start}
-.sfilters{position:sticky;top:96px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;max-height:calc(100vh - 120px);overflow:auto}
-.sfilters h4{margin:16px 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--green-dd)}
+.shop-testbar{background:#fff3cd;color:#6b4e00;text-align:center;font-weight:600;font-size:15px;padding:8px 16px}
+.shop-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:clamp(28px,4vw,52px);align-items:start}
+.sfilters{position:sticky;top:96px;max-height:calc(100vh - 116px);overflow:auto;padding-right:8px}
+.sfilters h4{margin:22px 0 8px;font-family:var(--display);font-size:18px;font-weight:600;color:var(--blue)}
 .sfilters h4:first-child{margin-top:0}
-.sfilters input[type=search],.sfilters input[type=number],.ssort{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+.sfilters input[type=search],.sfilters input[type=number],.ssort{width:100%;padding:9px 10px;border:1px solid #aab1a8;border-radius:0;font:inherit;font-size:16px;background:#fff;color:var(--ink)}
 .sprices{display:flex;gap:8px;align-items:center}
-.schips{display:flex;flex-wrap:wrap;gap:6px}
-.schip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:13.5px;cursor:pointer;color:var(--ink)}
-.schip small{color:var(--ink-soft)}
-.schip.on{background:var(--green);border-color:var(--green);color:#0b2010;font-weight:700}
-.scheck{display:flex;gap:8px;align-items:center;margin:6px 0;font-size:15px;cursor:pointer}
-.sbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.schips{display:flex;flex-direction:column;align-items:flex-start;gap:0}
+.schip{border:0;background:none;padding:4px 0;font:inherit;font-size:16px;text-align:left;cursor:pointer;color:var(--soft)}
+.schip small{font-size:14px;color:var(--muted);margin-left:2px}
+.schip:hover{color:var(--blue)}
+.schip.on{color:var(--blue);font-weight:700;text-decoration:underline;text-decoration-color:var(--green);text-decoration-thickness:3px;text-underline-offset:4px}
+.scheck{display:flex;gap:9px;align-items:center;margin:5px 0;font-size:16px;cursor:pointer}
+.scheck input{width:18px;height:18px;accent-color:var(--green-text)}
+.sbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap}
 .sbar .ssort{width:auto}
 #stoggle{display:none}
-.pimg{position:relative}
-.noimg{display:grid;place-items:center;aspect-ratio:1;color:var(--ink-soft);font-size:14px}
-.sbadge{position:absolute;top:10px;left:10px;background:#c62828;color:#fff;font-weight:800;font-size:12px;padding:3px 9px;border-radius:999px}
-.sprice{display:block;font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);margin-top:6px}
-.sprice.offer{color:#c62828}
-.suvp{display:block;font-size:13px;color:var(--ink-soft);text-decoration:line-through}
-.savail{display:block;font-size:13px;font-weight:700;margin-top:6px}
-.savail.yes{color:var(--green-dd)}
-.savail.no{color:var(--ink-soft)}
-.savail.big{font-size:16px;margin:10px 0 0}
+.noimg{display:grid;place-items:center;aspect-ratio:1;background:var(--stone);color:var(--muted);font-size:15px}
+.sbadge{position:absolute;top:0;left:6px;background:var(--green);color:var(--blue);font-weight:700;font-size:13.5px;padding:3px 10px;transform:skewX(var(--slant))}
+.sprice{display:block;font-family:var(--display);font-size:21px;font-weight:600;color:var(--blue);margin-top:6px}
+.sprice.offer{color:var(--offer)}
+.suvp{display:block;font-size:14.5px;color:var(--muted);text-decoration:line-through}
+.savail{display:block;font-size:15px;margin-top:4px}
+.savail.yes{color:var(--green-text)}
+.savail.no{color:var(--muted)}
+.savail.big{font-size:18px;font-weight:600;margin:10px 0 0}
 .pd-price{margin:18px 0 4px}
-.pd-price .sprice{font-size:34px}
-.pd-price small{display:block;color:var(--ink-soft);font-size:13px}
-.pvariant{margin:14px 0 0}
-.pvariant select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font:inherit;background:#fff}
-.snotes{margin:10px 0 0;padding-left:18px}
-.pd-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.pthumb{width:68px;height:68px;border:2px solid var(--line);border-radius:10px;background:#fff;padding:4px;cursor:pointer}
-.pthumb.on{border-color:var(--green)}
-.pthumb img{width:100%;height:100%;object-fit:contain}
-.source{font-size:13px;color:var(--ink-soft);margin-top:8px}
-@media(max-width:900px){.shop-layout{grid-template-columns:1fr}.sfilters{position:static;display:none;max-height:none}.sfilters.open{display:block}#stoggle{display:inline-flex}}
+.pd-price .sprice{font-size:38px;line-height:1.1}
+.pd-price small{display:block;color:var(--muted);font-size:15px}
+.pvariant{margin:16px 0 0}
+.pvariant select{display:block;width:100%;margin-top:4px;padding:11px;border:1px solid #aab1a8;border-radius:0;font:inherit;background:#fff;color:var(--ink)}
+.snotes{margin:12px 0 0;padding-left:18px;color:var(--soft)}
+.source{font-size:14.5px;color:var(--muted);margin-top:10px}
+@media(max-width:900px){.shop-layout{grid-template-columns:minmax(0,1fr)}.sfilters{position:static;display:none;max-height:none}.sfilters.open{display:block}#stoggle{display:inline-flex}}
 `;
 
 function specsDl(rows) {
@@ -303,14 +295,14 @@ async function main() {
     <div class="pd-info">
       <div class="pbrand big">${esc(p.brand || '')}</div>
       <h1>${esc(p.title)}</h1>
-      <p class="pd-sub">${esc([p.category, p.group].filter(Boolean).join(' · '))}</p>
+      <p class="pd-sub">${esc([p.category, p.group].filter(Boolean).join(', '))}</p>
       ${vs.length > 1 ? `<div class="pvariant"><label for="pvariant"><b>Ausführung</b></label><select id="pvariant">${vs.map((v, i) => `<option value="${i}"${i === start ? ' selected' : ''}>${esc(v.label || v.artNr)}${v.price != null ? ` – ${euro(v.price)}` : ''}</option>`).join('')}</select></div>` : ''}
       <div class="pd-price" id="pprice"></div>
       <div id="pavail" class="savail big"></div>
       <p class="pd-ids" id="partnr"></p>
       <div class="askbox tall">
         <div><b>Fragen oder reservieren?</b><span>Wir beraten Sie gern – am Telefon, per E-Mail oder bei uns im Geschäft in Ostrhauderfehn.</span></div>
-        <div class="btns"><a class="btn dark" href="tel:${PHONE}">📞 ${PHONE_LABEL}</a><a class="btn ghost" id="pmail" href="mailto:${MAIL}">✉️ Anfrage per E-Mail</a></div>
+        <div class="btns"><a class="btn dark" href="tel:${PHONE}">${PHONE_LABEL}</a><a class="btn ghost" id="pmail" href="mailto:${MAIL}">Anfrage per E-Mail</a></div>
       </div>
     </div>
   </div>
@@ -352,7 +344,7 @@ ${foot(1)}`;
   <div>
     <div class="sbar">
       <b id="scount"></b>
-      <span><button type="button" class="btn ghost" id="stoggle">☰ Filter</button>
+      <span><button type="button" class="btn ghost" id="stoggle">Filter</button>
       <select class="ssort" id="ssort" aria-label="Sortierung"><option value="relevance">Empfohlen</option><option value="price_asc">Preis aufsteigend</option><option value="price_desc">Preis absteigend</option><option value="name">Name A–Z</option></select></span>
     </div>
     <div class="pgrid">

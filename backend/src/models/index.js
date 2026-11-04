@@ -37,10 +37,15 @@ const ShopArticle = require('./ShopArticle');
 const ShopProduct = require('./ShopProduct');
 const ShopBrand = require('./ShopBrand');
 const ShopGroup = require('./ShopGroup');
+const WebInquiry = require('./WebInquiry');
+const AppFeedback = require('./AppFeedback');
 
 // ==========================================
 // ASSOCIATIONS
 // ==========================================
+
+// Feedback -> who wrote it
+AppFeedback.belongsTo(User, { foreignKey: 'userId', as: 'author', constraints: false });
 
 // User -> Posts (one-to-many)
 User.hasMany(Post, { foreignKey: 'userId', as: 'posts' });
@@ -233,4 +238,6 @@ module.exports = {
   ShopProduct,
   ShopBrand,
   ShopGroup,
+  WebInquiry,
+  AppFeedback,
 };

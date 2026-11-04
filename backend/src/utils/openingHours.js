@@ -1,5 +1,4 @@
 const { OpeningHour, Holiday } = require('../models');
-const { Op } = require('sequelize');
 const logger = require('./logger');
 
 // Default opening hours when database has no entries
@@ -92,25 +91,42 @@ async function getDayHours(dayOfWeek, season) {
  */
 async function checkHoliday(dateOnly) {
   try {
-    const holiday = await Holiday.findOne({
-      where: {
-        [Op.or]: [
-          { date: dateOnly },
-          {
-            isRecurring: true,
-            date: {
-              [Op.like]: `%-${dateOnly.slice(5)}`,
-            },
-          },
-        ],
-      },
-    });
-
-    return holiday;
+    // Compared here, not in SQL: LIKE on a date column fails in PostgreSQL.
+    const holidays = await Holiday.findAll();
+    const monthDay = dateOnly.slice(5);
+    const on = (h) => String(h.date).slice(0, 10);
+    return holidays.find((h) => on(h) === dateOnly)
+      || holidays.find((h) => h.isRecurring && on(h).slice(5) === monthDay)
+      || null;
   } catch (err) {
     logger.warn('Failed to check holiday from DB', { error: err.message });
     return null;
   }
+}
+
+/**
+ * Days the shop is closed or has special hours in the coming days, for the website.
+ * Recurring entries (stored with any year) are returned with their next date.
+ */
+async function getUpcomingClosedDays(days = 120, now = new Date()) {
+  const { dateOnly: today } = toBerlinTime(now);
+  const until = new Date(`${today}T12:00:00Z`);
+  until.setUTCDate(until.getUTCDate() + days);
+  const last = until.toISOString().slice(0, 10);
+  const year = Number(today.slice(0, 4));
+
+  const holidays = await Holiday.findAll();
+  return holidays
+    .map((h) => {
+      let date = String(h.date).slice(0, 10);
+      if (h.isRecurring) {
+        date = `${year}${date.slice(4)}`;
+        if (date < today) date = `${year + 1}${date.slice(4)}`;
+      }
+      return { date, name: h.name, isClosed: h.isClosed, specialHours: h.isClosed ? null : (h.specialHours || null) };
+    })
+    .filter((d) => d.date >= today && d.date <= last)
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /**
@@ -305,6 +321,7 @@ function isWeekday(dateStr) {
 }
 
 module.exports = {
+  getUpcomingClosedDays,
   getCurrentOpeningStatus,
   getWeekSchedule,
   isWithinOpeningHours,

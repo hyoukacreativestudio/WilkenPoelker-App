@@ -32,6 +32,12 @@ function slugToken(model) {
 }
 
 const pageCache = new Map();
+// The monthly check must read what the manufacturer shows today
+function clearCache() {
+  pageCache.clear();
+  sitemap = null;
+}
+
 async function readPage(url) {
   if (pageCache.has(url)) return pageCache.get(url);
   const html = await politeFetch(url);
@@ -137,4 +143,4 @@ async function findOfficial(product, articles) {
   return same ? { ...same, match: 'model' } : null;
 }
 
-module.exports = { brand: 'STIHL', findOfficial, materialNumber, slugToken, parsePage };
+module.exports = { brand: 'STIHL', findOfficial, materialNumber, slugToken, parsePage, clearCache };

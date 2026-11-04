@@ -15,6 +15,7 @@ const listProducts = asyncHandler(async (req, res) => {
   const filter = req.query.filter || 'all';
   if (filter === 'hidden') where.visibility = 'hide';
   if (filter === 'unknown_brand') where.brand = null;
+  if (filter === 'review') where.enrichStatus = 'review';
   const products = await ShopProduct.findAll({
     where,
     include: [{ model: ShopArticle, as: 'articles' }],
@@ -37,13 +38,14 @@ const listProducts = asyncHandler(async (req, res) => {
         datePut: a.datePut, text1: a.text1 || a.kurztext, manual: !!a.manualGroupKey,
       })),
     }));
-  const [total, noImage, hidden, unknownBrand] = await Promise.all([
+  const [total, noImage, hidden, unknownBrand, review] = await Promise.all([
     ShopProduct.count({ where: { variantCount: { [Op.gt]: 0 } } }),
     ShopProduct.findAll({ where: { variantCount: { [Op.gt]: 0 } }, attributes: ['images'] }).then((l) => l.filter((p) => !(p.images || []).length).length),
     ShopProduct.count({ where: { variantCount: { [Op.gt]: 0 }, visibility: 'hide' } }),
     ShopProduct.count({ where: { variantCount: { [Op.gt]: 0 }, brand: null } }),
+    ShopProduct.count({ where: { variantCount: { [Op.gt]: 0 }, enrichStatus: 'review' } }),
   ]);
-  res.json({ success: true, data: { products: rows, counts: { total, noImage, hidden, unknownBrand } } });
+  res.json({ success: true, data: { products: rows, counts: { total, noImage, hidden, unknownBrand, review } } });
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
@@ -136,6 +138,13 @@ const enrichAll = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { started: true } });
 });
 
+// Same check the monthly job does: are pictures + data still the manufacturer's current ones?
+const recheckNow = asyncHandler(async (req, res) => {
+  const { recheckAll } = require('../services/shop/enrich');
+  recheckAll({ slugs: Array.isArray(req.body.slugs) ? req.body.slugs : null }).catch(() => {});
+  res.json({ success: true, data: { started: true } });
+});
+
 const runImport = asyncHandler(async (req, res) => {
   const { scanAndImport } = require('../services/shop/shopStockImport');
   const result = await scanAndImport();
@@ -143,4 +152,4 @@ const runImport = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { result, rebuilt } });
 });
 
-module.exports = { listProducts, updateProduct, enrichNow, enrichAll, addImage, removeImage, regroupArticle, listBrands, saveBrand, runImport };
+module.exports = { listProducts, updateProduct, enrichNow, enrichAll, recheckNow, addImage, removeImage, regroupArticle, listBrands, saveBrand, runImport };

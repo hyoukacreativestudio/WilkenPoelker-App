@@ -89,7 +89,8 @@ const ShopProduct = sequelize.define('ShopProduct', {
   officialName: {
     type: DataTypes.STRING,
   },
-  // null = not tried yet, found | not_found | error | manual
+  // null = not tried yet, found | found_model | not_found | error | manual,
+  // review = monthly check: the manufacturer no longer has it, pictures removed
   enrichStatus: {
     type: DataTypes.STRING,
   },

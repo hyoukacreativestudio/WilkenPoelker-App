@@ -95,7 +95,7 @@ export default function Tickets() {
   );
 }
 
-function TicketDetail({ id, onClose, onChanged, toast }) {
+export function TicketDetail({ id, onClose, onChanged, toast }) {
   const [ticket, setTicket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);

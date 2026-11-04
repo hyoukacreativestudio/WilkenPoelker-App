@@ -154,7 +154,8 @@ module.exports = {
     api: env.API_URL,
     app: env.APP_URL,
     corsOrigins: (() => {
-      const origins = env.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
+      // The company website calls the public API (inquiry form, closed days)
+      const origins = [...env.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean), 'https://wilpo.net', 'https://www.wilpo.net'];
       // Reject wildcard outright — combined with credentials:true it would allow ANY site
       // to call the API with the user's session attached.
       const safeOrigins = origins.filter((o) => o !== '*');

@@ -69,7 +69,7 @@ const createRequest = asyncHandler(async (req, res) => {
   // Notify admins and managers
   const managers = await User.findAll({
     where: {
-      role: ['admin', 'super_admin', 'service_manager', 'bike_manager', 'cleaning_manager', 'motor_manager'],
+      role: ['admin', 'super_admin', 'service_manager', 'sales_manager', 'bike_manager', 'cleaning_manager', 'motor_manager'],
       isActive: true,
     },
     attributes: ['id'],
@@ -132,7 +132,7 @@ const getAllRequests = asyncHandler(async (req, res) => {
 
 // PUT /customer-number/requests/:id/approve - Admin approves a request
 const approveRequest = asyncHandler(async (req, res) => {
-  const { customerNumber } = req.body;
+  const customerNumber = String(req.body.customerNumber).trim();
   const { id } = req.params;
 
   const request = await CustomerNumberRequest.findByPk(id, {
@@ -145,6 +145,10 @@ const approveRequest = asyncHandler(async (req, res) => {
 
   if (request.status !== 'pending') {
     throw new AppError('Anfrage wurde bereits bearbeitet.', 400, 'ALREADY_PROCESSED');
+  }
+
+  if (request.requester?.customerNumber) {
+    throw new AppError('Dieser Kunde hat bereits eine Kundennummer.', 400, 'ALREADY_HAS_CUSTOMER_NUMBER');
   }
 
   // Check customer number uniqueness
