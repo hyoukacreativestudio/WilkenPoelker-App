@@ -1535,7 +1535,7 @@
     "brand": "Brand",
     "drive": "Power",
     "batterySystem": "Battery system",
-    "priceRange": "Price (€)",
+    "priceRange": "Price",
     "from": "from",
     "to": "to",
     "showAll": "Show all {{count}}",
@@ -1571,7 +1571,14 @@
     "inquiryNote": "This inquiry is non-binding and not an order. Our sales team will answer you here in the app.",
     "inquiryError": "The inquiry could not be sent. Please try again or call us: {{phone}}.",
     "noShopNote": "Not an online shop: pick up at our store in Ostrhauderfehn or delivery in the local area. We do not ship.",
-    "inquiryProduct": "Product inquired about"
+    "inquiryProduct": "Product inquired about",
+    "filterAll": "All",
+    "filterSearch": "Search this list",
+    "filterNoMatch": "Nothing found.",
+    "priceUpTo": "up to €{{to}}",
+    "priceFrom": "from €{{from}}",
+    "priceBetween": "€{{from}} to €{{to}}",
+    "removeFilter": "Remove filter {{name}}"
   },
   "feedback": {
     "title": "Feedback",

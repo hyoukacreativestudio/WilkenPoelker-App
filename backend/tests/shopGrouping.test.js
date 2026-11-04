@@ -68,6 +68,17 @@ describe('Taifun stock export', () => {
     expect(labels.get('STI-2')).toBe('Grundgerät AS System');
   });
 
+  test('device names from Taifun end up in groups a customer understands', () => {
+    expect(G.deviceGroup('Motorsäge Sondermodell 100 Jahre')).toBe('Motorsägen');
+    expect(G.deviceGroup('Heckenschneider')).toBe('Heckenscheren');
+    expect(G.deviceGroup('Saughäcksler')).toBe('Häcksler');
+    expect(G.deviceGroup('Laubsauger Q')).toBe('Laubbläser & Laubsauger');
+    expect(G.deviceGroup('Nass & Trockensauger')).toBe('Sauger');
+    expect(G.deviceGroup('DUESE FL.STRAHL. 30-04F110 ROT, POM')).toBe('Zubehör & Sonstiges');
+    expect(G.deviceGroup('Trennschleifer')).toBe('Trennschleifer');
+    expect(G.deviceGroup('Motor: 350 W')).toBe('Zubehör & Sonstiges');
+  });
+
   test('specs from Kurztext skip name and serial lines', () => {
     expect(G.parseSpecs(arts[2]).specs).toEqual([['Motor', '15 PS']]);
   });

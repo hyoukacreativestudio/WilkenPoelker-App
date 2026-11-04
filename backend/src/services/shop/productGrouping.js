@@ -82,6 +82,51 @@ const modelKey = (m) => String(m || '').toLowerCase().replace(/[^a-z0-9äöüß]
 // Own page for one article; article numbers are unique per Taifun account only
 const singleArticleKey = (article) => `art|${article.catalog === 'kaercher' ? 'k|' : ''}${article.artNr}`;
 
+// The device name comes straight from Taifun and is often one of a kind ("DUESE
+// FL.STRAHL.02F80 GELB"). For the filter, devices are grouped into what a customer
+// looks for; the first match wins, the rest is accessories.
+const DEVICE_GROUPS = [
+  [/maehroboter|robi|imow/, 'Mähroboter'],
+  [/rasentraktor|aufsitz/, 'Rasentraktoren'],
+  [/vertikut|aerifiz|luefter/, 'Vertikutierer & Lüfter'],
+  [/duese|verlaengerung|teleskoprohr|fahrwagen|gegengewicht|winkelgetriebe|handven|saugschlauch|schaft|rueckentrage|kehrgut|spritzschirm/, 'Zubehör & Sonstiges'],
+  [/maeher|maehbalken/, 'Rasenmäher & Balkenmäher'],
+  [/trenn(schneider|schleifer)/, 'Trennschleifer'],
+  [/motorsaege|kettensaege|wippsaege|wippkreissaege/, 'Motorsägen'],
+  [/hochentaster/, 'Hochentaster'],
+  [/gehoelzschneider|astschere|^asa /, 'Gehölzschneider & Astscheren'],
+  [/heckensch|strauchschere/, 'Heckenscheren'],
+  [/freischneider|sense/, 'Freischneider & Motorsensen'],
+  [/trimmer|kantenschneider/, 'Rasentrimmer'],
+  [/blasgeraet|blaeser|laubsauger/, 'Laubbläser & Laubsauger'],
+  [/haecksler/, 'Häcksler'],
+  [/kehrmaschine/, 'Kehrmaschinen'],
+  [/druckreiniger/, 'Hochdruckreiniger'],
+  [/sauger/, 'Sauger'],
+  [/bodenreiniger|dampfreiniger/, 'Boden- & Dampfreiniger'],
+  [/kombi|multiwerkzeug/, 'Kombigeräte'],
+  [/stromerzeuger|stromversorgung/, 'Stromerzeuger'],
+  [/kompressor/, 'Kompressoren'],
+  [/holzspalter/, 'Holzspalter'],
+  [/ruettel/, 'Rüttelplatten'],
+  [/spritz/, 'Spritzgeräte'],
+  [/wildkraut/, 'Wildkrautentfernung'],
+  [/motorhacke|bodenfraese/, 'Motorhacken & Bodenfräsen'],
+  [/erdbohr|bohrgeraet/, 'Erdbohrer'],
+  [/schnee/, 'Schneefräsen & Räumschilder'],
+  [/pumpe/, 'Pumpen'],
+  [/einachs/, 'Einachser'],
+  [/radialbesen/, 'Radialbesen'],
+  [/e-bike|ebike|bike|fahrrad|pedelec/, 'Fahrräder & E-Bikes'],
+];
+
+function deviceGroup(category) {
+  const text = String(category || '').toLowerCase()
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+  const hit = DEVICE_GROUPS.find(([re]) => re.test(text));
+  return hit ? hit[1] : 'Zubehör & Sonstiges';
+}
+
 function groupKeyFor(article, brand, model) {
   if (article.manualGroupKey) return article.manualGroupKey;
   if (!model) return singleArticleKey(article);
@@ -173,5 +218,5 @@ function variantLabels(articles) {
 
 module.exports = {
   nameLines, detectBrand, extractModel, extractCategory, baseCategory, categoryKey, baseModel, modelKey,
-  groupKeyFor, singleArticleKey, slugify, parseSpecs, detectDrive, detectBatterySystem, variantLabels,
+  groupKeyFor, singleArticleKey, deviceGroup, slugify, parseSpecs, detectDrive, detectBatterySystem, variantLabels,
 };

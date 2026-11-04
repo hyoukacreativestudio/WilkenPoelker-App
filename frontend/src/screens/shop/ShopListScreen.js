@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, Image, StyleSheet, ActivityIndicator, RefreshControl, useWindowDimensions,
+  View, Text, FlatList, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, RefreshControl, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,7 +14,7 @@ import { offerOnDark } from '../../theme/colors';
 import SearchBar from '../../components/ui/SearchBar';
 import Chip from '../../components/ui/Chip';
 import EmptyState from '../../components/ui/EmptyState';
-import ShopFilterSheet, { emptyShopFilters, countShopFilters } from './ShopFilterSheet';
+import ShopFilterSheet, { emptyShopFilters, countShopFilters, priceLabel } from './ShopFilterSheet';
 
 const PAGE = 40;
 
@@ -85,6 +85,23 @@ export default function ShopListScreen({ navigation, route }) {
   }, [offersParam]);
 
   const activeCount = countShopFilters(filters);
+
+  // What is switched on right now, each with a tap to remove it
+  const activeTags = useMemo(() => {
+    const labelOf = (key, v) => facets?.[key]?.find((o) => o.value === v)?.label || String(v);
+    const tags = [];
+    ['category', 'brand', 'drive', 'system', 'whg'].forEach((key) => {
+      filters[key].forEach((v) => tags.push({
+        id: `${key}-${v}`,
+        label: labelOf(key, v),
+        remove: (f) => ({ ...f, [key]: f[key].filter((x) => x !== v) }),
+      }));
+    });
+    if (filters.minPrice || filters.maxPrice) {
+      tags.push({ id: 'price', label: priceLabel(t, filters.minPrice, filters.maxPrice), remove: (f) => ({ ...f, minPrice: '', maxPrice: '' }) });
+    }
+    return tags;
+  }, [filters, facets, t]);
   const loadMore = () => {
     if (!loading && !loadingMore && items.length < total) load({ nextPage: page + 1, mode: 'more' });
   };
@@ -161,6 +178,32 @@ export default function ShopListScreen({ navigation, route }) {
         <SearchBar value={search} onChangeText={setSearch} onClear={() => setSearch('')} placeholder={t('shop.searchPlaceholder')} />
       </View>
       {quickChips}
+      {activeTags.length ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0 }}
+          contentContainerStyle={{ paddingHorizontal: theme.spacing.md, paddingBottom: theme.spacing.sm, gap: theme.spacing.xs, alignItems: 'center' }}
+        >
+          {activeTags.map((tag) => (
+            <TouchableOpacity
+              key={tag.id}
+              onPress={() => setFilters(tag.remove)}
+              style={[styles.tag, { backgroundColor: theme.colors.primaryLight, borderRadius: theme.borderRadius.round }]}
+              accessibilityRole="button"
+              accessibilityLabel={t('shop.removeFilter', { name: tag.label })}
+            >
+              <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.primary, fontWeight: '600' }]} numberOfLines={1}>{tag.label}</Text>
+              <MaterialCommunityIcons name="close" size={15} color={theme.colors.primary} style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+          ))}
+          {activeTags.length > 1 ? (
+            <TouchableOpacity onPress={() => setFilters((f) => ({ ...emptyShopFilters, sort: f.sort, available: f.available, offer: f.offer }))} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+              <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, textDecorationLine: 'underline' }]}>{t('shop.resetFilters')}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </ScrollView>
+      ) : null}
       {loading && !items.length ? (
         <View style={styles.center}><ActivityIndicator color={theme.colors.primary} /></View>
       ) : error && !items.length ? (
@@ -208,6 +251,7 @@ export default function ShopListScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 32, maxWidth: 240 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', paddingVertical: 8 },
   card: { overflow: 'hidden', elevation: 1, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
   imageBox: { height: 150, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },

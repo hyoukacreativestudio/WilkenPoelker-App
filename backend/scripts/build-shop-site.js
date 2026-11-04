@@ -104,7 +104,7 @@ function priceHtml(p) {
 function card(p, imgFile) {
   const data = {
     q: [p.title, p.brand, p.category, p.group].join(' ').toLowerCase(),
-    whg: p.group || '', cat: p.category || '', brand: p.brand || '', drive: p.drive || '', sys: p.batterySystem || '',
+    whg: p.group || '', cat: p.device || p.category || '', brand: p.brand || '', drive: p.drive || '', sys: p.batterySystem || '',
     price: p.price ?? '', avail: p.available ? 1 : 0, offer: p.isOffer ? 1 : 0, discount: p.discountPercent || 0, title: p.title,
   };
   const attrs = Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ');

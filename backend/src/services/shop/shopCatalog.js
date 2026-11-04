@@ -201,6 +201,7 @@ function productOut(p, articles, groupName, { detail = false } = {}) {
     model: p.model,
     category: p.category,
     categoryKey: p.categoryKey,
+    device: G.deviceGroup(p.category),
     whg: p.whg,
     group: groupName,
     drive: p.drive,
@@ -261,7 +262,7 @@ async function listProducts(query = {}) {
     const o = e.out;
     if (words.length && !words.every((w) => e.search.includes(w))) return false;
     if (skip !== 'whg' && f.whg.length && !f.whg.includes(o.whg)) return false;
-    if (skip !== 'category' && f.category.length && !f.category.includes(o.categoryKey)) return false;
+    if (skip !== 'category' && f.category.length && !f.category.includes(o.device)) return false;
     if (skip !== 'brand' && f.brand.length && !f.brand.includes(o.brand)) return false;
     if (skip !== 'drive' && f.drive.length && !f.drive.includes(o.drive)) return false;
     if (skip !== 'system' && f.system.length && !f.system.includes(o.batterySystem)) return false;
@@ -302,7 +303,7 @@ async function listProducts(query = {}) {
     total, page, limit, items,
     facets: {
       whg: facet('whg', (o) => o.whg, (o) => o.group || `Warengruppe ${o.whg}`),
-      category: facet('category', (o) => o.categoryKey, (o) => o.category),
+      category: facet('category', (o) => o.device, (o) => o.device),
       brand: facet('brand', (o) => o.brand, (o) => o.brand),
       drive: facet('drive', (o) => o.drive, (o) => ({ akku: 'Akku', benzin: 'Benzin', elektro: 'Elektro', diesel: 'Diesel' }[o.drive] || o.drive)),
       system: facet('system', (o) => o.batterySystem, (o) => `${o.batterySystem}-System`),

@@ -1521,7 +1521,7 @@
     "brand": "Hersteller",
     "drive": "Antrieb",
     "batterySystem": "Akku-System",
-    "priceRange": "Preis (€)",
+    "priceRange": "Preis",
     "from": "ab",
     "to": "bis",
     "showAll": "Alle {{count}} anzeigen",
@@ -1557,7 +1557,14 @@
     "inquiryNote": "Die Anfrage ist unverbindlich und keine Bestellung. Unser Verkauf antwortet Ihnen hier in der App.",
     "inquiryError": "Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es erneut oder rufen Sie uns an: {{phone}}.",
     "noShopNote": "Kein Onlineshop: Abholung bei uns in Ostrhauderfehn oder Lieferung im Umkreis. Wir versenden nicht.",
-    "inquiryProduct": "Angefragtes Produkt"
+    "inquiryProduct": "Angefragtes Produkt",
+    "filterAll": "Alle",
+    "filterSearch": "In der Liste suchen",
+    "filterNoMatch": "Nichts gefunden.",
+    "priceUpTo": "bis {{to}} €",
+    "priceFrom": "ab {{from}} €",
+    "priceBetween": "{{from}} bis {{to}} €",
+    "removeFilter": "Filter {{name}} entfernen"
   },
   "feedback": {
     "title": "Feedback",
