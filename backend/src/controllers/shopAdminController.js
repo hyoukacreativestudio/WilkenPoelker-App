@@ -11,9 +11,11 @@ const { singleArticleKey } = require('../services/shop/productGrouping');
 const num = (v) => (v == null ? null : Number(v));
 
 const listProducts = asyncHandler(async (req, res) => {
-  const where = { variantCount: { [Op.gt]: 0 } };
+  // Hidden pages only appear under "Ausgeblendet", where they can be shown again
+  const live = { variantCount: { [Op.gt]: 0 } };
+  const shown = { ...live, visibility: { [Op.ne]: 'hide' } };
   const filter = req.query.filter || 'all';
-  if (filter === 'hidden') where.visibility = 'hide';
+  const where = filter === 'hidden' ? { ...live, visibility: 'hide' } : { ...shown };
   if (filter === 'unknown_brand') where.brand = null;
   if (filter === 'review') where.enrichStatus = 'review';
   const products = await ShopProduct.findAll({
@@ -39,11 +41,11 @@ const listProducts = asyncHandler(async (req, res) => {
       })),
     }));
   const [total, noImage, hidden, unknownBrand, review] = await Promise.all([
-    ShopProduct.count({ where: { variantCount: { [Op.gt]: 0 } } }),
-    ShopProduct.findAll({ where: { variantCount: { [Op.gt]: 0 } }, attributes: ['images'] }).then((l) => l.filter((p) => !(p.images || []).length).length),
-    ShopProduct.count({ where: { variantCount: { [Op.gt]: 0 }, visibility: 'hide' } }),
-    ShopProduct.count({ where: { variantCount: { [Op.gt]: 0 }, brand: null } }),
-    ShopProduct.count({ where: { variantCount: { [Op.gt]: 0 }, enrichStatus: 'review' } }),
+    ShopProduct.count({ where: shown }),
+    ShopProduct.findAll({ where: shown, attributes: ['images'] }).then((l) => l.filter((p) => !(p.images || []).length).length),
+    ShopProduct.count({ where: { ...live, visibility: 'hide' } }),
+    ShopProduct.count({ where: { ...shown, brand: null } }),
+    ShopProduct.count({ where: { ...shown, enrichStatus: 'review' } }),
   ]);
   res.json({ success: true, data: { products: rows, counts: { total, noImage, hidden, unknownBrand, review } } });
 });
