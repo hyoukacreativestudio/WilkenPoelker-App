@@ -60,7 +60,7 @@ async function scanAndImport() {
     const rank = (f) => (f.kind === 'reservations' ? 1 : 0);
     files.sort((a, b) => (rank(a) - rank(b)) || (a.mtime - b.mtime));
 
-    const result = { scanned: files.length, articles: 0, inserted: 0, reservations: 0, failed: 0 };
+    const result = { scanned: files.length, articles: 0, inserted: 0, ignored: 0, reservations: 0, failed: 0 };
     for (const f of files) {
       try {
         if (!f.kind) throw new Error('Unbekannter Dateiinhalt: weder Artikel-XML noch Reservierungsliste');
@@ -70,6 +70,7 @@ async function scanAndImport() {
           const r = await catalog.upsertArticles(list, f.name);
           result.articles += list.length;
           result.inserted += r.inserted;
+          result.ignored += r.ignored;
         } else {
           const r = await catalog.applyReservations(parseReservations(f.buf), f.name);
           result.reservations += r.reservedArticles;

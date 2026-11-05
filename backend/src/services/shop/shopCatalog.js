@@ -17,16 +17,23 @@ const freeStock = (a) => (a.stock == null ? 0 : n(a.stock) - n(a.reserved || 0))
 async function upsertArticles(list, sourceFile) {
   let inserted = 0;
   let updated = 0;
+  let ignored = 0;
   const now = new Date();
+  // Only known Warengruppen go into the shop. Spare parts and bike parts arrive with
+  // no or an unlisted group and stay out; adding a group to shop_groups lets it in.
+  await ensureShopSeed();
+  const known = new Set((await ShopGroup.findAll({ attributes: ['nr'] })).map((g) => g.nr));
   for (const a of list) {
     const catalog = a.catalog || 'main';
     const or = [{ artNr: a.artNr }];
     if (a.guid) or.push({ guid: a.guid });
     const existing = await ShopArticle.findOne({ where: { catalog, [Op.or]: or } });
+    const whg = a.whg ?? existing?.whg ?? null; // older exports have no WHG
+    if (!known.has(whg)) { ignored += 1; continue; }
     const data = {
       catalog,
       artNr: a.artNr,
-      whg: a.whg ?? existing?.whg ?? null, // older exports have no WHG
+      whg,
       text1: a.text1 ?? existing?.text1 ?? null,
       text2: a.text2 ?? existing?.text2 ?? null,
       kurztext: a.kurztext ?? existing?.kurztext ?? null,
@@ -41,7 +48,7 @@ async function upsertArticles(list, sourceFile) {
     if (a.guid) data.guid = a.guid;
     if (existing) { await existing.update(data); updated += 1; } else { await ShopArticle.create(data); inserted += 1; }
   }
-  return { inserted, updated };
+  return { inserted, updated, ignored };
 }
 
 // A reservation file is the complete list of open reservations of ONE Taifun
