@@ -22,19 +22,8 @@ import SkeletonLoader from '../../components/shared/SkeletonLoader';
 import { useToast } from '../../components/ui/Toast';
 import { repairNumberLabelKey, repairOrderDate, separateOrderNumber } from '../../utils/repairDisplay';
 
-// Same traffic-light colours as the repair list: red = in progress, yellow = done, green = ready
-const STATUS_COLORS = {
-  ordered: '#E53E3E',
-  in_repair: '#E53E3E',
-  quote_created: '#E53E3E',
-  parts_ordered: '#E53E3E',
-  repair_done: '#ECC94B',
-  ready: '#38A169',
-  completed: '#2D8659',
-  leasing_in_progress: '#E53E3E',
-  sale_in_progress: '#E53E3E',
-  sale_test_drive: '#ECC94B',
-};
+import { STATUS_COLORS, DONE_STATUSES, repairStatusLabel } from '../../utils/repairStatus';
+import { SHOP_PHONE } from '../../api/shop';
 
 export default function RepairDetailScreen({ route, navigation }) {
   const { repairId } = route.params;
@@ -69,24 +58,41 @@ export default function RepairDetailScreen({ route, navigation }) {
   const repair = repairApi.data?.data?.repair || repairApi.data?.repair || repairApi.data;
   const statusData = statusApi.data?.data || statusApi.data;
 
-  const getStatusLabel = useCallback((status, category) => {
-    if (status === 'ready' && category === 'leasing') {
-      return t('repairs.statusLeasingDone', 'Leasing abgeschlossen');
+  const getStatusLabel = useCallback((status, category) => repairStatusLabel(t, status, category), [t]);
+
+  // Cost estimate: the customer accepts, declines or wants to talk. "Anrufen"
+  // opens the phone and tells us at the same time that they want a call.
+  const [quoteBusy, setQuoteBusy] = useState(null);
+  const sendQuoteAnswer = useCallback(async (decision) => {
+    try {
+      setQuoteBusy(decision);
+      await repairsApi.respondToQuote(repairId, decision);
+      showToast({ type: 'success', message: t('repairs.quoteSent') });
+      setChangingQuote(false);
+      loadRepairData();
+    } catch (err) {
+      const msg = err?.response?.data?.error?.message || err?.message || t('errors.somethingWentWrong');
+      showToast({ type: 'error', message: msg });
+    } finally {
+      setQuoteBusy(null);
     }
-    const labels = {
-      ordered: t('repairs.statusOrdered', 'Bestellt'),
-      in_repair: t('repairs.statusInRepair'),
-      quote_created: t('repairs.statusQuoteCreated'),
-      parts_ordered: t('repairs.statusPartsOrdered'),
-      repair_done: t('repairs.statusRepairDone'),
-      ready: t('repairs.statusReady'),
-      completed: t('repairs.statusCompleted', 'Abgeschlossen'),
-      leasing_in_progress: t('repairs.statusLeasingInProgress', 'Leasing in Bearbeitung'),
-      sale_in_progress: t('repairs.statusInProgress', 'In Bearbeitung'),
-      sale_test_drive: t('repairs.statusTestDrive', 'Zur Probefahrt'),
-    };
-    return labels[status] || status;
-  }, [t]);
+  }, [repairId, t, showToast]);
+  const answerQuote = useCallback((decision) => {
+    if (decision === 'call') {
+      Linking.openURL(`tel:${SHOP_PHONE}`).catch(() => {});
+      sendQuoteAnswer('call');
+      return;
+    }
+    Alert.alert(
+      t('repairs.quoteTitle'),
+      t(decision === 'accepted' ? 'repairs.quoteConfirmAccept' : 'repairs.quoteConfirmDecline'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t(decision === 'accepted' ? 'repairs.quoteAccept' : 'repairs.quoteDecline'), onPress: () => sendQuoteAnswer(decision) },
+      ]
+    );
+  }, [t, sendQuoteAnswer]);
+  const [changingQuote, setChangingQuote] = useState(false);
 
   const handleDownloadInvoice = useCallback(async () => {
     if (repair?.invoiceUrl) {
@@ -240,6 +246,74 @@ export default function RepairDetailScreen({ route, navigation }) {
         </View>
       </View>
 
+      {/* Cost estimate (KVA): message from us + accept / decline / call */}
+      {repair.status === 'quote_created' && (
+        <Card style={{ marginBottom: theme.spacing.lg, backgroundColor: STATUS_COLORS.quote_created + '10', borderWidth: 1, borderColor: STATUS_COLORS.quote_created + '40' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
+            <MaterialCommunityIcons name="file-document-edit-outline" size={24} color={STATUS_COLORS.quote_created} />
+            <Text style={[theme.typography.styles.body, { color: theme.colors.text, fontWeight: theme.typography.weights.bold, marginLeft: theme.spacing.sm, flex: 1 }]}>
+              {t('repairs.quoteTitle')}
+            </Text>
+          </View>
+          <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, marginBottom: theme.spacing.md }]}>
+            {t('repairs.quoteDesc')}
+          </Text>
+          {repair.quoteMessage ? (
+            <View style={{ backgroundColor: theme.colors.card, borderRadius: theme.borderRadius.md, padding: theme.spacing.sm, marginBottom: theme.spacing.md }}>
+              <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary, marginBottom: 2 }]}>
+                {t('repairs.quoteMessageFrom')}{repair.quoteMessageAt ? ` · ${formatDate(repair.quoteMessageAt)}` : ''}
+              </Text>
+              <Text style={[theme.typography.styles.body, { color: theme.colors.text }]}>{repair.quoteMessage}</Text>
+            </View>
+          ) : null}
+          {repair.quoteResponse && !changingQuote ? (
+            <View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', padding: theme.spacing.sm, backgroundColor: theme.colors.success + '20', borderRadius: theme.borderRadius.md }}>
+                <MaterialCommunityIcons name="check-circle" size={20} color={theme.colors.success} />
+                <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.text, fontWeight: theme.typography.weights.semiBold, marginLeft: theme.spacing.sm, flex: 1 }]}>
+                  {t(`repairs.quoteAnswered_${repair.quoteResponse}`)}
+                </Text>
+              </View>
+              {repair.userId === user?.id ? (
+                <Button title={t('repairs.quoteChange')} onPress={() => setChangingQuote(true)} variant="ghost" fullWidth style={{ marginTop: theme.spacing.sm }} />
+              ) : null}
+            </View>
+          ) : repair.userId === user?.id ? (
+            <View style={{ gap: theme.spacing.sm }}>
+              <Button
+                title={t('repairs.quoteAccept')}
+                onPress={() => answerQuote('accepted')}
+                loading={quoteBusy === 'accepted'}
+                disabled={!!quoteBusy}
+                fullWidth
+                variant="primary"
+                icon={<MaterialCommunityIcons name="check" size={18} color="#FFFFFF" />}
+              />
+              <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+                <Button
+                  title={t('repairs.quoteDecline')}
+                  onPress={() => answerQuote('declined')}
+                  loading={quoteBusy === 'declined'}
+                  disabled={!!quoteBusy}
+                  variant="secondary"
+                  style={{ flex: 1 }}
+                  icon={<MaterialCommunityIcons name="close" size={18} color={theme.colors.primary} />}
+                />
+                <Button
+                  title={t('repairs.quoteCall')}
+                  onPress={() => answerQuote('call')}
+                  loading={quoteBusy === 'call'}
+                  disabled={!!quoteBusy}
+                  variant="secondary"
+                  style={{ flex: 1 }}
+                  icon={<MaterialCommunityIcons name="phone" size={18} color={theme.colors.primary} />}
+                />
+              </View>
+            </View>
+          ) : null}
+        </Card>
+      )}
+
       {/* Acknowledge ready repair - visible to owner and staff */}
       {repair.status === 'ready' && (
         <Card style={{ marginBottom: theme.spacing.lg, backgroundColor: theme.colors.success + '10', borderWidth: 1, borderColor: theme.colors.success + '30' }}>
@@ -252,6 +326,14 @@ export default function RepairDetailScreen({ route, navigation }) {
           <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, marginBottom: theme.spacing.md }]}>
             {t('repairs.readyForPickupDesc')}
           </Text>
+          {repair.category === 'neu' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: theme.spacing.md }}>
+              <MaterialCommunityIcons name="battery-charging-60" size={20} color={theme.colors.textSecondary} style={{ marginTop: 1 }} />
+              <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, marginLeft: theme.spacing.sm, flex: 1 }]}>
+                {t('repairs.batteryNote')}
+              </Text>
+            </View>
+          ) : null}
           {acknowledged || repair.acknowledgedAt ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', padding: theme.spacing.sm, backgroundColor: theme.colors.success + '20', borderRadius: theme.borderRadius.md }}>
               <MaterialCommunityIcons name="check-circle" size={20} color={theme.colors.success} />
@@ -331,7 +413,7 @@ export default function RepairDetailScreen({ route, navigation }) {
       </Card>
 
       {/* Patience note for active repairs */}
-      {repair.status !== 'ready' && (
+      {!DONE_STATUSES.includes(repair.status) && repair.status !== 'quote_created' && (
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', backgroundColor: theme.colors.info + '10', borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.lg }}>
           <MaterialCommunityIcons name="information-outline" size={20} color={theme.colors.info} style={{ marginTop: 2 }} />
           <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, marginLeft: theme.spacing.sm, flex: 1, lineHeight: 20 }]}>

@@ -5,27 +5,31 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { formatDateTime } from '../../utils/formatters';
 import { visibleHistoryNote } from '../../utils/repairDisplay';
+import { repairStatusLabel } from '../../utils/repairStatus';
 
-// Step order per category. 'ready' is the shared pickup-ready end state.
+// Step order per category - only the statuses customers see since 2026-11-06.
+// 'ready' (or 'sale_delivery' for delivered new devices) is the end state.
 const STATUS_ORDERS = {
-  reparatur: ['ordered', 'in_repair', 'quote_created', 'parts_ordered', 'repair_done', 'ready'],
-  leasing: ['leasing_in_progress', 'ready'],
-  neu: ['sale_in_progress', 'sale_test_drive', 'ready'],
+  reparatur: ['quote_created', 'parts_ordered', 'ready'],
+  leasing: ['ready'],
+  neu: ['reserved', 'sale_test_drive', 'sale_delivery', 'ready'],
 };
-const OPTIONAL_STEPS = new Set(['ordered', 'quote_created', 'parts_ordered', 'repair_done', 'sale_test_drive']);
+const END_STEPS = new Set(['ready']);
 
 export default function StatusTimeline({ statusHistory = [], currentStatus, category, style }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Optional steps (Taifun often jumps straight from "In Arbeit" to "Abholbereit")
-  // are only shown when the repair actually went through them - otherwise the
-  // customer would see e.g. "KVA erstellt" ticked although there never was one.
+  // Steps before the end are only shown when the order actually went through
+  // them - otherwise the customer would see e.g. "KVA geschrieben" ticked
+  // although there never was one. Delivered new devices end with "wird geliefert".
   const visited = new Set((statusHistory || []).map((h) => h.status));
-  const STATUS_ORDER = (STATUS_ORDERS[category] || STATUS_ORDERS.reparatur).filter(
-    (st) => !OPTIONAL_STEPS.has(st) || visited.has(st) || st === currentStatus
-  );
+  const delivered = currentStatus === 'sale_delivery' || (visited.has('sale_delivery') && currentStatus !== 'ready');
+  const STATUS_ORDER = (STATUS_ORDERS[category] || STATUS_ORDERS.reparatur).filter((st) => {
+    if (st === 'ready') return !delivered;
+    return END_STEPS.has(st) || visited.has(st) || st === currentStatus;
+  });
 
   useEffect(() => {
     Animated.loop(
@@ -51,23 +55,7 @@ export default function StatusTimeline({ statusHistory = [], currentStatus, cate
     return statusHistory.find((h) => h.status === statusKey);
   };
 
-  const getStatusLabel = (statusKey) => {
-    if (statusKey === 'ready' && category === 'leasing') {
-      return t('repairs.statusLeasingDone', 'Leasing abgeschlossen');
-    }
-    const labels = {
-      ordered: t('repairs.statusOrdered', 'Bestellt'),
-      in_repair: t('repairs.statusInRepair', 'In Arbeit'),
-      quote_created: t('repairs.statusQuoteCreated', 'KVA erstellt'),
-      parts_ordered: t('repairs.statusPartsOrdered', 'Teile bestellt'),
-      repair_done: t('repairs.statusRepairDone', 'Reparatur fertig'),
-      ready: t('repairs.statusReady', 'Abholbereit'),
-      leasing_in_progress: t('repairs.statusLeasingInProgress', 'Leasing in Bearbeitung'),
-      sale_in_progress: t('repairs.statusInProgress', 'In Bearbeitung'),
-      sale_test_drive: t('repairs.statusTestDrive', 'Zur Probefahrt'),
-    };
-    return labels[statusKey] || statusKey;
-  };
+  const getStatusLabel = (statusKey) => repairStatusLabel(t, statusKey, category);
 
   return (
     <View style={style}>

@@ -1,17 +1,40 @@
 const { Op } = require('sequelize');
 const { Repair, TaifunOrder, User, Notification } = require('../models');
 const logger = require('../utils/logger');
-const { appStatusToRepair } = require('./taifunStatusMap');
+const { appStatusToRepair, isCustomerStatus } = require('./taifunStatusMap');
 
 // Notify the customer that their repair status changed. In-app notification +
 // push. Only called on a real status transition of an existing repair (never on
 // first import). Non-blocking: failures are logged, not thrown.
+// Customer-facing text per status. Only the statuses the customer can see in the
+// app send anything (see CUSTOMER_STATUSES); "in Arbeit" and the like stay silent.
+const BATTERY_NOTE = 'Hinweis: Der Akku wird noch geladen. Falls Sie mit dem Rad nach Hause fahren möchten, geben Sie uns bitte kurz vorher Bescheid.';
+function customerText(mapping, repair, deviceName) {
+  switch (mapping.repairStatus) {
+    case 'ready':
+      return {
+        title: 'Abholbereit!',
+        body: mapping.category === 'neu' ? `${deviceName} ist abholbereit. ${BATTERY_NOTE}` : `${deviceName} ist abholbereit.`,
+      };
+    case 'quote_created':
+      return { title: 'Kostenvoranschlag erstellt', body: `${deviceName}: Wir haben einen Kostenvoranschlag geschrieben. Bitte melden Sie sich bei uns oder antworten Sie direkt in der App.` };
+    case 'parts_ordered':
+      return { title: 'Teile bestellt', body: `${deviceName}: Die Teile für Ihre Reparatur sind bestellt.` };
+    case 'reserved':
+      return { title: 'Reserviert', body: `${deviceName} ist für Sie reserviert.` };
+    case 'sale_delivery':
+      return { title: 'Fertig', body: `${deviceName} ist fertig und wird geliefert.` };
+    case 'sale_test_drive':
+      return { title: 'Fertig zur Probefahrt', body: `${deviceName} ist fertig zur Probefahrt.` };
+    default:
+      return { title: 'Status aktualisiert', body: `${repair.repairNumber}: ${mapping.label}` };
+  }
+}
+
 async function notifyStatusChange(repair, mapping, deviceName) {
+  if (!isCustomerStatus(mapping.repairStatus)) return;
   const isReady = mapping.repairStatus === 'ready';
-  const title = isReady ? 'Abholbereit!' : 'Status aktualisiert';
-  const body = isReady
-    ? `${deviceName} ist abholbereit.`
-    : `${repair.repairNumber}: ${mapping.label}`;
+  const { title, body } = customerText(mapping, repair, deviceName);
 
   try {
     await Notification.create({
@@ -50,7 +73,8 @@ function today() {
 // Create or refresh a single Repair from a TaifunOrder for a known user.
 // notifyNewReady: live imports also tell the customer about an order that arrives
 // already finished (same-day jobs). The backfill at registration stays silent.
-async function upsertRepairFromOrder(order, userId, { notifyNewReady = false } = {}) {
+async function upsertRepairFromOrder(order, userId, opts = {}) {
+  const { notifyNewReady = false } = opts;
   const mapping = appStatusToRepair(order.appStatus);
   if (!mapping) return 'skipped'; // hidden/unknown — shouldn't reach here
 
@@ -74,7 +98,9 @@ async function upsertRepairFromOrder(order, userId, { notifyNewReady = false } =
       ],
       ...(mapping.repairStatus === 'ready' ? { actualCompletion: today() } : {}),
     });
-    if (notifyNewReady && mapping.repairStatus === 'ready') {
+    // Live import: an order that arrives already in a status the customer sees
+    // (finished the same day, KVA, parts ordered ...) is announced as well.
+    if (notifyNewReady && !opts.silent && isCustomerStatus(mapping.repairStatus)) {
       await notifyStatusChange(repair, mapping, deviceName);
     }
     return 'created';
@@ -105,10 +131,16 @@ async function upsertRepairFromOrder(order, userId, { notifyNewReady = false } =
     ...(mapping.repairStatus === 'ready' && !existing.actualCompletion
       ? { actualCompletion: today() }
       : {}),
+    // A new cost estimate starts without the answer to an earlier one
+    ...(statusChanged && mapping.repairStatus === 'quote_created'
+      ? { quoteResponse: null, quoteRespondedAt: null, quoteMessage: null, quoteMessageAt: null }
+      : {}),
   });
 
   // Push + in-app notification ONLY when the status actually changed.
-  if (statusChanged) {
+  // silent: recalculating old orders (e.g. after a status-map change) must not
+  // send customers a push for something that did not happen just now.
+  if (statusChanged && !opts.silent) {
     await notifyStatusChange(existing, mapping, deviceName);
   }
   return 'updated';

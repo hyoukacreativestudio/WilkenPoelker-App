@@ -100,12 +100,15 @@ describe('Taifun stock export', () => {
     expect(size('Spritzgeräte', 'Behälterinhalt', '4,50 gal')).toEqual([]);
     expect(size('Hochdruckreiniger', 'Max. Druck', '100 bar 1)')).toEqual(['100 bar']);
     expect(size('Laubbläser & Laubsauger', 'Gewicht', '5 kg')).toEqual([]);
+    // Kalkhoff in Taifun: wheel size in inches first, then the frame height
+    expect(size('E-Bikes', 'Rahmenh./Form', '29"/ 53 cm / Wave')).toEqual(['53 cm']);
   });
 
   test('colours only from what is stated', () => {
     expect(F.colorsOf('Mountainbike Bulls', [[['Rahmenfarbe', 'grau/rot']]])).toEqual(['Grau', 'Rot']);
     expect(F.colorsOf('DUESE FL.STRAHL.02F80 GELB f. Solo Spritzen', [])).toEqual(['Gelb']);
     expect(F.colorsOf('Rotationsbesen Herkules', [[['Motor', 'Rotor']]])).toEqual([]);
+    expect(F.colorsOf('E-Bike Kalkhoff', [[['Rahmenfarbe', 'midnightplum matt']]])).toEqual(['Lila']);
   });
 
   test('drive and battery system from the manufacturer data', () => {

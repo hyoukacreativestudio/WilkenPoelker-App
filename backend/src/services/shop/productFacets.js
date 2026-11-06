@@ -54,7 +54,8 @@ const toNumber = (s) => Number(/^\d{1,3}\.\d{3}$/.test(s) ? s.replace('.', '') :
 // "45 / 60 cm" -> [45, 60]; "Max. 4 cm" as mm -> [40]; "35 cm (42 cm)" -> [35]
 function readSizes(value, label, cfg) {
   const factors = TO_BASE[cfg.unit];
-  const text = String(value).toLowerCase().replace(/\(.*$/, ' ').replace(/\b\d+\)/g, ' '); // "(42 cm)", footnote "1)"
+  const text = String(value).toLowerCase().replace(/\(.*$/, ' ').replace(/\b\d+\)/g, ' ') // "(42 cm)", footnote "1)"
+    .replace(/\d+(?:[.,]\d+)?\s*(?:"|''|”|″|zoll)/g, ' '); // bike wheel size: '29"/ 53 cm' is 53 cm
   const unitInLabel = String(label).toLowerCase().match(/\((\w+)\)/)?.[1];
   const found = [...text.matchAll(/(\d+(?:[.,]\d+)?)\s*([a-zä]*)/g)];
   const unit = found.map((m) => m[2]).find((u) => factors[u]) || (factors[unitInLabel] ? unitInLabel : null);
@@ -84,7 +85,7 @@ function sizesOf(device, specLists) {
 
 const COLORS = [
   [/schwarz/, 'Schwarz'], [/weiss/, 'Weiß'], [/grau|anthrazit/, 'Grau'], [/silber/, 'Silber'], [/\brot\b|\brot\//, 'Rot'],
-  [/blau/, 'Blau'], [/gruen/, 'Grün'], [/gelb/, 'Gelb'], [/orange/, 'Orange'], [/braun/, 'Braun'], [/beige|sand/, 'Beige'],
+  [/blau/, 'Blau'], [/lila|violett|plum|purple/, 'Lila'], [/gruen/, 'Grün'], [/gelb/, 'Gelb'], [/orange/, 'Orange'], [/braun/, 'Braun'], [/beige|sand/, 'Beige'],
 ];
 
 // Colour only where it is stated: the colour line, or a colour word in an accessory name
@@ -96,6 +97,24 @@ function colorsOf(title, specLists) {
   if (/\b(GELB|ROT|BLAU|GRUEN|GRÜN|SCHWARZ|WEISS)\b/.test(String(title))) sources.push(plain(title));
   const out = new Set();
   sources.forEach((s) => COLORS.forEach(([re, name]) => { if (re.test(s)) out.add(name); }));
+  return [...out];
+}
+
+// Bikes: frame shape from Taifun's "Rahmenh./Form" line ('29"/ 53 cm / Wave') or a
+// "Rahmenform" line on the manufacturer page
+const FRAMES = [
+  [/\bwave\b|tiefeinst/, 'Wave / Tiefeinsteiger'],
+  [/trapez|\bdamen\b/, 'Trapez / Damen'],
+  [/diamant|diamond|\bherren\b/, 'Diamant / Herren'],
+  [/\bmixte\b/, 'Mixte'],
+];
+function framesOf(specLists) {
+  const out = new Set();
+  specLists.forEach((specs) => (specs || []).forEach(([k, v]) => {
+    const key = plain(k);
+    if (!/^rahmenh|^rahmenform|^rahmentyp|^form$/.test(key)) return;
+    FRAMES.forEach(([re, name]) => { if (re.test(plain(v))) out.add(name); });
+  }));
   return [...out];
 }
 
@@ -117,4 +136,4 @@ function systemFromSpecs(specs) {
   return m ? m[1] : null;
 }
 
-module.exports = { plain, sizesOf, colorsOf, driveFromSpecs, systemFromSpecs, readSizes, SIZES };
+module.exports = { plain, sizesOf, colorsOf, framesOf, driveFromSpecs, systemFromSpecs, readSizes, SIZES };

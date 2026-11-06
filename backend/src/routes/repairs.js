@@ -43,6 +43,18 @@ router.patch(
   repairController.markOutreachReached
 );
 
+// Kostenvoranschläge for the PC tool (before /:id so "kva" isn't taken as an id)
+const KVA_STAFF = [ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.SERVICE_MANAGER];
+router.get('/kva', authenticate, authorize(...KVA_STAFF), repairController.listKva);
+router.patch('/kva/:nr/contacted', authenticate, authorize(...KVA_STAFF), repairController.setKvaContacted);
+router.post(
+  '/kva/:nr/message',
+  authenticate,
+  authorize(...KVA_STAFF),
+  validate([body('text').isString().trim().notEmpty().isLength({ max: 1500 })]),
+  repairController.sendKvaMessage
+);
+
 // POST /api/repairs - Request new repair (authenticated)
 router.post(
   '/',
@@ -165,6 +177,14 @@ router.post(
   authenticate,
   validate([validators.uuid('id')]),
   repairController.acknowledgeRepair
+);
+
+// POST /api/repairs/:id/quote-response - Customer answers the cost estimate
+router.post(
+  '/:id/quote-response',
+  authenticate,
+  validate([validators.uuid('id'), body('decision').isIn(['accepted', 'declined', 'call'])]),
+  repairController.respondToQuote
 );
 
 module.exports = router;

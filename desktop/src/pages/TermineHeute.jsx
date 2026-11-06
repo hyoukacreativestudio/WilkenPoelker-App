@@ -3,6 +3,7 @@ import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { TYPES } from './Termine.jsx';
+import { useLiveReload, AppBadge } from '../customers.jsx';
 
 const TYPE_LABEL = Object.fromEntries(TYPES.map((t) => [t.key, t.label]));
 const typeLabel = (t) => TYPE_LABEL[t] || t || 'Termin';
@@ -19,12 +20,13 @@ export default function TermineHeute({ user }) {
   const [warnFor, setWarnFor] = useState(null);   // appointment we're adding a warning to
   const [warnText, setWarnText] = useState('');
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try { setRows(unwrap(await api.get('/desktop/appointments')).appointments || []); }
-    catch (e) { setRows([]); } finally { setLoading(false); }
+    catch (e) { if (!silent) setRows([]); } finally { if (!silent) setLoading(false); }
   };
-  useEffect(() => { load(); const t = setInterval(load, 60000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); }, []);
+  useLiveReload(load, []);
 
   const list = useMemo(() => rows
     .filter((a) => (a.department || '') === 'fahrrad' && String(a.date || '').slice(0, 10) === day && a.status !== 'cancelled')
@@ -67,7 +69,7 @@ export default function TermineHeute({ user }) {
                   <td>{hm(a.startTime) || (a.proposedText ? <span className="muted">{a.proposedText}</span> : '—')}</td>
                   <td><strong>{a.repairNumber || '—'}</strong></td>
                   <td>
-                    {a.customerName || '—'}{a.customerNumber ? <span className="muted"> · Kd {a.customerNumber}</span> : null}
+                    {a.customerName || '—'}<AppBadge on={a.hasApp} />{a.customerNumber ? <span className="muted"> · Kd {a.customerNumber}</span> : null}
                     {a.phone ? <div className="muted" style={{ fontSize: 12 }}>☎ {a.phone}</div> : null}
                     {a.warnNote ? <div style={{ color: '#c53030', fontWeight: 700, fontSize: 12 }}>⚠ {a.warnNote}</div> : null}
                   </td>

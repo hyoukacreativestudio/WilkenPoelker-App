@@ -10,6 +10,8 @@ export const repairsApi = {
   getInvoice: (id) => apiClient.get(`/repairs/${id}/invoice`),
   createReview: (id, data) => apiClient.post(`/repairs/${id}/review`, data),
   acknowledgeRepair: (id) => apiClient.post(`/repairs/${id}/acknowledge`),
+  // Cost estimate (KVA): decision = 'accepted' | 'declined' | 'call'
+  respondToQuote: (id, decision) => apiClient.post(`/repairs/${id}/quote-response`, { decision }),
   // Staff outreach: Taifun orders whose customer has no app account yet
   getOutreach: (params) => apiClient.get('/repairs/outreach', { params }),
   markOutreachReached: (kdNr, reached, category) =>

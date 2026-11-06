@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { RepairJob, Appointment } = require('../models');
 const { asyncHandler } = require('../middlewares/errorHandler');
+const { markHasApp } = require('../services/appAccounts');
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 
 // Bike-workshop mechanics ("Fahrradwerkstatt") — Service assigns repairs to them.
@@ -59,7 +60,9 @@ const listRepairJobs = asyncHandler(async (req, res) => {
   const date = String(req.query.date || today).slice(0, 10);
   const where = { date };
   if (req.query.assignedTo && req.query.assignedTo !== 'all') where.assignedTo = req.query.assignedTo;
-  const jobs = await RepairJob.findAll({ where, order: [['done', 'ASC'], ['repairNumber', 'ASC']] });
+  const rows = await RepairJob.findAll({ where, order: [['done', 'ASC'], ['repairNumber', 'ASC']] });
+  // hasApp: the PC tool splits the list into customers with / without the app
+  const jobs = await markHasApp(rows.map((j) => j.toJSON()));
   res.json({ success: true, data: { jobs, employees: BIKE_WORKSHOP, today } });
 });
 

@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { auftragCategoriesForRole, REPAIR_DEPARTMENT_ROLE, REPAIR_DEPARTMENTS } from '../config.js';
+import { AppTabs, useLiveReload, whatsappNumber, readyText, WhatsAppButton } from '../customers.jsx';
 
 const CAT_LABEL = { reparatur: 'Reparatur', neu: 'Neu', leasing: 'Leasing' };
 const DEPT_LABEL = { fahrrad: 'Fahrrad', robby: 'Robby', rasenmaeher: 'Rasenmäher', motorgeraete: 'Motorgeräte', elektro: 'Elektrofahrzeuge' };
-const READY = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'LEASING_ABGESCHLOSSEN'];
+// Finished orders (same list as READY_CODES in backend/src/services/taifunStatusMap.js)
+const READY = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'NEU_GELIEFERT', 'LEASING_ABHOLBEREIT'];
 
 // Aufträge (Taifun outreach): customers to contact, split by category and by
 // status (Abholbereit / In Arbeit). Sales only sees Neu + Leasing.
@@ -15,6 +17,7 @@ export default function Reparaturen({ user }) {
   const [category, setCategory] = useState(cats[0]);
   const [statusF, setStatusF] = useState('all');   // all | ready | progress
   const [filter, setFilter] = useState('open');     // open | reached
+  const [scope, setScope] = useState('no_app');     // no_app | app (customer has the app)
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState('name');   // name | kdnr | auftrag
   // Department roles are locked to their own repairs (one dept or several, e.g.
@@ -26,15 +29,17 @@ export default function Reparaturen({ user }) {
   const [data, setData] = useState({ items: [], counts: { byCategory: {}, byDepartment: {}, open: 0, reached: 0 } });
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
-      const q = new URLSearchParams({ filter, category, department: lockedDept || department, search, scope: 'no_account' });
+      const q = new URLSearchParams({ filter, category, department: lockedDept || department, search, scope: scope === 'app' ? 'account' : 'no_account' });
       setData(unwrap(await api.get(`/repairs/outreach?${q.toString()}`)));
-    } catch (e) { setData({ items: [], counts: { byCategory: {}, byDepartment: {}, open: 0, reached: 0 } }); }
-    finally { setLoading(false); }
+    } catch (e) { if (!silent) setData({ items: [], counts: { byCategory: {}, byDepartment: {}, open: 0, reached: 0 } }); }
+    finally { if (!silent) setLoading(false); }
   };
-  useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); /* eslint-disable-next-line */ }, [filter, category, department, search]);
+  useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); /* eslint-disable-next-line */ }, [filter, category, department, search, scope]);
+  // Taifun status changes show up by themselves while the window is open
+  useLiveReload(load, [filter, category, department, search, scope]);
 
   const setReached = async (g, reached) => {
     try {
@@ -87,6 +92,8 @@ export default function Reparaturen({ user }) {
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
       </div>
       <div className="toolbar no-print">
+        <AppTabs value={scope} onChange={setScope} counts={{ no_app: data.counts?.byScope?.no_account, app: data.counts?.byScope?.account }} />
+        <div style={{ width: 12 }} />
         <span className={`pill tab ${filter === 'open' ? 'active' : ''}`} onClick={() => setFilter('open')}>Offen <span className="n">{data.counts?.open || 0}</span></span>
         <span className={`pill tab ${filter === 'reached' ? 'active' : ''}`} onClick={() => setFilter('reached')}>Erreicht <span className="n">{data.counts?.reached || 0}</span></span>
         <div style={{ width: 12 }} />
@@ -96,7 +103,7 @@ export default function Reparaturen({ user }) {
       </div>
 
       {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : items.length === 0 ? (
-        <div className="empty"><div className="big">📞</div>Keine Einträge.</div>
+        <div className="empty"><div className="big">📞</div>Keine Einträge.{scope === 'app' ? <div className="muted" style={{ marginTop: 6 }}>Kunden mit App bekommen jede Statusänderung automatisch aufs Handy.</div> : null}</div>
       ) : (
         <div className="table-wrap"><table>
           <thead><tr><th>Kunde</th><th>Telefon</th><th>Ort</th><th>Aufträge</th><th className="no-print"></th></tr></thead>
@@ -108,12 +115,20 @@ export default function Reparaturen({ user }) {
                 <td>{[g.zip, g.city].filter(Boolean).join(' ') || '—'}</td>
                 <td>{(g.orders || []).map((o) => (
                   <div key={o.nr} className="muted" style={{ fontSize: 13 }}>
-                    <span className={`badge ${READY.includes(o.appStatus) ? 'brought' : 'open'}`} style={{ fontSize: 11, marginRight: 6 }}>{READY.includes(o.appStatus) ? 'Abholbereit' : 'In Arbeit'}</span>
+                    <span className={`badge ${READY.includes(o.appStatus) ? 'brought' : 'open'}`} style={{ fontSize: 11, marginRight: 6 }}>{o.appStatus === 'NEU_GELIEFERT' ? 'Fertig' : READY.includes(o.appStatus) ? 'Abholbereit' : 'In Arbeit'}</span>
                     {o.info || `Auftrag ${o.nr}`}{o.appStatusLabel ? ` · ${o.appStatusLabel}` : ''}
                     {o.info && o.nr ? <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 6 }}>· Nr. {o.nr}</span> : null}
                   </div>
                 ))}</td>
-                <td className="right no-print">
+                <td className="right no-print" style={{ whiteSpace: 'nowrap' }}>
+                  {scope === 'no_app' && groupReady(g) ? (() => {
+                    const done = (g.orders || []).filter((o) => READY.includes(o.appStatus));
+                    const text = readyText({
+                      name: g.customerName, info: done.map((o) => o.info).filter(Boolean).join(', '),
+                      category: g.category, department: g.department, delivery: done.every((o) => o.appStatus === 'NEU_GELIEFERT'),
+                    });
+                    return <span style={{ marginRight: 6 }}><WhatsAppButton number={whatsappNumber(g.mobile, g.phone)} text={text} label="Fertig" /></span>;
+                  })() : null}
                   {g.reached ? <button className="btn sm ghost" onClick={() => setReached(g, false)}>Zurück</button>
                              : <button className="btn sm" onClick={() => setReached(g, true)}>Erreicht ✓</button>}
                 </td>

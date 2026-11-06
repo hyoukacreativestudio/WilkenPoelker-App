@@ -56,7 +56,8 @@ async function run() {
     const visible = await TaifunOrder.findAll({
       where: { appHidden: false, vanishedAt: null, storno: false },
     });
-    const r = await repairSync.syncOrders(visible);
+    // silent: recalculated statuses are not news for the customer (no push)
+    const r = await repairSync.syncOrders(visible, { silent: true });
     console.log(`Repair sync: created ${r.created}, updated ${r.updated}, skipped-no-account ${r.skippedNoUser}`);
   }
 

@@ -139,7 +139,7 @@ const getOutreach = asyncHandler(async (req, res) => {
     category: req.query.category || 'all',    // all | reparatur | neu | leasing
     department: req.query.department || 'all', // all | fahrrad | robby | rasenmaeher | motorgeraete | elektro
     search: req.query.search || '',
-    scope: req.query.scope || 'no_account',   // no_account | all
+    scope: req.query.scope || 'no_account',   // no_account | account | all
   });
   res.json({ success: true, data: result });
 });
@@ -212,7 +212,35 @@ const acknowledgeRepair = asyncHandler(async (req, res) => {
   });
 });
 
+// ── Kostenvoranschläge (KVA) ──
+const kva = require('../services/kvaService');
+
+// GET /kva - Staff: all orders with a cost estimate, with/without app account
+const listKva = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await kva.listKva() });
+});
+
+// PATCH /kva/:nr/contacted - Staff: { contacted: bool }
+const setKvaContacted = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await kva.setContacted(req.params.nr, req.body.contacted !== false) });
+});
+
+// POST /kva/:nr/message - Staff: { text } -> notification + push to the app customer
+const sendKvaMessage = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await kva.sendMessage(req.params.nr, req.body.text) });
+});
+
+// POST /:id/quote-response - Customer: { decision: accepted | declined | call }
+const respondToQuote = asyncHandler(async (req, res) => {
+  const repair = await kva.respond(req.params.id, req.user.id, req.body.decision);
+  res.json({ success: true, data: { repair } });
+});
+
 module.exports = {
+  listKva,
+  setKvaContacted,
+  sendKvaMessage,
+  respondToQuote,
   getUserRepairs,
   getAllRepairs,
   getRepairById,

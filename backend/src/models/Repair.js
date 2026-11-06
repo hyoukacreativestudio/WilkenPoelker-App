@@ -90,6 +90,26 @@ const Repair = sequelize.define('Repair', {
     type: DataTypes.DATE,
     allowNull: true,
   },
+  // Cost estimate (KVA): the customer answers in the app - 'accepted' | 'declined'
+  // | 'call' (wants to talk about it). Taifun is not changed by this; staff see it
+  // in the PC tool and set the stand in Taifun themselves.
+  quoteResponse: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  quoteRespondedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  // Last message staff sent about the KVA from the PC tool (shown in the app)
+  quoteMessage: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  quoteMessageAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
   // Weekly archive: acknowledged repairs move here at end of week
   archivedAt: {
     type: DataTypes.DATE,

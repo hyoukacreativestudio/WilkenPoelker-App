@@ -259,6 +259,7 @@ async function loadCatalog() {
         title: F.plain(p.title).replace(/[^a-z0-9]+/g, ''),
         sizes: F.sizesOf(out.device, specLists),
         colors: F.colorsOf(p.title, specLists),
+        frames: F.framesOf(specLists),
       };
     }),
     bySlug: new Map(visible.map((p) => [p.slug, p])),
@@ -270,13 +271,14 @@ async function loadCatalog() {
 
 const many = (v) => (v == null || v === '' ? [] : String(v).split(',').map((s) => s.trim()).filter(Boolean));
 
-// query: q, main, category, whg, brand, drive, system, size, color, available, offer, minPrice, maxPrice, sort, page, limit
+// query: q, main, category, whg, brand, drive, system, size, color, frame, available, offer, minPrice, maxPrice, sort, page, limit
 async function listProducts(query = {}) {
   const c = await loadCatalog();
   const words = F.plain(query.q).split(/[^a-z0-9]+/).filter(Boolean);
   const f = {
     whg: many(query.whg).map(Number), main: many(query.main), category: many(query.category), brand: many(query.brand),
     drive: many(query.drive), system: many(query.system), size: many(query.size), color: many(query.color),
+    frame: many(query.frame),
   };
   const minP = query.minPrice != null && query.minPrice !== '' ? Number(query.minPrice) : null;
   const maxP = query.maxPrice != null && query.maxPrice !== '' ? Number(query.maxPrice) : null;
@@ -293,6 +295,7 @@ async function listProducts(query = {}) {
     if (skip !== 'system' && f.system.length && !f.system.includes(o.batterySystem)) return false;
     if (skip !== 'size' && f.size.length && !e.sizes.values.some((s) => f.size.includes(s.value))) return false;
     if (skip !== 'color' && f.color.length && !e.colors.some((x) => f.color.includes(x))) return false;
+    if (skip !== 'frame' && f.frame.length && !e.frames.some((x) => f.frame.includes(x))) return false;
     if (query.available === '1' && !o.available) return false;
     if (query.offer === '1' && !o.isOffer) return false;
     if (minP != null && (o.price == null || o.price < minP)) return false;
@@ -350,6 +353,12 @@ async function listProducts(query = {}) {
     cur.count += 1;
     colorOptions.set(x, cur);
   }));
+  const frameOptions = new Map();
+  c.list.filter((e) => pass(e, 'frame')).forEach((e) => e.frames.forEach((x) => {
+    const cur = frameOptions.get(x) || { value: x, label: x, count: 0 };
+    cur.count += 1;
+    frameOptions.set(x, cur);
+  }));
   const mainFacet = facet('main', (o) => o.main, (o) => o.main)
     .sort((a, b) => G.MAIN_ORDER.indexOf(a.value) - G.MAIN_ORDER.indexOf(b.value));
   return {
@@ -363,6 +372,7 @@ async function listProducts(query = {}) {
       system: facet('system', (o) => o.batterySystem, (o) => `${o.batterySystem}-System`),
       size: { label: sizeLabel, options: [...sizeOptions.values()].sort((a, b) => a.sort - b.sort) },
       color: [...colorOptions.values()].sort((a, b) => a.label.localeCompare(b.label, 'de')),
+      frame: [...frameOptions.values()].sort((a, b) => a.label.localeCompare(b.label, 'de')),
       available: c.list.filter((e) => pass(e) && e.out.available).length,
       offer: c.list.filter((e) => pass(e) && e.out.isOffer).length,
       price: prices.length ? { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) } : null,

@@ -81,7 +81,21 @@ async function listOutreach({ filter = 'open', category = 'all', department = 'a
     city: o.customer?.city || null,
   }));
 
+  // Tab badges in the PC tool: open customers (per category) with / without app,
+  // counted before the scope filter so both tabs always show their number.
+  const byScope = { no_account: 0, account: 0 };
+  {
+    const inCategory = category && category !== 'all' ? orders.filter((o) => o.appCategory === category) : orders;
+    const inDept = department && department !== 'all'
+      ? inCategory.filter((o) => String(department).split(',').includes(o.department))
+      : inCategory;
+    const open = new Set();
+    for (const o of inDept) if (!o.reachedAt) open.add(`${o.hasAccount ? 'account' : 'no_account'}|${o.kdNr}|${o.appCategory}`);
+    for (const k of open) byScope[k.split('|')[0]] += 1;
+  }
+
   if (scope === 'no_account') orders = orders.filter((o) => !o.hasAccount);
+  else if (scope === 'account') orders = orders.filter((o) => o.hasAccount);
 
   // Department counts (over all orders in scope, before the department filter)
   // so each tab can show how many are waiting for it.
@@ -174,7 +188,7 @@ async function listOutreach({ filter = 'open', category = 'all', department = 'a
 
   return {
     items: sel,
-    counts: { byCategory, byDepartment, open: openCount, reached: reachedCount, total: sel.length },
+    counts: { byCategory, byDepartment, byScope, open: openCount, reached: reachedCount, total: sel.length },
   };
 }
 
@@ -194,4 +208,4 @@ async function markReached(kdNr, category, userId, reached) {
   return { kdNr, category: category || 'all', reached: !!reached, count: orders.length };
 }
 
-module.exports = { listOutreach, markReached };
+module.exports = { listOutreach, markReached, departmentFromOrder, customerName };

@@ -26,36 +26,23 @@ import NoCustomerNumberGate from '../../components/shared/NoCustomerNumberGate';
 import { repairNumberLabelKey, repairOrderDate, separateOrderNumber } from '../../utils/repairDisplay';
 import SearchButton from '../../components/shared/SearchButton';
 
-// Ampelfarben: Rot = In Bearbeitung, Gelb = Fertig, Grün = Abholbereit
-const STATUS_COLORS = {
-  ordered: '#E53E3E',
-  in_repair: '#E53E3E',
-  quote_created: '#E53E3E',
-  parts_ordered: '#E53E3E',
-  repair_done: '#ECC94B',
-  ready: '#38A169',
-  completed: '#2D8659',
-  // Leasing
-  leasing_in_progress: '#E53E3E',
-  // Neu / Verkauf
-  sale_in_progress: '#E53E3E',
-  sale_test_drive: '#ECC94B',
-};
+import { STATUS_COLORS, repairStatusLabel } from '../../utils/repairStatus';
 
 const ACTIVE_STATUSES = [
   'ordered', 'in_repair', 'quote_created', 'parts_ordered', 'repair_done', 'ready',
   'leasing_in_progress',
-  'sale_in_progress', 'sale_test_drive',
+  'sale_in_progress', 'sale_test_drive', 'reserved', 'sale_delivery',
 ];
 
-// "Abholbereit" = ready for pickup (green). Everything else active = "In Arbeit".
-const READY_STATUS = ['ready'];
+// "Abholbereit"/"Fertig" (green). Everything else active = "In Arbeit".
+const READY_STATUS = ['ready', 'sale_delivery'];
 
 // App tabs for the customer's own repairs (matches Repair.category)
 const CATEGORY_TABS = ['reparatur', 'neu', 'leasing'];
 
-// A customer can only be marked "reached" once their order is ready for pickup.
-const READY_STATES = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'LEASING_ABGESCHLOSSEN'];
+// A customer can only be marked "reached" once their order is finished
+// (same list as READY_CODES in backend/src/services/taifunStatusMap.js).
+const READY_STATES = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'NEU_GELIEFERT', 'LEASING_ABHOLBEREIT'];
 
 // Rollen die alle Reparaturen sehen dürfen
 const STAFF_ROLES = ['admin', 'super_admin', 'service_manager', 'bike_manager', 'cleaning_manager', 'motor_manager', 'robby_manager'];
@@ -283,25 +270,7 @@ export default function RepairsListScreen({ navigation }) {
     }
   }, [fetchOutreach, showSnackbar, t]);
 
-  const getStatusLabel = useCallback((status, category) => {
-    // 'ready' is shared across categories; leasing shows its own label.
-    if (status === 'ready' && category === 'leasing') {
-      return t('repairs.statusLeasingDone', 'Leasing abgeschlossen');
-    }
-    const labels = {
-      ordered: t('repairs.statusOrdered', 'Bestellt'),
-      in_repair: t('repairs.statusInRepair'),
-      quote_created: t('repairs.statusQuoteCreated'),
-      parts_ordered: t('repairs.statusPartsOrdered'),
-      repair_done: t('repairs.statusRepairDone'),
-      ready: t('repairs.statusReady'),
-      completed: t('repairs.statusCompleted', 'Abgeschlossen'),
-      leasing_in_progress: t('repairs.statusLeasingInProgress', 'Leasing in Bearbeitung'),
-      sale_in_progress: t('repairs.statusInProgress', 'In Bearbeitung'),
-      sale_test_drive: t('repairs.statusTestDrive', 'Zur Probefahrt'),
-    };
-    return labels[status] || status;
-  }, [t]);
+  const getStatusLabel = useCallback((status, category) => repairStatusLabel(t, status, category), [t]);
 
   const renderSkeletons = () => (
     <View style={{ padding: theme.spacing.md }}>

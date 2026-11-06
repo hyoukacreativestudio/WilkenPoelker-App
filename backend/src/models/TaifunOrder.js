@@ -88,6 +88,11 @@ const TaifunOrder = sequelize.define('TaifunOrder', {
   reachedBy: {
     type: DataTypes.UUID,
   },
+  // KVA tab in the PC tool: staff told the customer about the cost estimate
+  // (WhatsApp/phone for customers without the app, a message for app users).
+  quoteContactedAt: {
+    type: DataTypes.DATE,
+  },
   // Link to the customer (by Taifun's GUID, not our internal UUID,
   // so the order survives even if we re-import the customer)
   kdGuid: {

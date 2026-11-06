@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { ORDER_DEPARTMENTS } from '../config.js';
 import { useToast } from '../toast.jsx';
+import { AppTabs, useLiveReload, scopeCounts } from '../customers.jsx';
 
 // Customer orders = orders without Rep-/VK-Nr. that got an automatic number.
 // Flow: Offen -> "Teil da" -> "Erreicht" -> "Abgeholt" (kept there, can be undone).
@@ -26,15 +27,17 @@ export default function Kundenbestellungen({ user }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [busyKey, setBusyKey] = useState(null);
+  const [scope, setScope] = useState('no_app'); // no_app | app
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const data = unwrap(await api.get(`/desktop/customer-orders?status=${step}`));
       setRows(data.orders || []);
-    } catch (e) { setRows([]); toast(e.message, { type: 'error' }); } finally { setLoading(false); }
+    } catch (e) { if (!silent) { setRows([]); toast(e.message, { type: 'error' }); } } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [step]);
+  useLiveReload(load, [step]);
 
   // One card per customer order (all articles with the same year + number)
   const groups = useMemo(() => {
@@ -50,6 +53,7 @@ export default function Kundenbestellungen({ user }) {
         ...g,
         customerName: firstSet(g.items, 'customerName'),
         customerNumber: firstSet(g.items, 'customerNumber'),
+        hasApp: g.items.some((i) => i.hasApp),
         customerPhone: firstSet(g.items, 'customerPhone'),
         department: g.items[0].department,
         handle: firstSet(g.items, 'handle'),
@@ -63,6 +67,8 @@ export default function Kundenbestellungen({ user }) {
     if (step === 'picked_up') list.sort((a, b) => new Date(b.statusAt || 0) - new Date(a.statusAt || 0));
     return list;
   }, [rows, search, step]);
+  const counts = useMemo(() => scopeCounts(groups), [groups]);
+  const shown = useMemo(() => groups.filter((g) => (scope === 'app' ? g.hasApp : !g.hasApp)), [groups, scope]);
 
   const move = async (g, status, { silent } = {}) => {
     setBusyKey(g.key);
@@ -87,12 +93,14 @@ export default function Kundenbestellungen({ user }) {
         {STEPS.map((s) => (
           <span key={s.key} className={`pill tab ${step === s.key ? 'active' : ''}`} onClick={() => setStep(s.key)}>{s.label}</span>
         ))}
+        <div style={{ width: 12 }} />
+        <AppTabs value={scope} onChange={setScope} counts={counts} />
         <div className="spacer" />
         <input className="input" style={{ maxWidth: 260 }} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Suchen: Nr., Name, Telefon, Artikel…" />
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
       </div>
 
-      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : groups.length === 0 ? (
+      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : shown.length === 0 ? (
         <div className="empty"><div className="big">🧾</div>{search ? 'Nichts gefunden.' : current.empty}</div>
       ) : (
         <div className="table-wrap"><table>
@@ -109,7 +117,7 @@ export default function Kundenbestellungen({ user }) {
             </tr>
           </thead>
           <tbody>
-            {groups.map((g) => (
+            {shown.map((g) => (
               <tr key={g.key}>
                 <td className="nowrap">
                   <strong style={{ fontSize: 18 }}>{g.number}</strong>

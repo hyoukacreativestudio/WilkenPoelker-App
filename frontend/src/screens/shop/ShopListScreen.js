@@ -17,6 +17,17 @@ import EmptyState from '../../components/ui/EmptyState';
 import ShopFilterSheet, { emptyShopFilters, countShopFilters, priceLabel, chooseMain, chooseDevice } from './ShopFilterSheet';
 
 const PAGE = 40;
+// Icons for the main categories (MAIN_GROUPS in backend/src/services/shop/productGrouping.js)
+const MAIN_ICONS = {
+  'Sägen & Holz': 'saw-blade',
+  'Rasen & Wiese': 'grass',
+  'Hecke & Garten': 'flower-outline',
+  'Laub, Kehren & Winter': 'leaf',
+  Reinigen: 'spray-bottle',
+  'Bau & Werkstatt': 'hammer-wrench',
+  Fahrräder: 'bicycle',
+  Zubehör: 'toolbox-outline',
+};
 const SORTS = ['relevance', 'price_asc', 'price_desc', 'name'];
 
 export default function ShopListScreen({ navigation, route }) {
@@ -52,6 +63,7 @@ export default function ShopListScreen({ navigation, route }) {
     drive: filters.drive.join(',') || undefined,
     system: filters.system.join(',') || undefined,
     size: filters.size.join(',') || undefined,
+    frame: filters.frame.join(',') || undefined,
     color: filters.color.join(',') || undefined,
     available: filters.available ? '1' : undefined,
     offer: filters.offer ? '1' : undefined,
@@ -99,12 +111,18 @@ export default function ShopListScreen({ navigation, route }) {
 
   const activeCount = countShopFilters(filters);
 
+  // Start page = category tiles. Products show after choosing a category, searching,
+  // filtering or "Alle Produkte". Leaving a category returns to the tiles.
+  const [showAll, setShowAll] = useState(false);
+  useEffect(() => { if (filters.main) setShowAll(false); }, [filters.main]);
+  const isHome = !showAll && !debounced && !search && activeCount === 0;
+
   // What is switched on right now, each with a tap to remove it
   const activeTags = useMemo(() => {
     const options = (key) => (key === 'size' ? facets?.size?.options : facets?.[key]);
     const labelOf = (key, v) => options(key)?.find((o) => o.value === v)?.label || String(v);
     const tags = [];
-    ['drive', 'system', 'size', 'color', 'brand'].forEach((key) => {
+    ['drive', 'system', 'frame', 'size', 'color', 'brand'].forEach((key) => {
       filters[key].forEach((v) => tags.push({
         id: `${key}-${v}`,
         label: labelOf(key, v),
@@ -205,9 +223,24 @@ export default function ShopListScreen({ navigation, route }) {
             />
           )) : null}
         </>
-      ) : (facets?.main || []).map((m) => (
-        <Chip key={m.value} size="small" label={m.label} onPress={() => setFilters((f) => chooseMain(f, m.value))} />
-      ))}
+      ) : (
+        <>
+          {showAll ? (
+            <TouchableOpacity
+              onPress={() => setShowAll(false)}
+              style={[styles.crumb, { borderColor: theme.colors.border, borderRadius: theme.borderRadius.round }]}
+              accessibilityRole="button"
+              accessibilityLabel={t('shop.categoriesTitle')}
+            >
+              <MaterialCommunityIcons name="chevron-left" size={18} color={theme.colors.text} />
+              <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.text, fontWeight: '600' }]}>{t('shop.categoriesTitle')}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {(facets?.main || []).map((m) => (
+            <Chip key={m.value} size="small" label={m.label} onPress={() => setFilters((f) => chooseMain(f, m.value))} />
+          ))}
+        </>
+      )}
     </ScrollView>
   );
 
@@ -230,9 +263,50 @@ export default function ShopListScreen({ navigation, route }) {
       <View style={{ paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.sm }}>
         <SearchBar value={search} onChangeText={setSearch} onClear={() => setSearch('')} placeholder={t('shop.searchPlaceholder')} />
       </View>
-      {categoryBar}
-      {quickChips}
-      {activeTags.length ? (
+      {isHome ? (
+        // Start page: first the categories, products only after choosing one
+        loading && !facets ? (
+          <View style={styles.center}><ActivityIndicator color={theme.colors.primary} /></View>
+        ) : error && !facets ? (
+          <EmptyState icon="wifi-off" title={t('shop.loadError')} actionLabel={t('common.retry')} onAction={() => load()} />
+        ) : (
+          <ScrollView
+            contentContainerStyle={{ padding: theme.spacing.md, paddingBottom: theme.spacing.xl }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load({ mode: 'refresh' })} tintColor={theme.colors.primary} />}
+          >
+            <Text style={[theme.typography.styles.h5, { color: theme.colors.text, marginBottom: theme.spacing.sm }]}>{t('shop.categoriesTitle')}</Text>
+            <View style={[styles.tiles, { gap }]}>
+              {(facets?.main || []).map((m) => (
+                <TouchableOpacity
+                  key={m.value}
+                  activeOpacity={0.8}
+                  onPress={() => setFilters((f) => chooseMain(f, m.value))}
+                  style={[styles.tile, { width: cardWidth, backgroundColor: theme.colors.card, borderRadius: theme.borderRadius.lg }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${m.label}, ${t('shop.resultCount', { count: m.count })}`}
+                >
+                  <View style={[styles.tileIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.primaryLight, borderRadius: theme.borderRadius.round }]}>
+                    <MaterialCommunityIcons name={MAIN_ICONS[m.value] || 'shape-outline'} size={30} color={isDark ? theme.colors.text : theme.colors.primary} />
+                  </View>
+                  <Text style={[theme.typography.styles.body, { color: theme.colors.text, fontWeight: '700', textAlign: 'center' }]} numberOfLines={2}>{m.label}</Text>
+                  <Text style={[theme.typography.styles.caption, { color: theme.colors.textSecondary, marginTop: 2 }]}>{t('shop.resultCount', { count: m.count })}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowAll(true)}
+              style={[styles.allButton, { borderColor: theme.colors.border, borderRadius: theme.borderRadius.lg, marginTop: theme.spacing.md }]}
+              accessibilityRole="button"
+            >
+              <Text style={[theme.typography.styles.body, { color: offerColor, fontWeight: '700' }]}>{t('shop.showAllProducts', { count: total })}</Text>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={offerColor} />
+            </TouchableOpacity>
+          </ScrollView>
+        )
+      ) : null}
+      {isHome ? null : categoryBar}
+      {isHome ? null : quickChips}
+      {!isHome && activeTags.length ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -258,7 +332,7 @@ export default function ShopListScreen({ navigation, route }) {
           ) : null}
         </ScrollView>
       ) : null}
-      {loading && !items.length ? (
+      {isHome ? null : loading && !items.length ? (
         <View style={styles.center}><ActivityIndicator color={theme.colors.primary} /></View>
       ) : error && !items.length ? (
         <EmptyState icon="wifi-off" title={t('shop.loadError')} actionLabel={t('common.retry')} onAction={() => load()} />
@@ -349,4 +423,8 @@ const styles = StyleSheet.create({
   badgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
   availRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap' },
+  tile: { alignItems: 'center', paddingVertical: 18, paddingHorizontal: 10, elevation: 1, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
+  tileIcon: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  allButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, paddingHorizontal: 16, minHeight: 50 },
 });

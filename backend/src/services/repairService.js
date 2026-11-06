@@ -2,6 +2,7 @@ const { Op, literal } = require('sequelize');
 const { AppError, NotFoundError } = require('../middlewares/errorHandler');
 const { generateRepairNumber } = require('../utils/crypto');
 const logger = require('../utils/logger');
+const { CUSTOMER_STATUSES } = require('./taifunStatusMap');
 
 // Ready-for-pickup repairs first, then by repair number ascending.
 const READY_FIRST_ORDER = [
@@ -17,7 +18,9 @@ async function getUserRepairs(userId, query, models) {
   const { Repair, User } = models;
   const { filter, page = 1, limit = 20 } = query;
 
-  const where = { userId };
+  // Customers only see the statuses decided for the app (Teile bestellt, KVA, ...);
+  // orders "in Arbeit" etc. appear once Taifun moves them into one of those.
+  const where = { userId, status: { [Op.in]: CUSTOMER_STATUSES } };
 
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -90,6 +93,10 @@ async function getRepairById(repairId, userId, userRole, models) {
   const isAdmin = userRole === 'admin' || userRole === 'super_admin' || userRole === 'service_manager';
   if (repair.userId !== userId && !isAdmin) {
     throw new AppError('You do not have permission to view this repair', 403, 'FORBIDDEN');
+  }
+  // Same rule as the list: a hidden status is not shown to the customer
+  if (!isAdmin && !CUSTOMER_STATUSES.includes(repair.status)) {
+    throw new NotFoundError('Repair');
   }
 
   return repair;

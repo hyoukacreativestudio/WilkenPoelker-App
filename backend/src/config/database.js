@@ -170,6 +170,8 @@ async function connectDatabase() {
         { name: 'enum_repairs_status', value: 'leasing_in_progress' },
         { name: 'enum_repairs_status', value: 'sale_in_progress' },
         { name: 'enum_repairs_status', value: 'sale_test_drive' },
+        { name: 'enum_repairs_status', value: 'reserved' },
+        { name: 'enum_repairs_status', value: 'sale_delivery' },
         { name: 'enum_notifications_type', value: 'ticket_closed' },
         { name: 'enum_appointments_type', value: 'onsite_repair' },
         { name: 'enum_appointments_type', value: 'new_installation' },

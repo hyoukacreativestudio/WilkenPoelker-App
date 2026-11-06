@@ -3,6 +3,7 @@ import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { apptColor, contrastText, KUERZEL_COLOR } from '../apptColors.js';
+import { AppTabs, useLiveReload, scopeCounts, inScope } from '../customers.jsx';
 
 // Appointments created in the app show up here automatically (same backend).
 // Staff can also create their own by hand with a free-text customer.
@@ -47,15 +48,18 @@ export default function Termine({ user }) {
   const [propText, setPropText] = useState('');
   const [question, setQuestion] = useState('');
 
-  const load = async () => {
-    setLoading(true); setError('');
+  const [scope, setScope] = useState('no_app'); // no_app | app (customer has the app)
+
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setError(''); }
     try {
       const res = unwrap(await api.get('/desktop/appointments'));
       setRows(res.appointments || []);
-    } catch (e) { setError(e.message); setRows([]); }
-    finally { setLoading(false); }
+    } catch (e) { if (!silent) { setError(e.message); setRows([]); } }
+    finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); }, []);
+  useLiveReload(load, []);
 
   // Requests (customer asked, not yet scheduled) vs running (confirmed) appointments
   const REQUEST_STATES = ['pending', 'proposed', 'rescheduled'];
@@ -66,7 +70,7 @@ export default function Termine({ user }) {
   const isPast = (a) => a.date && String(a.date).slice(0, 10) < cutoff;
   // Same rule as the list below - otherwise the badge counted hidden old requests
   const requestCount = useMemo(() => rows.filter((a) => isRequest(a) && !isPast(a)).length, [rows, cutoff]);
-  const filtered = useMemo(
+  const inView = useMemo(
     () => rows.filter((a) => {
       if (kind === 'anfragen' && !isRequest(a)) return false;
       if (kind === 'laufend' && a.status !== 'confirmed') return false;
@@ -77,6 +81,8 @@ export default function Termine({ user }) {
     }),
     [rows, kind, type, dept, isAdmin, cutoff]
   );
+  const counts = useMemo(() => scopeCounts(inView), [inView]);
+  const filtered = useMemo(() => inView.filter(inScope(scope)), [inView, scope]);
   const sorted = useMemo(() => {
     const arr = [...filtered];
     const { key, dir } = sort;
@@ -140,6 +146,8 @@ export default function Termine({ user }) {
         </span>
         <span className={`pill tab ${kind === 'laufend' ? 'active' : ''}`} onClick={() => setKind('laufend')}>Laufende Termine</span>
         <span className={`pill tab ${kind === 'alle' ? 'active' : ''}`} onClick={() => setKind('alle')}>Alle</span>
+        <div style={{ width: 12 }} />
+        <AppTabs value={scope} onChange={setScope} counts={counts} />
         <div className="spacer" />
         {isAdmin && (
           <select className="select" value={dept} onChange={(e) => setDept(e.target.value)} title="Abteilung">

@@ -5,6 +5,7 @@ const { Order, WarehouseItem, User, Appointment, Ticket, ChatMessage, RobbyCusto
 const serviceService = require('../services/serviceService');
 const customerOrderService = require('../services/customerOrderService');
 const appointmentService = require('../services/appointmentService');
+const { appCustomerNumbers, markHasApp } = require('../services/appAccounts');
 
 // ── Passwordless department login (desktop tool on trusted company PCs) ──
 // Each department = one fixed account, linked by its stable username (NOT by a
@@ -263,7 +264,7 @@ const listCustomerOrders = asyncHandler(async (req, res) => {
     where: { ...customerOrderScope(req), customerOrderNumber: { [Op.ne]: null }, customerOrderStatus: status },
     order: [['customerOrderYear', 'ASC'], ['customerOrderNumber', 'ASC'], ['createdAt', 'ASC']],
   });
-  res.json({ success: true, data: { orders } });
+  res.json({ success: true, data: { orders: await markHasApp(orders.map((o) => o.toJSON())) } });
 });
 
 // Move a whole customer order (all its articles) to another status.
@@ -426,10 +427,15 @@ const listAppointments = asyncHandler(async (req, res) => {
 
   // Normalise: staff-entered ones carry the customer as free text; app ones
   // resolve it from the linked account.
+  // With app = booked in the app by a customer account, or entered by staff for
+  // a customer number that has an app account.
+  const appNumbers = await appCustomerNumbers(items.map((a) => a.customerNumber || a.customer?.customerNumber));
   const appointments = items.map((a) => {
     const c = a.customer;
     const fromAccount = c ? `${c.firstName || ''} ${c.lastName || ''}`.trim() : '';
+    const number = a.createdByStaff ? (a.customerNumber || '') : (c?.customerNumber || a.customerNumber || '');
     return {
+      hasApp: (!a.createdByStaff && !!c) || appNumbers.has(String(number).trim()),
       id: a.id,
       date: a.date,
       startTime: a.startTime,

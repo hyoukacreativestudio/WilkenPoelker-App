@@ -19,6 +19,7 @@ function setTaskbarBadge(count) {
 import Dashboard from './pages/Dashboard.jsx';
 import Termine from './pages/Termine.jsx';
 import Reparaturen from './pages/Reparaturen.jsx';
+import Kva from './pages/Kva.jsx';
 import Tickets from './pages/Tickets.jsx';
 import Bestellungen from './pages/Bestellungen.jsx';
 import Kundenbestellungen from './pages/Kundenbestellungen.jsx';
@@ -34,7 +35,7 @@ import ReparaturenHeute from './pages/ReparaturenHeute.jsx';
 import Quellen from './pages/Quellen.jsx';
 import HiddenTools from './pages/HiddenTools.jsx';
 
-const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturenheute: ReparaturenHeute, reparaturen: Reparaturen, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, kundenbestellungen: Kundenbestellungen, produkte: Produkte, anfragen: Anfragen, feedback: Feedback, quellen: Quellen, lager: Lager };
+const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturenheute: ReparaturenHeute, reparaturen: Reparaturen, kva: Kva, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, kundenbestellungen: Kundenbestellungen, produkte: Produkte, anfragen: Anfragen, feedback: Feedback, quellen: Quellen, lager: Lager };
 
 const SUBTITLES = {
   uebersicht: 'Überblick für deine Abteilung',
@@ -42,7 +43,8 @@ const SUBTITLES = {
   kalender: 'Terminübersicht im Monatskalender',
   termineheute: 'Reparaturen für heute – abhaken oder Warnung setzen',
   reparaturenheute: 'Reparaturen den Werkstatt-Mitarbeitern zuteilen',
-  reparaturen: 'Noch nicht erreichte Kunden anrufen',
+  reparaturen: 'Kunden ohne App anrufen oder per WhatsApp melden, Kunden mit App sehen den Stand selbst',
+  kva: 'Kostenvoranschläge: Kunden ohne App per WhatsApp, Kunden mit App direkt anschreiben',
   tickets: 'Tickets deiner Abteilung bearbeiten',
   robbykunden: 'Alle Kunden mit einem Robby',
   kundennummern: 'Kundennummer-Anfragen bearbeiten',
@@ -123,6 +125,7 @@ export default function Shell({ user, onLogout }) {
     const c = `${n.category || ''} ${n.relatedType || ''} ${n.type || ''}`.toLowerCase();
     let key = 'uebersicht';
     if (/produktanfrage/i.test(n.title || '')) key = 'anfragen';
+    else if (c.includes('kva')) key = 'kva';
     else if (c.includes('shop_recheck')) key = 'produkte';
     else if (c.includes('app_feedback')) key = 'feedback';
     else if (c.includes('appointment') || c.includes('termin')) key = 'termine';

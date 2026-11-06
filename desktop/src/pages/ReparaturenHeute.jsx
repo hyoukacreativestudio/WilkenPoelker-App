@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload, AppBadge } from '../customers.jsx';
 
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -24,15 +25,16 @@ export default function ReparaturenHeute({ user }) {
   const [warnText, setWarnText] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const q = new URLSearchParams({ date: day });
       const d = unwrap(await api.get(`/desktop/repairjobs?${q.toString()}`));
       setJobs(d.jobs || []); setEmployees(d.employees || []);
-    } catch (e) { setJobs([]); } finally { setLoading(false); }
+    } catch (e) { if (!silent) setJobs([]); } finally { if (!silent) setLoading(false); }
   };
-  useEffect(() => { load(); const t = setInterval(load, 60000); return () => clearInterval(t); /* eslint-disable-next-line */ }, [day]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [day]);
+  useLiveReload(load, [day]);
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -90,7 +92,7 @@ export default function ReparaturenHeute({ user }) {
                   </td>
                   <td><strong>{j.repairNumber}</strong></td>
                   <td>
-                    {j.customerName || '—'}{j.customerNumber ? <span className="muted"> · Kd {j.customerNumber}</span> : null}
+                    {j.customerName || '—'}<AppBadge on={j.hasApp} />{j.customerNumber ? <span className="muted"> · Kd {j.customerNumber}</span> : null}
                     {j.phone ? <div className="muted" style={{ fontSize: 12 }}>☎ {j.phone}</div> : null}
                     {j.note ? <div className="muted" style={{ fontSize: 12 }}>{j.note}</div> : null}
                     {j.warnNote ? <div style={{ color: '#c53030', fontWeight: 700, fontSize: 12 }}>⚠ {j.warnNote}</div> : null}

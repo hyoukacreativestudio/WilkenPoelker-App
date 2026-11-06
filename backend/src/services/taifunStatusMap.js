@@ -19,13 +19,17 @@
 const APP_STATUS = {
   REP_BESTELLT:          { category: 'reparatur', label: 'Bestellt',                repairStatus: 'ordered' },
   REP_IN_ARBEIT:         { category: 'reparatur', label: 'Reparatur in Arbeit',     repairStatus: 'in_repair' },
-  REP_KVA:               { category: 'reparatur', label: 'KVA erstellt',            repairStatus: 'quote_created' },
+  REP_KVA:               { category: 'reparatur', label: 'KVA geschrieben',         repairStatus: 'quote_created' },
   REP_TEILE_BESTELLT:    { category: 'reparatur', label: 'Teile bestellt',          repairStatus: 'parts_ordered' },
   REP_ABHOLBEREIT:       { category: 'reparatur', label: 'Reparatur Abholbereit',   repairStatus: 'ready' },
   LEASING_IN_ARBEIT:     { category: 'leasing',   label: 'Leasing in Bearbeitung',  repairStatus: 'leasing_in_progress' },
-  LEASING_ABGESCHLOSSEN: { category: 'leasing',   label: 'Leasing abgeschlossen',   repairStatus: 'ready' },
+  // Released but not ready for pickup: hidden in the app since 2026-11-06
+  LEASING_ABGESCHLOSSEN: { category: 'leasing',   label: 'Leasing abgeschlossen',   repairStatus: 'leasing_in_progress' },
+  LEASING_ABHOLBEREIT:   { category: 'leasing',   label: 'Leasing Abholbereit',     repairStatus: 'ready' },
   NEU_IN_ARBEIT:         { category: 'neu',       label: 'In Bearbeitung',          repairStatus: 'sale_in_progress' },
-  NEU_PROBEFAHRT:        { category: 'neu',       label: 'Zur Probefahrt',          repairStatus: 'sale_test_drive' },
+  NEU_RESERVIERT:        { category: 'neu',       label: 'Reserviert',              repairStatus: 'reserved' },
+  NEU_PROBEFAHRT:        { category: 'neu',       label: 'Fertig zur Probefahrt',   repairStatus: 'sale_test_drive' },
+  NEU_GELIEFERT:         { category: 'neu',       label: 'Fertig - wird geliefert', repairStatus: 'sale_delivery' },
   NEU_ABHOLBEREIT:       { category: 'neu',       label: 'Abholbereit',             repairStatus: 'ready' },
 };
 
@@ -34,8 +38,19 @@ const APP_STATUS = {
 const REPAIR_STATUSES = [
   'ordered', 'in_repair', 'quote_created', 'parts_ordered', 'repair_done', 'ready', 'completed',
   'leasing_in_progress',
-  'sale_in_progress', 'sale_test_drive',
+  'sale_in_progress', 'sale_test_drive', 'reserved', 'sale_delivery',
 ];
+
+// The only statuses a CUSTOMER sees in the app (user decision 2026-11-06):
+// Teile bestellt, KVA geschrieben, Reserviert, Abholbereit, Fertig - wird geliefert,
+// Fertig zur Probefahrt. Every other stand (in Arbeit, Neu bestellt, Leasing in
+// Bearbeitung ...) stays in the PC tool but is not shown in the app.
+// 'completed' = the customer confirmed the pickup in the app (purged after 2 days).
+const CUSTOMER_STATUSES = ['parts_ordered', 'quote_created', 'reserved', 'ready', 'sale_delivery', 'sale_test_drive', 'completed'];
+const isCustomerStatus = (repairStatus) => CUSTOMER_STATUSES.includes(repairStatus);
+
+// Finished orders: the PC tool offers the "fertig" WhatsApp message for these.
+const READY_CODES = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'NEU_GELIEFERT', 'LEASING_ABHOLBEREIT'];
 
 // Raw Taifun stands -> app status code (null = hidden, not shown in the app).
 // [guid, nr, taifunText, appStatusCode|null]
@@ -76,15 +91,15 @@ const STANDS = [
   ['{07A73580-43F8-4484-B820-5DE305ADB4BB}', 301, 'Leasing Zubehör',                'LEASING_IN_ARBEIT'],
   ['{90B3D4DF-B6D1-4855-B3AD-3751A875A922}', 302, 'Leasing abgeschlossen',          'LEASING_ABGESCHLOSSEN'],
   ['{6923995F-0CF3-475B-ACAF-D94A1C218BFA}', 303, 'Leasing freigegeben',            'LEASING_ABGESCHLOSSEN'],
-  ['{F7BCF409-376B-41B3-90DC-91C651ABF7D7}', 304, 'Leasing freige. + Abholbereit',  'LEASING_ABGESCHLOSSEN'],
+  ['{F7BCF409-376B-41B3-90DC-91C651ABF7D7}', 304, 'Leasing freige. + Abholbereit',  'LEASING_ABHOLBEREIT'],
   ['{04B10134-493C-4AE2-A133-2514E21F179D}', 305, 'Leasing auf Termin eingeben',    'LEASING_IN_ARBEIT'],
 
   // --- 4xx Neu / Verkauf (3 App-Status: in Bearbeitung / Probefahrt / abholbereit) ---
-  ['{3A0350CC-65D1-4312-B369-FC51DEEF222E}', 403, 'Neu fertig - wird geliefert',    'NEU_ABHOLBEREIT'],
+  ['{3A0350CC-65D1-4312-B369-FC51DEEF222E}', 403, 'Neu fertig - wird geliefert',    'NEU_GELIEFERT'],
   ['{89262E3F-EDBD-4EE6-9E5B-152F9B7807BA}', 404, 'Neu fertig-abhol Bereit',        'NEU_ABHOLBEREIT'],
   ['{1B0ED507-0CAC-4AC1-9E53-5D7B32C4CD5D}', 405, 'Unmontiert zur Probefahrt',      'NEU_IN_ARBEIT'],
   ['{490B38DB-836A-46F7-9C3C-31CDC0B0761D}', 406, 'Neu fertig-zur Probefahrt',      'NEU_PROBEFAHRT'],
-  ['{BA4A7837-EEB2-4A09-B28E-8035AAC3F119}', 407, 'Neu reserviert',                 'NEU_IN_ARBEIT'],
+  ['{BA4A7837-EEB2-4A09-B28E-8035AAC3F119}', 407, 'Neu reserviert',                 'NEU_RESERVIERT'],
   ['{A8CA5268-E141-4C68-ABB1-0AD5664605C8}', 408, 'Neu bestellt',                   'NEU_IN_ARBEIT'],
   ['{7A777657-4E94-4B4D-8382-E2DC7EB26F9C}', 409, 'Neu in Bearbeitung abholen',     'NEU_IN_ARBEIT'],
   ['{06E754AE-6878-49E2-96DC-72A54497E207}', 410, 'Neu in Bearbeitung liefern',     'NEU_IN_ARBEIT'],
@@ -164,6 +179,9 @@ function resolveByNr(nr) {
 module.exports = {
   APP_STATUS,
   REPAIR_STATUSES,
+  CUSTOMER_STATUSES,
+  READY_CODES,
+  isCustomerStatus,
   STANDS,
   normGuid,
   resolveByGuid,

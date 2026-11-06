@@ -12,12 +12,12 @@ import Chip from '../../components/ui/Chip';
 // step only appears when it can help. Changes apply at once, so the button always
 // shows how many products are left.
 export const emptyShopFilters = {
-  main: '', category: '', drive: [], system: [], size: [], color: [], brand: [],
+  main: '', category: '', drive: [], system: [], size: [], frame: [], color: [], brand: [],
   available: false, offer: false, minPrice: '', maxPrice: '', sort: 'relevance',
 };
 
 export const countShopFilters = (f) => (f.main || f.category ? 1 : 0) + f.drive.length + f.system.length + f.size.length
-  + f.color.length + f.brand.length + (f.available ? 1 : 0) + (f.offer ? 1 : 0) + (f.minPrice || f.maxPrice ? 1 : 0);
+  + (f.frame || []).length + f.color.length + f.brand.length + (f.available ? 1 : 0) + (f.offer ? 1 : 0) + (f.minPrice || f.maxPrice ? 1 : 0);
 
 const PRICE_RANGES = [['', '100'], ['100', '500'], ['500', '1000'], ['1000', '']];
 const BRANDS_SHOWN = 6;
@@ -34,7 +34,7 @@ export function priceLabel(t, min, max) {
 }
 
 // Choosing something higher up clears the details below it, which would no longer fit
-export const chooseMain = (f, main) => ({ ...f, main, category: '', size: [], color: [] });
+export const chooseMain = (f, main) => ({ ...f, main, category: '', size: [], frame: [], color: [] });
 export const chooseDevice = (f, category) => ({ ...f, category, size: [], color: [] });
 
 export default function ShopFilterSheet({ visible, facets, total, value, onChange, onClose }) {
@@ -171,6 +171,7 @@ export default function ShopFilterSheet({ visible, facets, total, value, onChang
 
           {chipGroup(t('shop.drive'), 'drive', facets?.drive)}
           {value.drive.includes('akku') ? chipGroup(t('shop.batterySystem'), 'system', facets?.system) : null}
+          {chipGroup(t('shop.frame'), 'frame', facets?.frame)}
           {value.category && facets?.size?.label ? chipGroup(facets.size.label, 'size', facets.size.options) : null}
           {value.category ? chipGroup(t('shop.color'), 'color', facets?.color) : null}
 

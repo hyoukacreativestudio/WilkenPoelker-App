@@ -7204,5 +7204,86 @@
     "SOLO Universal-Hohlkegeldüse, verstellbar"
    ]
   ]
+ },
+ {
+  "artNrs": [
+   "DER-D690521193",
+   "DER-D690521198",
+   "DER-D690521207",
+   "DER-D690521208"
+  ],
+  "title": "E-Bike Kalkhoff Modell: Image 3.B Advance",
+  "officialUrl": "https://www.kalkhoff-bikes.com/de_de/image-3-advance",
+  "officialName": "Kalkhoff IMAGE 3 ADVANCE",
+  "match": "model",
+  "images": [
+   "https://resource.pon.bike/by/transform/Large/9f74516e-9833-47dc-bcc4-bd83f1907dd4/K502v2025_2026_29_DI_BLK_090_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+   "https://resource.pon.bike/by/transform/Large/40b7f490-a2fa-4ec4-9621-4fdf51999e83/K502v2025_2026_29_DI_BLK_045_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+   "https://resource.pon.bike/by/transform/Large/02947368-cd27-4ae3-8456-ce2a5d66d323/K502v2025_2026_29_DI_BLK_135_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+   "https://resource.pon.bike/by/transform/Large/5b943f17-d3a4-4804-a928-1734d3c8435a/K502v2025_2026_29_DI_BLK_180_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+   "https://resource.pon.bike/by/transform/Large/2a00a9ad-e712-46c0-948f-2227e59f5f31/K502v2025_2026_29_DI_BLK_TOP_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280"
+  ],
+  "specs": [
+   [
+    "Motor",
+    "Bosch Performance Line Smart System, 36 V / 250 W / 75 Nm"
+   ],
+   [
+    "Akku",
+    "Bosch PowerTube Li-Ion, 540 Wh (15 Ah)"
+   ],
+   [
+    "Display",
+    "Bosch Purion 200 Farbdisplay mit Schiebehilfe"
+   ],
+   [
+    "Schaltung",
+    "5-Gang Shimano Nexus Nabenschaltung"
+   ],
+   [
+    "Bremsen",
+    "Hydraulische Scheibenbremsen (180 / 160 mm)"
+   ],
+   [
+    "Laufradgröße",
+    "29\""
+   ],
+   [
+    "Reifen",
+    "Schwalbe Green Marathon, 55-622"
+   ],
+   [
+    "Gabel",
+    "SR Suntour XCM32 Coil, 80 mm Federweg"
+   ],
+   [
+    "Sattelstütze",
+    "Aluminium, gefedert"
+   ],
+   [
+    "Gepäckträger",
+    "MIK HD Systemgepäckträger, Traglast 27 kg"
+   ],
+   [
+    "Licht",
+    "Herrmans MR5 LED / Herrmans H-Trace LED"
+   ],
+   [
+    "Sitzposition",
+    "Aufrecht"
+   ],
+   [
+    "Gewicht inkl. Akku",
+    "28,8 kg"
+   ],
+   [
+    "Zul. Gesamtgewicht",
+    "150 kg"
+   ],
+   [
+    "Max. Geschwindigkeit",
+    "25 km/h"
+   ]
+  ]
  }
 ]

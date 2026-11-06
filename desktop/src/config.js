@@ -54,6 +54,7 @@ export function modulesForRole(role) {
     { key: 'termineheute', label: 'Termine heute', icon: '📋', show: all || role === 'bike_manager' || role === 'service_manager' },
     { key: 'reparaturenheute', label: 'Reparaturen heute', icon: '🔧', show: all || role === 'bike_manager' || role === 'service_manager' },
     { key: 'reparaturen',  label: 'Aufträge',     icon: '🔧', show: all || role === 'service_manager' || role === 'sales_manager' || REPAIR_DEPARTMENT_ROLE[role] != null },
+    { key: 'kva',          label: 'KVA',          icon: '🧾', show: all || role === 'service_manager' },
     { key: 'tickets',      label: 'Tickets',      icon: '💬', show: role !== 'warehouse_worker' },
     { key: 'robbykunden',  label: 'Robby-Kunden', icon: '🤖', show: all || role === 'robby_manager' },
     { key: 'kundennummern', label: 'Kundennummern', icon: '🔢', show: all || role === 'service_manager' || role === 'sales_manager' },
