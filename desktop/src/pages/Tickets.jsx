@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap, mediaUrl } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 
 // Render image/file attachments (ticket or chat message).
 function Attachments({ list }) {
@@ -37,16 +38,17 @@ export default function Tickets() {
   const [status, setStatus] = useState('open');
   const [openId, setOpenId] = useState(null);
 
-  const load = async () => {
-    setLoading(true); setError('');
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setError(''); }
     try {
       const q = status !== 'all' ? `?status=${status}` : '';
       const res = unwrap(await api.get(`/desktop/tickets${q}`));
       setRows(res.tickets || []);
-    } catch (e) { setError(e.message); setRows([]); }
-    finally { setLoading(false); }
+    } catch (e) { if (!silent) { setError(e.message); setRows([]); } }
+    finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [status]);
+  useLiveReload(load, [status]);
 
   const custName = (t) => t.creator ? `${t.creator.firstName || ''} ${t.creator.lastName || ''}`.trim() : (t.customerName || '');
 
@@ -102,15 +104,16 @@ export function TicketDetail({ id, onClose, onChanged, toast }) {
   const [reply, setReply] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const res = unwrap(await api.get(`/desktop/tickets/${id}`));
       setTicket(res.ticket); setMessages(res.messages || []);
-    } catch (e) { toast(e.message, { type: 'error' }); onClose(); }
-    finally { setLoading(false); }
+    } catch (e) { if (!silent) { toast(e.message, { type: 'error' }); onClose(); } }
+    finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
+  useLiveReload(load, [id]);
 
   const send = async () => {
     if (!reply.trim()) return;

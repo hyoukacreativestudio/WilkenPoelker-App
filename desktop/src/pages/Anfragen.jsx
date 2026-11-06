@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 import { TicketDetail } from './Tickets.jsx';
 
 // Product inquiries for Verkauf + Admin, split by where they came from.
@@ -26,8 +27,8 @@ export default function Anfragen() {
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState(null);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const [list, c] = await Promise.all([
         api.get(`/desktop/inquiries/${source === 'app' ? 'app' : 'website'}?status=${status}`),
@@ -36,9 +37,10 @@ export default function Anfragen() {
       const d = unwrap(list);
       setRows((source === 'app' ? d.tickets : d.inquiries) || []);
       setCounts(unwrap(c));
-    } catch (e) { toast(e.message, { type: 'error' }); setRows([]); } finally { setLoading(false); }
+    } catch (e) { if (!silent) { toast(e.message, { type: 'error' }); setRows([]); } } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [source, status]);
+  useLiveReload(load, [source, status]);
 
   const setWebStatus = async (r, next) => {
     try { await api.patch(`/desktop/inquiries/website/${r.id}`, { status: next }); load(); }

@@ -31,6 +31,8 @@ router.delete('/orders/:id', authenticate, authorize(...STAFF), desktop.deleteOr
 const CUSTOMER_ORDER_ROLES = ['admin', 'super_admin', 'orders_manager', 'service_manager'];
 router.get('/customer-orders', authenticate, authorize(...CUSTOMER_ORDER_ROLES), desktop.listCustomerOrders);
 router.patch('/customer-orders/:year/:number', authenticate, authorize(...CUSTOMER_ORDER_ROLES), desktop.setCustomerOrderStatus);
+router.post('/customer-orders/:year/:number/message', authenticate, authorize(...CUSTOMER_ORDER_ROLES), desktop.messageCustomerOrder);
+router.patch('/customer-orders/:year/:number/contacted', authenticate, authorize(...CUSTOMER_ORDER_ROLES), desktop.setCustomerOrderContacted);
 router.get('/customer-lookup', authenticate, authorize(...STAFF), desktop.lookupCustomer);
 
 // ── Produkte (Taifun stock -> app + website product pages) ──

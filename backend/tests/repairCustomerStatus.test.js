@@ -18,8 +18,15 @@ describe('repair statuses shown to customers', () => {
     [102, 104, 407, 101, 404, 403, 406, 304].forEach((nr) => expect(M.isCustomerStatus(byNr(nr).repairStatus)).toBe(true));
   });
 
+  test('Neu bestellt and Leasing in Bearbeitung are shown again (2026-11-06)', () => {
+    expect(byNr(408).repairStatus).toBe('sale_ordered');
+    [300, 301, 302, 303, 109].forEach((nr) => expect(byNr(nr).repairStatus).toBe('leasing_in_progress'));
+    [408, 300, 302, 109].forEach((nr) => expect(M.isCustomerStatus(byNr(nr).repairStatus)).toBe(true));
+    expect(M.REPAIR_STATUSES).toContain('sale_ordered');
+  });
+
   test('work in progress stays in the PC tool but not in the app', () => {
-    [100, 105, 107, 116, 200, 201, 300, 302, 303, 405, 408, 409].forEach((nr) => {
+    [100, 105, 107, 116, 200, 201, 405, 409, 410, 411].forEach((nr) => {
       const e = byNr(nr);
       expect(e.hidden).toBe(false); // still listed for staff
       expect(M.isCustomerStatus(e.repairStatus)).toBe(false);

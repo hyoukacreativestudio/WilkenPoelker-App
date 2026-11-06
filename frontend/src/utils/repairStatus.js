@@ -1,7 +1,8 @@
 // One place for how a repair status looks in the app (list, detail, timeline).
 // Since 2026-11-06 customers only get these statuses from the server:
 // Teile bestellt, KVA geschrieben, Reserviert, Abholbereit, Fertig - wird
-// geliefert, Fertig zur Probefahrt (+ completed after they confirmed the pickup).
+// geliefert, Fertig zur Probefahrt, Neu bestellt, Leasing in Bearbeitung
+// (+ completed after they confirmed the pickup).
 // The older values stay here for staff views and older data.
 
 // Traffic light: red = waiting for something, yellow = almost there, green = done
@@ -15,6 +16,7 @@ export const STATUS_COLORS = {
   completed: '#2D8659',
   leasing_in_progress: '#E53E3E',
   sale_in_progress: '#E53E3E',
+  sale_ordered: '#E53E3E',
   reserved: '#ECC94B',
   sale_test_drive: '#ECC94B',
   sale_delivery: '#38A169',
@@ -35,6 +37,7 @@ export function repairStatusLabel(t, status, category) {
     completed: t('repairs.statusCompleted', 'Abgeschlossen'),
     leasing_in_progress: t('repairs.statusLeasingInProgress', 'Leasing in Bearbeitung'),
     sale_in_progress: t('repairs.statusInProgress', 'In Bearbeitung'),
+    sale_ordered: t('repairs.statusSaleOrdered', 'Neu bestellt'),
     reserved: t('repairs.statusReserved', 'Reserviert'),
     sale_test_drive: t('repairs.statusTestDrive', 'Fertig zur Probefahrt'),
     sale_delivery: t('repairs.statusDelivery', 'Fertig – wird geliefert'),

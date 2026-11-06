@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { ORDER_DEPARTMENTS } from '../config.js';
 import { useToast } from '../toast.jsx';
-import { AppTabs, useLiveReload, scopeCounts } from '../customers.jsx';
+import { AppTabs, useLiveReload, scopeCounts, whatsappNumber, customerOrderText, WhatsAppButton, MessageModal } from '../customers.jsx';
 
 // Customer orders = orders without Rep-/VK-Nr. that got an automatic number.
 // Flow: Offen -> "Teil da" -> "Erreicht" -> "Abgeholt" (kept there, can be undone).
@@ -18,6 +18,8 @@ const deptLabel = (key) => ORDER_DEPARTMENTS.find((d) => d.key === key)?.label |
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('de-DE') : '—');
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
 const firstSet = (rows, key) => rows.map((r) => r[key]).find((v) => v) || '';
+const when = (d) => (d ? new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '');
+const VIA = { app: '✉️ In der App', whatsapp: '💬 WhatsApp', manual: '✓ Gemeldet' };
 
 export default function Kundenbestellungen({ user }) {
   const toast = useToast();
@@ -28,6 +30,8 @@ export default function Kundenbestellungen({ user }) {
   const [search, setSearch] = useState('');
   const [busyKey, setBusyKey] = useState(null);
   const [scope, setScope] = useState('no_app'); // no_app | app
+  const [compose, setCompose] = useState(null); // { group, text }
+  const [sending, setSending] = useState(false);
 
   const load = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -60,6 +64,9 @@ export default function Kundenbestellungen({ user }) {
         createdAt: g.items[0].createdAt,
         statusAt: g.items[0].customerOrderStatusAt,
         statusBy: g.items[0].customerOrderStatusBy,
+        contactedAt: firstSet(g.items, 'customerContactedAt'),
+        contactedVia: firstSet(g.items, 'customerContactedVia'),
+        message: firstSet(g.items, 'customerMessage'),
       }))
       .filter((g) => !q || [g.number, g.customerName, g.customerNumber, g.customerPhone, ...g.items.map((i) => `${i.description} ${i.articleNumber || ''} ${i.sourceText || ''}`)]
         .join(' ').toLowerCase().includes(q));
@@ -87,6 +94,22 @@ export default function Kundenbestellungen({ user }) {
 
   const current = STEPS.find((s) => s.key === step);
 
+  // Only a message written since the order reached the current step counts here
+  const contactedNow = (g) => g.contactedAt && (!g.statusAt || new Date(g.contactedAt) >= new Date(g.statusAt));
+  const textFor = (g) => customerOrderText({ name: g.customerName, items: g.items, number: g.number, step });
+  const setContacted = async (g, contacted, via) => {
+    try { await api.patch(`/desktop/customer-orders/${g.year}/${g.number}/contacted`, { contacted, via }); load({ silent: true }); }
+    catch (e) { toast(e.message, { type: 'error' }); }
+  };
+  const send = async () => {
+    setSending(true);
+    try {
+      await api.post(`/desktop/customer-orders/${compose.group.year}/${compose.group.number}/message`, { text: compose.text.trim() });
+      toast(`Nachricht an ${compose.group.customerName || 'den Kunden'} gesendet`);
+      setCompose(null); load({ silent: true });
+    } catch (e) { toast(e.message, { type: 'error' }); } finally { setSending(false); }
+  };
+
   return (
     <div>
       <div className="toolbar no-print">
@@ -113,6 +136,7 @@ export default function Kundenbestellungen({ user }) {
               {isManager && <th>Abteilung</th>}
               <th>Kürzel</th>
               <th className="nowrap">Bestellt am</th>
+              {step !== 'picked_up' && <th className="no-print">Kunde melden</th>}
               <th className="no-print"></th>
             </tr>
           </thead>
@@ -147,6 +171,20 @@ export default function Kundenbestellungen({ user }) {
                   {fmtDate(g.createdAt)}
                   {step !== 'waiting' && g.statusAt ? <div className="muted" style={{ fontSize: 12 }}>{current.label}: {fmtDate(g.statusAt)}{g.statusBy ? ` (${g.statusBy})` : ''}</div> : null}
                 </td>
+                {step !== 'picked_up' && (
+                  <td className="nowrap no-print">
+                    {g.hasApp
+                      ? <button className="btn sm" onClick={() => setCompose({ group: g, text: textFor(g) })}>✉️ Nachricht</button>
+                      : <WhatsAppButton number={whatsappNumber(g.customerPhone)} text={textFor(g)} onSent={() => setContacted(g, true, 'whatsapp')} />}
+                    {!g.hasApp && !contactedNow(g) ? <>{' '}<button className="btn sm ghost" title="z. B. nach einem Anruf" onClick={() => setContacted(g, true, 'manual')}>Gemeldet ✓</button></> : null}
+                    {contactedNow(g) ? (
+                      <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                        {VIA[g.contactedVia] || 'Gemeldet'} {when(g.contactedAt)}
+                        {!g.hasApp ? <> · <a href="#" onClick={(e) => { e.preventDefault(); setContacted(g, false); }}>zurück</a></> : null}
+                      </div>
+                    ) : null}
+                  </td>
+                )}
                 <td className="right nowrap no-print">
                   {current.next ? <button className="btn sm" disabled={busyKey === g.key} onClick={() => move(g, current.next)}>{current.action}</button> : null}
                   {current.prev ? <>{' '}<button className="btn sm ghost" disabled={busyKey === g.key} onClick={() => move(g, current.prev)} title="Einen Schritt zurück">{current.next ? '↩' : '↩ Zurück zu „Erreicht“'}</button></> : null}
@@ -156,6 +194,17 @@ export default function Kundenbestellungen({ user }) {
           </tbody>
         </table></div>
       )}
+
+      {compose ? (
+        <MessageModal
+          title={`Nachricht an ${compose.group.customerName || `Kd ${compose.group.customerNumber}`}`}
+          text={compose.text}
+          onChange={(text) => setCompose({ ...compose, text })}
+          onClose={() => setCompose(null)}
+          onSend={send}
+          busy={sending}
+        />
+      ) : null}
     </div>
   );
 }

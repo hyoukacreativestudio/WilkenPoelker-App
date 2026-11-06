@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 
 const CAN_WRITE = ['sales_manager', 'admin', 'super_admin'];
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
@@ -24,15 +25,16 @@ export default function Lager({ user }) {
   const [form, setForm] = useState(emptyForm());
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const q = status !== 'all' ? `?status=${status}` : '';
       const data = unwrap(await api.get(`/desktop/warehouse${q}`));
       setRows(data.items || []);
-    } catch (e) { setRows([]); } finally { setLoading(false); }
+    } catch (e) { if (!silent) setRows([]); } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [status]);
+  useLiveReload(load, [status]);
 
   const sorted = useMemo(() => {
     const arr = [...rows];

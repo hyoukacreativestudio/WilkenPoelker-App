@@ -30,14 +30,22 @@ export const scopeCounts = (rows, isOpen = () => true) => ({
   app: rows.filter((r) => r.hasApp && isOpen(r)).length,
 });
 
-// Reload in the background so status changes appear while the window is open:
-// every few seconds, when the window gets the focus again and when it becomes
-// visible. load({ silent: true }) must not show the big spinner.
-export function useLiveReload(load, deps = [], ms = 15000) {
+// Reload in the background so changes appear while the page is open (user wish
+// 2026-11-06: every 5 seconds, always - also while the window is in the
+// background), plus right away when the window gets the focus again.
+// load({ silent: true }) must not show the big spinner or error toasts.
+// A reload that is still running is not started a second time.
+export const LIVE_RELOAD_MS = 5000;
+export function useLiveReload(load, deps = [], ms = LIVE_RELOAD_MS) {
   const ref = useRef(load);
   ref.current = load;
+  const busy = useRef(false);
   useEffect(() => {
-    const run = () => { if (!document.hidden) ref.current({ silent: true }); };
+    const run = async () => {
+      if (busy.current) return;
+      busy.current = true;
+      try { await ref.current({ silent: true }); } catch { /* next round */ } finally { busy.current = false; }
+    };
     const t = setInterval(run, ms);
     window.addEventListener('focus', run);
     document.addEventListener('visibilitychange', run);
@@ -85,6 +93,36 @@ export function readyText({ name, info, category, department, delivery }) {
 
 export function kvaText({ name, info }) {
   return `${salutation(name)}\n\nfür Ihre Reparatur${what(info)} haben wir einen Kostenvoranschlag erstellt. Bitte melden Sie sich kurz bei uns, ob wir die Reparatur so durchführen sollen.\n\n${SHOP_SIGNATURE}`;
+}
+
+// Kundenbestellung: what the customer gets, depending on where the order is.
+// "Offen" = ordered, still waiting; everything after = the part is here.
+export function customerOrderText({ name, items = [], number, step, signature = true }) {
+  const list = items.map((i) => `${i.quantity > 1 ? `${i.quantity}× ` : ''}${i.description}`).filter(Boolean).join(', ');
+  const what = list ? ` (${list})` : '';
+  const nr = number ? ` Nr. ${number}` : '';
+  const body = step === 'waiting'
+    ? `Ihre Bestellung${nr}${what} ist bei uns in Arbeit. Wir melden uns, sobald alles da ist.`
+    : `Ihre Bestellung${nr}${what} ist da und kann bei uns abgeholt werden.`;
+  return `${salutation(name)}\n\n${body}${signature ? `\n\n${SHOP_SIGNATURE}` : ''}`;
+}
+
+// Message window for app customers (notification + push). Not sent while the
+// text still has a ___ gap (e.g. the KVA amount).
+export function MessageModal({ title, hint, text, onChange, onClose, onSend, busy }) {
+  return (
+    <div className="backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h2>{title}</h2>
+        <div className="muted" style={{ marginBottom: 8 }}>{hint || 'Kommt als Benachrichtigung aufs Handy und steht in der App unter Mitteilungen.'}</div>
+        <textarea className="input" rows={9} style={{ width: '100%', resize: 'vertical' }} value={text} onChange={(e) => onChange(e.target.value)} autoFocus />
+        <div className="modal-actions">
+          <button className="btn ghost" onClick={onClose}>Abbrechen</button>
+          <button className="btn" disabled={busy || !text.trim()} onClick={onSend}>{busy ? 'Sende…' : 'Senden'}</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function openWhatsApp(number, text) {

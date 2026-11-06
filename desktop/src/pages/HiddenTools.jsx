@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 
 // ── date helpers ──────────────────────────────────────────────────────────
 const pad = (n) => String(n).padStart(2, '0');
@@ -145,7 +146,8 @@ function Auswertung() {
     try { const d = unwrap(await api.get('/desktop/hidden/timeclock/running')); setNowRunning(d.entries || []); }
     catch (e) { setNowRunning([]); }
   };
-  useEffect(() => { loadRunning(); const t = setInterval(loadRunning, 20000); return () => clearInterval(t); }, []);
+  useEffect(() => { loadRunning(); }, []);
+  useLiveReload(loadRunning, []);
 
   const loadReport = async () => {
     if (!name) { setEntries([]); return; }
@@ -160,6 +162,7 @@ function Auswertung() {
   // Load the names list once even before a person is chosen.
   useEffect(() => { (async () => { try { const d = unwrap(await api.get('/desktop/hidden/timeclock')); setNames(d.names || []); } catch (e) {} })(); }, []);
   useEffect(() => { loadReport(); /* eslint-disable-next-line */ }, [name, from, to]);
+  useLiveReload(loadReport, [name, from, to]);
 
   const markDone = async (date, done) => {
     try { await api.post('/desktop/hidden/timeclock/done', { name, date, done }); loadReport(); }

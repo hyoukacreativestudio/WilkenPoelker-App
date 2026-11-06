@@ -4,6 +4,7 @@ import { api, unwrap } from '../api.js';
 import { ORDER_DEPARTMENTS, departmentForRole } from '../config.js';
 // (unwrap used for the purge response)
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 
 // Service acts exactly like the Bestellungen account for orders (see all, edit,
 // tick off).
@@ -102,17 +103,18 @@ export default function Bestellungen({ user }) {
     } catch (e) { /* not authorised (non-manager) → keep localStorage fallback */ }
   };
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const q = new URLSearchParams();
       if (isManager && dept !== 'all') q.set('department', dept);
       q.set('status', status);
       const data = unwrap(await api.get(`/desktop/orders?${q.toString()}`));
       setRows(data.orders || []);
-    } catch (e) { setRows([]); } finally { setLoading(false); }
+    } catch (e) { if (!silent) setRows([]); } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); loadSourceList(); /* eslint-disable-next-line */ }, [dept, status]);
+  useLiveReload(load, [dept, status]);
 
   const sorted = useMemo(() => {
     const arr = rows.filter((r) => sourceFilter === 'all' || String(r.sourceText || '').toLowerCase() === sourceFilter.toLowerCase());

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 
 // What people write under "Mehr" -> "Feedback" in the app. Admins only.
 const fmt = (d) => new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -10,12 +11,13 @@ export default function Feedback() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try { setRows(unwrap(await api.get('/desktop/feedback')).feedback || []); }
-    catch (e) { toast(e.message, { type: 'error' }); setRows([]); } finally { setLoading(false); }
+    catch (e) { if (!silent) { toast(e.message, { type: 'error' }); setRows([]); } } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useLiveReload(load, []);
 
   const setRead = async (r, read) => {
     try { await api.patch(`/desktop/feedback/${r.id}`, { read }); setRows((l) => l.map((x) => (x.id === r.id ? { ...x, read } : x))); }

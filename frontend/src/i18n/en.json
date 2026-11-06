@@ -657,6 +657,7 @@
     "repairPatienceNote": "Please understand that repair duration depends on the availability of spare parts and the complexity of the damage.",
     "statusCompleted": "Completed",
     "statusReserved": "Reserved",
+    "statusSaleOrdered": "Ordered",
     "statusDelivery": "Done – will be delivered",
     "statusLeasingReady": "Ready for pickup",
     "batteryNote": "Note: the battery is still charging. If you would like to ride home, please let us know shortly beforehand.",

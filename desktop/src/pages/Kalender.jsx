@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 import { TYPES } from './Termine.jsx';
 import { KUERZEL_COLOR, URLAUB_COLOR, FALLBACK_COLOR, apptColor, contrastText, LEGEND_BY_DEPT, kuerzelName } from '../apptColors.js';
 
@@ -153,12 +154,13 @@ export default function Kalender({ user }) {
     return map;
   }, [cursor.y, weekStart, extraClosed]);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try { setRows(unwrap(await api.get('/desktop/appointments')).appointments || []); }
-    catch (e) { setRows([]); } finally { setLoading(false); }
+    catch (e) { if (!silent) setRows([]); } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); }, []);
+  useLiveReload(load, []);
   useEffect(() => {
     (async () => {
       try {

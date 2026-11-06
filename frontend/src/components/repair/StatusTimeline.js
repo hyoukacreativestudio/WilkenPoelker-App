@@ -11,8 +11,8 @@ import { repairStatusLabel } from '../../utils/repairStatus';
 // 'ready' (or 'sale_delivery' for delivered new devices) is the end state.
 const STATUS_ORDERS = {
   reparatur: ['quote_created', 'parts_ordered', 'ready'],
-  leasing: ['ready'],
-  neu: ['reserved', 'sale_test_drive', 'sale_delivery', 'ready'],
+  leasing: ['leasing_in_progress', 'ready'],
+  neu: ['sale_ordered', 'reserved', 'sale_test_drive', 'sale_delivery', 'ready'],
 };
 const END_STEPS = new Set(['ready']);
 

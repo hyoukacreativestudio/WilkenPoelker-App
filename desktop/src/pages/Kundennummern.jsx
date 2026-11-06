@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 
 // Customer-number requests. Admin/Service/Verkauf can view, assign a number
 // (approve) or reject. Talks to the same /api/customer-number endpoints as the app.
@@ -18,15 +19,16 @@ export default function Kundennummern() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    setLoading(true); setError('');
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setError(''); }
     try {
       const res = unwrap(await api.get(`/customer-number/requests?status=${status}`));
       setRows(res.requests || []);
-    } catch (e) { setError(e.message); setRows([]); }
-    finally { setLoading(false); }
+    } catch (e) { if (!silent) { setError(e.message); setRows([]); } }
+    finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [status]);
+  useLiveReload(load, [status]);
 
   const name = (r) => r.requester ? `${r.requester.firstName || ''} ${r.requester.lastName || ''}`.trim() || r.requester.username : '—';
   const addr = (r) => { const a = r.address || {}; return [a.street, [a.zip, a.city].filter(Boolean).join(' ')].filter(Boolean).join(', '); };

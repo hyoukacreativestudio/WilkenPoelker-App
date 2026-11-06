@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap, mediaUrl } from '../api.js';
 import { backdropHandlers } from '../backdrop.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 
 // Product pages for app + website, built automatically from Bruno's Taifun
 // stock export (SFTP /Bestand). Here: visibility, pictures, variants, brands.
@@ -33,15 +34,16 @@ export default function Produkte() {
   const [showBrands, setShowBrands] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const d = unwrap(await api.get(`/desktop/shop/products?filter=${filter}`));
       setRows(d.products || []);
       setCounts(d.counts || {});
-    } catch (e) { toast(e.message, { type: 'error' }); setRows([]); } finally { setLoading(false); }
+    } catch (e) { if (!silent) { toast(e.message, { type: 'error' }); setRows([]); } } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [filter]);
+  useLiveReload(load, [filter]);
 
   const shown = useMemo(() => {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean);

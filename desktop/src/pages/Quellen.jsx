@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 
 // Merge duplicate order sources (e.g. "amazon" + "Amazon" → "Amazon") across all
 // departments. For admin / Bestellungen / Service.
@@ -12,12 +13,13 @@ export default function Quellen() {
   const [target, setTarget] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try { setRows(unwrap(await api.get('/desktop/orders/sources')).sources || []); }
-    catch (e) { toast(e.message, { type: 'error' }); setRows([]); } finally { setLoading(false); }
+    catch (e) { if (!silent) { toast(e.message, { type: 'error' }); setRows([]); } } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useLiveReload(load, []);
 
   const selected = useMemo(() => rows.filter((r) => sel[r.name]).map((r) => r.name), [rows, sel]);
   const toggle = (name) => setSel((s) => ({ ...s, [name]: !s[name] }));

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
+import { useLiveReload } from '../customers.jsx';
 import { TYPES } from './Termine.jsx';
 
 // All customers who bought a Robby. Search across everything, add/edit/delete.
@@ -21,14 +22,15 @@ export default function RobbyKunden() {
   const [apptFor, setApptFor] = useState(null); // customer we're creating an appointment for
   const [apptForm, setApptForm] = useState(null);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const q = search ? `?search=${encodeURIComponent(search)}` : '';
       setRows(unwrap(await api.get(`/desktop/robby-customers${q}`)).customers || []);
-    } catch (e) { setRows([]); } finally { setLoading(false); }
+    } catch (e) { if (!silent) setRows([]); } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); /* eslint-disable-next-line */ }, [search]);
+  useLiveReload(load, [search]);
 
   // PLZ ⇄ Ort autofill: typing one looks up the other (debounced, via backend).
   // Only fills the other field when it's empty or still holds a previous

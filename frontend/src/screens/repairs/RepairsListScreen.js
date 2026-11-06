@@ -31,7 +31,7 @@ import { STATUS_COLORS, repairStatusLabel } from '../../utils/repairStatus';
 const ACTIVE_STATUSES = [
   'ordered', 'in_repair', 'quote_created', 'parts_ordered', 'repair_done', 'ready',
   'leasing_in_progress',
-  'sale_in_progress', 'sale_test_drive', 'reserved', 'sale_delivery',
+  'sale_in_progress', 'sale_test_drive', 'reserved', 'sale_delivery', 'sale_ordered',
 ];
 
 // "Abholbereit"/"Fertig" (green). Everything else active = "In Arbeit".

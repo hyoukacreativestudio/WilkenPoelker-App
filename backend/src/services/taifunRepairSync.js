@@ -24,6 +24,10 @@ function customerText(mapping, repair, deviceName) {
       return { title: 'Reserviert', body: `${deviceName} ist für Sie reserviert.` };
     case 'sale_delivery':
       return { title: 'Fertig', body: `${deviceName} ist fertig und wird geliefert.` };
+    case 'sale_ordered':
+      return { title: 'Neu bestellt', body: `${deviceName} ist für Sie bestellt. Wir melden uns, sobald es da ist.` };
+    case 'leasing_in_progress':
+      return { title: 'Leasing in Bearbeitung', body: `${deviceName}: Ihr Leasing wird bearbeitet.` };
     case 'sale_test_drive':
       return { title: 'Fertig zur Probefahrt', body: `${deviceName} ist fertig zur Probefahrt.` };
     default:

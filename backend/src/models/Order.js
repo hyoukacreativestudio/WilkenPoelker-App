@@ -71,6 +71,16 @@ const Order = sequelize.define('Order', {
   customerOrderStatusBy: {
     type: DataTypes.STRING,
   },
+  // Last message to the customer: app message (text kept) or WhatsApp (time only)
+  customerMessage: {
+    type: DataTypes.TEXT,
+  },
+  customerContactedAt: {
+    type: DataTypes.DATE,
+  },
+  customerContactedVia: {
+    type: DataTypes.STRING, // app | whatsapp | manual
+  },
   description: {
     type: DataTypes.STRING, // "was es ist"
     allowNull: false,

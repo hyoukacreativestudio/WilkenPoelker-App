@@ -18,15 +18,22 @@ beforeEach(() => {
   ShopGroup.findAll.mockResolvedValue([...GROUPS.map(([nr]) => ({ nr }))]);
 });
 
-describe('only known Warengruppen go into the shop', () => {
+// User decision 2026-11-06: every article of the export goes in ("alle Produkte
+// von den XMLs"), only our own internal numbers (WP-...) stay out.
+describe('every article of the stock export goes into the shop', () => {
   test('a device of a known group is stored', async () => {
     expect(await upsertArticles([art('STI-1', 105)], 'x.xml')).toEqual({ inserted: 1, updated: 0, ignored: 0 });
     expect(ShopArticle.create).toHaveBeenCalledTimes(1);
   });
 
-  test('no group and an unlisted group are ignored', async () => {
+  test('spare parts without or with an unlisted group are stored too', async () => {
     const r = await upsertArticles([art('ZEG-speiche', 268), art('ABU-helm', 243), art('RAT-kette', null)], 'x.xml');
-    expect(r).toEqual({ inserted: 0, updated: 0, ignored: 3 });
+    expect(r).toEqual({ inserted: 3, updated: 0, ignored: 0 });
+  });
+
+  test('internal numbers (Fracht, Besichtigung) are no products', async () => {
+    const r = await upsertArticles([art('WP-913', null), art('wp-531', null)], 'x.xml');
+    expect(r).toEqual({ inserted: 0, updated: 0, ignored: 2 });
     expect(ShopArticle.create).not.toHaveBeenCalled();
   });
 
@@ -36,12 +43,5 @@ describe('only known Warengruppen go into the shop', () => {
     const r = await upsertArticles([art('STI-2', null)], 'alt.xml');
     expect(r).toEqual({ inserted: 0, updated: 1, ignored: 0 });
     expect(update.mock.calls[0][0].whg).toBe(105);
-  });
-
-  test('a stored spare part without group is not updated again', async () => {
-    const update = jest.fn();
-    ShopArticle.findOne.mockResolvedValue({ whg: null, update });
-    expect((await upsertArticles([art('RAT-kette', null)], 'x.xml')).ignored).toBe(1);
-    expect(update).not.toHaveBeenCalled();
   });
 });

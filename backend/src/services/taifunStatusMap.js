@@ -23,10 +23,11 @@ const APP_STATUS = {
   REP_TEILE_BESTELLT:    { category: 'reparatur', label: 'Teile bestellt',          repairStatus: 'parts_ordered' },
   REP_ABHOLBEREIT:       { category: 'reparatur', label: 'Reparatur Abholbereit',   repairStatus: 'ready' },
   LEASING_IN_ARBEIT:     { category: 'leasing',   label: 'Leasing in Bearbeitung',  repairStatus: 'leasing_in_progress' },
-  // Released but not ready for pickup: hidden in the app since 2026-11-06
+  // Released but not ready for pickup: the app shows "Leasing in Bearbeitung"
   LEASING_ABGESCHLOSSEN: { category: 'leasing',   label: 'Leasing abgeschlossen',   repairStatus: 'leasing_in_progress' },
   LEASING_ABHOLBEREIT:   { category: 'leasing',   label: 'Leasing Abholbereit',     repairStatus: 'ready' },
-  NEU_IN_ARBEIT:         { category: 'neu',       label: 'In Bearbeitung',          repairStatus: 'sale_in_progress' },
+  NEU_BESTELLT:          { category: 'neu',       label: 'Neu bestellt',            repairStatus: 'sale_ordered' },
+  NEU_IN_ARBEIT:        { category: 'neu',       label: 'In Bearbeitung',          repairStatus: 'sale_in_progress' },
   NEU_RESERVIERT:        { category: 'neu',       label: 'Reserviert',              repairStatus: 'reserved' },
   NEU_PROBEFAHRT:        { category: 'neu',       label: 'Fertig zur Probefahrt',   repairStatus: 'sale_test_drive' },
   NEU_GELIEFERT:         { category: 'neu',       label: 'Fertig - wird geliefert', repairStatus: 'sale_delivery' },
@@ -38,15 +39,19 @@ const APP_STATUS = {
 const REPAIR_STATUSES = [
   'ordered', 'in_repair', 'quote_created', 'parts_ordered', 'repair_done', 'ready', 'completed',
   'leasing_in_progress',
-  'sale_in_progress', 'sale_test_drive', 'reserved', 'sale_delivery',
+  'sale_in_progress', 'sale_test_drive', 'reserved', 'sale_delivery', 'sale_ordered',
 ];
 
-// The only statuses a CUSTOMER sees in the app (user decision 2026-11-06):
+// The only statuses a CUSTOMER sees in the app (user decisions 2026-11-06):
 // Teile bestellt, KVA geschrieben, Reserviert, Abholbereit, Fertig - wird geliefert,
-// Fertig zur Probefahrt. Every other stand (in Arbeit, Neu bestellt, Leasing in
-// Bearbeitung ...) stays in the PC tool but is not shown in the app.
+// Fertig zur Probefahrt, Neu bestellt (stand 408) and Leasing in Bearbeitung.
+// Every other stand (Reparatur in Arbeit, Rücksprache, Neu in Bearbeitung ...)
+// stays in the PC tool but is not shown in the app.
 // 'completed' = the customer confirmed the pickup in the app (purged after 2 days).
-const CUSTOMER_STATUSES = ['parts_ordered', 'quote_created', 'reserved', 'ready', 'sale_delivery', 'sale_test_drive', 'completed'];
+const CUSTOMER_STATUSES = [
+  'parts_ordered', 'quote_created', 'reserved', 'ready', 'sale_delivery', 'sale_test_drive',
+  'sale_ordered', 'leasing_in_progress', 'completed',
+];
 const isCustomerStatus = (repairStatus) => CUSTOMER_STATUSES.includes(repairStatus);
 
 // Finished orders: the PC tool offers the "fertig" WhatsApp message for these.
@@ -100,7 +105,7 @@ const STANDS = [
   ['{1B0ED507-0CAC-4AC1-9E53-5D7B32C4CD5D}', 405, 'Unmontiert zur Probefahrt',      'NEU_IN_ARBEIT'],
   ['{490B38DB-836A-46F7-9C3C-31CDC0B0761D}', 406, 'Neu fertig-zur Probefahrt',      'NEU_PROBEFAHRT'],
   ['{BA4A7837-EEB2-4A09-B28E-8035AAC3F119}', 407, 'Neu reserviert',                 'NEU_RESERVIERT'],
-  ['{A8CA5268-E141-4C68-ABB1-0AD5664605C8}', 408, 'Neu bestellt',                   'NEU_IN_ARBEIT'],
+  ['{A8CA5268-E141-4C68-ABB1-0AD5664605C8}', 408, 'Neu bestellt',                   'NEU_BESTELLT'],
   ['{7A777657-4E94-4B4D-8382-E2DC7EB26F9C}', 409, 'Neu in Bearbeitung abholen',     'NEU_IN_ARBEIT'],
   ['{06E754AE-6878-49E2-96DC-72A54497E207}', 410, 'Neu in Bearbeitung liefern',     'NEU_IN_ARBEIT'],
   ['{516A7A16-FBAD-4919-87A1-14BDEE4AEE38}', 411, 'muss bestellt werden',           'NEU_IN_ARBEIT'],

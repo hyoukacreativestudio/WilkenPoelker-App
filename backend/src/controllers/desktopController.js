@@ -284,6 +284,54 @@ const setCustomerOrderStatus = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { updated } });
 });
 
+// All articles of one customer order (year + number) the user may work on.
+async function customerOrderRows(req) {
+  const year = parseInt(req.params.year, 10);
+  const number = parseInt(req.params.number, 10);
+  if (!year || !number) throw new AppError('Ungültige Nummer', 400, 'BAD_NUMBER');
+  const rows = await Order.findAll({ where: { ...customerOrderScope({ ...req, query: {} }), customerOrderYear: year, customerOrderNumber: number } });
+  if (!rows.length) throw new NotFoundError('Kundenbestellung');
+  return rows;
+}
+
+// App customer: message about the customer order as notification + push
+// (opens the app's Mitteilungen). Customers without the app get WhatsApp.
+const messageCustomerOrder = asyncHandler(async (req, res) => {
+  const text = String(req.body.text || '').trim().slice(0, 1500);
+  if (!text) throw new AppError('Bitte eine Nachricht eingeben', 400, 'MESSAGE_REQUIRED');
+  const rows = await customerOrderRows(req);
+  const number = rows.map((r) => String(r.customerNumber || '').trim()).find(Boolean);
+  const users = number
+    ? await models.User.findAll({ where: { customerNumber: number, isActive: true }, attributes: ['id'] })
+    : [];
+  if (!users.length) throw new AppError('Der Kunde hat kein App-Konto', 400, 'NO_APP_ACCOUNT');
+  // One by one so every notification sends its push (afterCreate hook)
+  for (const u of users) {
+    await models.Notification.create({
+      userId: u.id,
+      title: `Ihre Bestellung Nr. ${rows[0].customerOrderNumber}`,
+      message: text,
+      type: 'system',
+      category: 'system',
+      relatedType: 'customer_order',
+      deepLink: '/notifications',
+    });
+  }
+  const now = new Date();
+  await Order.update({ customerMessage: text, customerContactedAt: now, customerContactedVia: 'app' }, { where: { id: rows.map((r) => r.id) } });
+  res.json({ success: true, data: { contactedAt: now, recipients: users.length } });
+});
+
+// WhatsApp sent (or phoned) - or undone.
+const setCustomerOrderContacted = asyncHandler(async (req, res) => {
+  const rows = await customerOrderRows(req);
+  const contacted = req.body.contacted !== false;
+  const via = ['whatsapp', 'manual'].includes(req.body.via) ? req.body.via : 'manual';
+  const now = contacted ? new Date() : null;
+  await Order.update({ customerContactedAt: now, customerContactedVia: contacted ? via : null }, { where: { id: rows.map((r) => r.id) } });
+  res.json({ success: true, data: { contactedAt: now } });
+});
+
 // Phone lookup for the order form (customer already in our data?).
 const lookupCustomer = asyncHandler(async (req, res) => {
   const phone = await customerOrderService.lookupCustomerPhone({
@@ -829,7 +877,7 @@ module.exports = {
   lookupGeo,
   listRobbyCustomers, createRobbyCustomer, updateRobbyCustomer, deleteRobbyCustomer,
   listOrders, createOrder, updateOrder, deleteOrder, setOrderProblem, purgeDoneOrders,
-  listCustomerOrders, setCustomerOrderStatus, lookupCustomer,
+  listCustomerOrders, setCustomerOrderStatus, messageCustomerOrder, setCustomerOrderContacted, lookupCustomer,
   listOrderSources, mergeOrderSources,
   listWarehouse, createWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
   listAppointments, createAppointment, updateAppointment, deleteAppointment,

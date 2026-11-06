@@ -10,6 +10,8 @@ const { isKaercherFileName } = require('./taifunArticleParser');
 // them into product pages and serves the public data for app + website.
 
 const n = (v) => (v == null ? null : Number(v));
+// Our own Taifun numbers (Fracht, Besichtigung ...) - never a product page
+const isInternalArticle = (artNr) => /^WP-/i.test(String(artNr || '').trim());
 const freeStock = (a) => (a.stock == null ? 0 : n(a.stock) - n(a.reserved || 0));
 
 // ── Import ──────────────────────────────────────────────────────────────
@@ -19,17 +21,18 @@ async function upsertArticles(list, sourceFile) {
   let updated = 0;
   let ignored = 0;
   const now = new Date();
-  // Only known Warengruppen go into the shop. Spare parts and bike parts arrive with
-  // no or an unlisted group and stay out; adding a group to shop_groups lets it in.
+  // Every article of the export goes in (user decision 2026-11-06: "alle Produkte
+  // von den XMLs"), also spare parts without or with an unlisted Warengruppe -
+  // they end up under Zubehör. Only our own internal numbers (WP-..., e.g.
+  // Fracht, Besichtigung) are no products. Single pages stay hideable in the PC tool.
   await ensureShopSeed();
-  const known = new Set((await ShopGroup.findAll({ attributes: ['nr'] })).map((g) => g.nr));
   for (const a of list) {
+    if (isInternalArticle(a.artNr)) { ignored += 1; continue; }
     const catalog = a.catalog || 'main';
     const or = [{ artNr: a.artNr }];
     if (a.guid) or.push({ guid: a.guid });
     const existing = await ShopArticle.findOne({ where: { catalog, [Op.or]: or } });
     const whg = a.whg ?? existing?.whg ?? null; // older exports have no WHG
-    if (!known.has(whg)) { ignored += 1; continue; }
     const data = {
       catalog,
       artNr: a.artNr,
@@ -388,6 +391,7 @@ async function getProduct(slug) {
 }
 
 module.exports = {
+  isInternalArticle,
   upsertArticles, applyReservations, rebuildProducts, listProducts, getProduct, invalidate, productOut,
   freeStock,
 };

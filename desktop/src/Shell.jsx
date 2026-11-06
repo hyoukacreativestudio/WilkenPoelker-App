@@ -98,7 +98,7 @@ export default function Shell({ user, onLogout }) {
   }, [toast]);
   useEffect(() => {
     let active = true;
-    const t = setInterval(() => { if (active) loadNotifs(); }, 20000);
+    const t = setInterval(() => { if (active) loadNotifs(); }, 5000); // bell: same 5 s as the pages
     loadNotifs();
     // Refresh immediately when the window regains focus (came back from AFK).
     const onFocus = () => { if (active) loadNotifs(); };

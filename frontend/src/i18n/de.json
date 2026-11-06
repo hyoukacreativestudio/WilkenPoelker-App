@@ -657,6 +657,7 @@
     "repairPatienceNote": "Bitte haben Sie Verständnis, dass die Reparaturdauer von der Verfügbarkeit der Ersatzteile und der Komplexität des Schadens abhängt.",
     "statusCompleted": "Abgeschlossen",
     "statusReserved": "Reserviert",
+    "statusSaleOrdered": "Neu bestellt",
     "statusDelivery": "Fertig – wird geliefert",
     "statusLeasingReady": "Abholbereit",
     "batteryNote": "Hinweis: Der Akku wird noch geladen. Falls Sie mit dem Rad nach Hause fahren möchten, geben Sie uns bitte kurz vorher Bescheid.",

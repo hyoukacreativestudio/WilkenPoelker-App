@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { colorForRole } from '../config.js';
+import { useLiveReload } from '../customers.jsx';
 
 // A friendly landing screen: the numbers that matter for this department, as
 // clickable cards. Each card only shows if the department has that module.
@@ -10,9 +11,10 @@ export default function Dashboard({ user, go, modules }) {
   const [c, setC] = useState({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
+  const alive = React.useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
+  const load = async () => {
+    {
       const out = {};
       const tryGet = async (key, fn) => { try { out[key] = await fn(); } catch { out[key] = null; } };
       await Promise.all([
@@ -23,11 +25,11 @@ export default function Dashboard({ user, go, modules }) {
         has('tickets') && tryGet('tickets', async () => { const r = unwrap(await api.get('/service/tickets/all?status=open')); return (r.tickets || r.items || []).length; }),
         has('termine') && tryGet('termine', async () => { const r = unwrap(await api.get('/appointments')); const list = r.appointments || r.items || (Array.isArray(r) ? r : []); const today = new Date().toISOString().slice(0, 10); return list.filter((a) => (a.date || '').slice(0, 10) === today).length; }),
       ].filter(Boolean));
-      if (alive) { setC(out); setLoading(false); }
-    })();
-    return () => { alive = false; };
-    /* eslint-disable-next-line */
-  }, []);
+      if (alive.current) { setC(out); setLoading(false); }
+    }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useLiveReload(load, []);
 
   const cards = [
     has('termine')      && { key: 'termine',      icon: '📅', label: 'Termine heute',        n: c.termine, hint: 'Aus der App', bg: '#eaf4ff', fg: '#2563eb' },
