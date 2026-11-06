@@ -26,7 +26,8 @@
       ],
       "infoPlist": {
         "NSCameraUsageDescription": "WilkenPoelker benötigt Zugriff auf die Kamera für Profilbilder und Service-Anfragen.",
-        "NSPhotoLibraryUsageDescription": "WilkenPoelker benötigt Zugriff auf Ihre Fotos für Profilbilder und Service-Anfragen."
+        "NSPhotoLibraryUsageDescription": "WilkenPoelker benötigt Zugriff auf Ihre Fotos für Profilbilder und Service-Anfragen.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
