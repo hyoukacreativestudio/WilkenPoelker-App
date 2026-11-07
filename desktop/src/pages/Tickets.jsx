@@ -29,57 +29,56 @@ function Attachments({ list }) {
 // (backend-scoped). Open a ticket to read the chat, reply, and change status.
 const CAT_LABEL = { bike: 'Fahrrad', cleaning: 'Reinigung', motor: 'Motor', service: 'Service' };
 const STATUS_LABEL = { open: 'Offen', in_progress: 'In Bearbeitung', confirmed: 'Bestätigt', completed: 'Erledigt', cancelled: 'Storniert', closed: 'Geschlossen' };
+// Closed tickets leave the list and wait under "Erledigt"
+export const DONE_TICKET = ['completed', 'cancelled', 'closed'];
+const isDoneTicket = (t) => DONE_TICKET.includes(t.status);
 
 export default function Tickets() {
   const toast = useToast();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [status, setStatus] = useState('open');
+  const [tab, setTab] = useState('open'); // open | done
   const [openId, setOpenId] = useState(null);
 
   const load = async ({ silent = false } = {}) => {
     if (!silent) { setLoading(true); setError(''); }
     try {
-      const q = status !== 'all' ? `?status=${status}` : '';
-      const res = unwrap(await api.get(`/desktop/tickets${q}`));
+      const res = unwrap(await api.get('/desktop/tickets?status=all'));
       setRows(res.tickets || []);
     } catch (e) { if (!silent) { setError(e.message); setRows([]); } }
     finally { if (!silent) setLoading(false); }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [status]);
-  useLiveReload(load, [status]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useLiveReload(load, []);
+  const openRows = rows.filter((t) => !isDoneTicket(t));
+  const doneRows = rows.filter(isDoneTicket);
+  const shown = tab === 'done' ? doneRows : openRows;
 
   const custName = (t) => t.creator ? `${t.creator.firstName || ''} ${t.creator.lastName || ''}`.trim() : (t.customerName || '');
 
   return (
     <div>
       <div className="toolbar no-print">
-        <span className="muted">Tickets deiner Abteilung</span>
+        <span className={`pill tab ${tab === 'open' ? 'active' : ''}`} onClick={() => setTab('open')}>Offen{openRows.length ? <span className="n">{openRows.length}</span> : null}</span>
+        <span className={`pill tab ${tab === 'done' ? 'active' : ''}`} onClick={() => setTab('done')}>Erledigt{doneRows.length ? <span className="n">{doneRows.length}</span> : null}</span>
         <div className="spacer" />
-        <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="open">Offen</option>
-          <option value="in_progress">In Bearbeitung</option>
-          <option value="completed">Fertig</option>
-          <option value="closed">Geschlossen</option>
-          <option value="all">Alle</option>
-        </select>
         <button className="btn ghost" onClick={() => window.print()}>🖨️ Drucken</button>
         <button className="btn ghost" onClick={load}>Aktualisieren</button>
       </div>
 
       {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : error ? (
         <div className="empty"><div className="big">💬</div>Tickets nicht verfügbar.<div className="muted">{error}</div></div>
-      ) : rows.length === 0 ? (
-        <div className="empty"><div className="big">💬</div>Keine Tickets.</div>
+      ) : shown.length === 0 ? (
+        <div className="empty"><div className="big">💬</div>{tab === 'done' ? 'Noch keine erledigten Tickets.' : 'Keine offenen Tickets.'}</div>
       ) : (
         <div className="table-wrap"><table>
           <thead>
             <tr><th>Nr.</th><th>Kunde</th><th>Titel</th><th>Kategorie</th><th>Status</th><th className="no-print"></th></tr>
           </thead>
           <tbody>
-            {rows.map((t) => (
-              <tr key={t.id} className={['closed', 'completed', 'cancelled'].includes(t.status) ? 'done' : ''} style={{ cursor: 'pointer' }} onClick={() => setOpenId(t.id)}>
+            {shown.map((t) => (
+              <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => setOpenId(t.id)}>
                 <td>#{t.ticketNumber || '—'}</td>
                 <td>{custName(t) || '—'}{t.creator?.customerNumber ? <div className="muted">Kd {t.creator.customerNumber}</div> : null}</td>
                 <td>{t.title || t.type || '—'}<div className="muted" style={{ fontSize: 12 }}>{(t.description || '').slice(0, 80)}</div></td>

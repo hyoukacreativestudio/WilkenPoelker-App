@@ -9,19 +9,15 @@ import { TicketDetail } from './Tickets.jsx';
 //  Website: the customer has no account and is reached by e-mail or phone.
 const APP_STATUS = { open: 'Neu', in_progress: 'In Bearbeitung', confirmed: 'In Bearbeitung', completed: 'Erledigt', cancelled: 'Erledigt', closed: 'Erledigt' };
 const WEB_STATUS = { new: 'Neu', in_progress: 'In Bearbeitung', done: 'Erledigt' };
-const FILTERS = [
-  { key: 'all', label: 'Alle' },
-  { key: 'new', label: 'Neu' },
-  { key: 'in_progress', label: 'In Bearbeitung' },
-  { key: 'done', label: 'Erledigt' },
-];
+// Finished inquiries leave the list and wait under "Erledigt"
+const isDone = (r) => ['completed', 'cancelled', 'closed', 'done'].includes(r.status);
 const fmt = (d) => (d ? new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
 const mailto = (r) => `mailto:${r.email}?subject=${encodeURIComponent(`Ihre Anfrage bei Wilken Poelker${r.productTitle ? `: ${r.productTitle}` : ''}`)}`;
 
 export default function Anfragen() {
   const toast = useToast();
   const [source, setSource] = useState('app');
-  const [status, setStatus] = useState('all');
+  const [tab, setTab] = useState('open'); // open | done
   const [rows, setRows] = useState([]);
   const [counts, setCounts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -31,7 +27,7 @@ export default function Anfragen() {
     if (!silent) setLoading(true);
     try {
       const [list, c] = await Promise.all([
-        api.get(`/desktop/inquiries/${source === 'app' ? 'app' : 'website'}?status=${status}`),
+        api.get(`/desktop/inquiries/${source === 'app' ? 'app' : 'website'}?status=all`),
         api.get('/desktop/inquiries/counts'),
       ]);
       const d = unwrap(list);
@@ -39,8 +35,11 @@ export default function Anfragen() {
       setCounts(unwrap(c));
     } catch (e) { if (!silent) { toast(e.message, { type: 'error' }); setRows([]); } } finally { if (!silent) setLoading(false); }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [source, status]);
-  useLiveReload(load, [source, status]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [source]);
+  useLiveReload(load, [source]);
+  const openRows = rows.filter((r) => !isDone(r));
+  const doneRows = rows.filter(isDone);
+  const shown = tab === 'done' ? doneRows : openRows;
 
   const setWebStatus = async (r, next) => {
     try { await api.patch(`/desktop/inquiries/website/${r.id}`, { status: next }); load(); }
@@ -57,10 +56,10 @@ export default function Anfragen() {
       <div className="toolbar no-print">
         <span className={`pill tab ${source === 'app' ? 'active' : ''}`} onClick={() => setSource('app')}>📱 App{counts.app ? ` (${counts.app} neu)` : ''}</span>
         <span className={`pill tab ${source === 'website' ? 'active' : ''}`} onClick={() => setSource('website')}>🌐 Website{counts.website ? ` (${counts.website} neu)` : ''}</span>
+        <div style={{ width: 12 }} />
+        <span className={`pill tab ${tab === 'open' ? 'active' : ''}`} onClick={() => setTab('open')}>Offen{openRows.length ? <span className="n">{openRows.length}</span> : null}</span>
+        <span className={`pill tab ${tab === 'done' ? 'active' : ''}`} onClick={() => setTab('done')}>Erledigt{doneRows.length ? <span className="n">{doneRows.length}</span> : null}</span>
         <div className="spacer" />
-        <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-          {FILTERS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
-        </select>
         <button className="btn ghost" onClick={load}>Aktualisieren</button>
       </div>
       <div className="muted" style={{ marginBottom: 12 }}>
@@ -70,14 +69,14 @@ export default function Anfragen() {
         {' '}Eine Anfrage ist keine Bestellung. Wir liefern nur im Umkreis und versenden nichts.
       </div>
 
-      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : rows.length === 0 ? (
-        <div className="empty"><div className="big">✉️</div>Keine Anfragen.</div>
+      {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : shown.length === 0 ? (
+        <div className="empty"><div className="big">✉️</div>{tab === 'done' ? 'Noch keine erledigten Anfragen.' : 'Keine offenen Anfragen.'}</div>
       ) : source === 'app' ? (
         <div className="table-wrap"><table>
           <thead><tr><th>Eingang</th><th>Kunde</th><th>Produkt</th><th>Nachricht</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {rows.map((t) => (
-              <tr key={t.id} className={['closed', 'completed', 'cancelled'].includes(t.status) ? 'done' : ''} style={{ cursor: 'pointer' }} onClick={() => setOpenId(t.id)}>
+            {shown.map((t) => (
+              <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => setOpenId(t.id)}>
                 <td className="nowrap">{fmt(t.createdAt)}</td>
                 <td>
                   {`${t.creator?.firstName || ''} ${t.creator?.lastName || ''}`.trim() || '—'}
@@ -96,8 +95,8 @@ export default function Anfragen() {
         <div className="table-wrap"><table>
           <thead><tr><th>Eingang</th><th>Kunde</th><th>Produkt</th><th>Nachricht</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className={r.status === 'done' ? 'done' : ''}>
+            {shown.map((r) => (
+              <tr key={r.id}>
                 <td className="nowrap">{fmt(r.createdAt)}</td>
                 <td>
                   {r.name}

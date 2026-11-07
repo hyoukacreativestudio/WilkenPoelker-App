@@ -21,11 +21,13 @@ async function upsertArticles(list, sourceFile) {
   let updated = 0;
   let ignored = 0;
   const now = new Date();
-  // Every article of the export goes in (user decision 2026-11-06: "alle Produkte
-  // von den XMLs"), also spare parts without or with an unlisted Warengruppe -
-  // they end up under Zubehör. Only our own internal numbers (WP-..., e.g.
-  // Fracht, Besichtigung) are no products. Single pages stay hideable in the PC tool.
+  // Only the Warengruppen the shop sent (shop_groups) go in - user decision
+  // 2026-11-07: "Zubehör und Ersatzteile sollen nicht auftauchen, nur die
+  // Warengruppen die ich gesendet habe". Spare parts and accessories arrive with
+  // no or an unlisted group and are skipped; adding a group to shop_groups lets
+  // it in. Our own internal numbers (WP-..., Fracht, Besichtigung) never go in.
   await ensureShopSeed();
+  const known = new Set((await ShopGroup.findAll({ attributes: ['nr'] })).map((g) => g.nr));
   for (const a of list) {
     if (isInternalArticle(a.artNr)) { ignored += 1; continue; }
     const catalog = a.catalog || 'main';
@@ -33,6 +35,7 @@ async function upsertArticles(list, sourceFile) {
     if (a.guid) or.push({ guid: a.guid });
     const existing = await ShopArticle.findOne({ where: { catalog, [Op.or]: or } });
     const whg = a.whg ?? existing?.whg ?? null; // older exports have no WHG
+    if (!known.has(whg)) { ignored += 1; continue; }
     const data = {
       catalog,
       artNr: a.artNr,
@@ -108,7 +111,14 @@ async function rebuildProducts() {
   await ensureShopSeed();
   const brands = (await ShopBrand.findAll()).map((b) => b.get({ plain: true }));
   const groups = new Map((await ShopGroup.findAll()).map((g) => [g.nr, g]));
-  const articles = await ShopArticle.findAll();
+  // Only articles of the listed Warengruppen make product pages (2026-11-07: no
+  // Zubehör / spare parts). Others stay stored but belong to no page, so they
+  // show nowhere; adding their group to shop_groups brings them back.
+  const all = await ShopArticle.findAll();
+  const inShop = (a) => groups.has(a.whg) && !isInternalArticle(a.artNr);
+  const articles = all.filter(inShop);
+  const outIds = all.filter((a) => !inShop(a) && a.productId).map((a) => a.id);
+  if (outIds.length) await ShopArticle.update({ productId: null }, { where: { id: outIds } });
   const byKey = new Map();
   for (const a of articles) {
     const d = describe(a, brands);

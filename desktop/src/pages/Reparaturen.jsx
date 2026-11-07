@@ -9,41 +9,36 @@ const DEPT_LABEL = { fahrrad: 'Fahrrad', robby: 'Robby', rasenmaeher: 'Rasenmäh
 // Finished orders (same list as READY_CODES in backend/src/services/taifunStatusMap.js)
 const READY = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'NEU_GELIEFERT', 'LEASING_ABHOLBEREIT'];
 
-// Same wording + traffic-light colours as the customer app
-// (frontend/src/utils/repairStatus.js; mapping in backend taifunStatusMap.js).
-// app: false = the customer does not see this status in the app.
-const RED = { bg: '#fdecec', fg: '#c53030' };
-const YELLOW = { bg: '#fff6d6', fg: '#8a6d00' };
-const ORANGE = { bg: '#fdeedf', fg: '#b4530f' };
-const GREEN = { bg: '#e3f4e8', fg: '#22783f' };
-const GREY = { bg: '#eef0f2', fg: '#5c6670' };
+// Exactly as the customer app shows it (frontend/src/utils/repairStatus.js:
+// repairStatusLabel + STATUS_COLORS): same text, solid colour, white bold text.
+// Mapping Taifun -> app status: backend/src/services/taifunStatusMap.js.
+const RED = '#E53E3E';
+const ORANGE = '#DD6B20';
+const YELLOW = '#ECC94B';
+const GREEN = '#38A169';
 const APP_STATUS_VIEW = {
-  REP_TEILE_BESTELLT:    { label: 'Teile bestellt', ...RED, app: true },
-  REP_KVA:               { label: 'KVA geschrieben', ...ORANGE, app: true },
-  REP_ABHOLBEREIT:       { label: 'Abholbereit', ...GREEN, app: true },
-  LEASING_IN_ARBEIT:     { label: 'Leasing in Bearbeitung', ...RED, app: true },
-  LEASING_ABGESCHLOSSEN: { label: 'Leasing in Bearbeitung', ...RED, app: true },
-  LEASING_ABHOLBEREIT:   { label: 'Abholbereit', ...GREEN, app: true },
-  NEU_BESTELLT:          { label: 'Neu bestellt', ...RED, app: true },
-  NEU_RESERVIERT:        { label: 'Reserviert', ...YELLOW, app: true },
-  NEU_PROBEFAHRT:        { label: 'Fertig zur Probefahrt', ...YELLOW, app: true },
-  NEU_GELIEFERT:         { label: 'Fertig – wird geliefert', ...GREEN, app: true },
-  NEU_ABHOLBEREIT:       { label: 'Abholbereit', ...GREEN, app: true },
-  REP_BESTELLT:          { label: 'Bestellt', ...GREY, app: false },
-  REP_IN_ARBEIT:         { label: 'Reparatur in Arbeit', ...GREY, app: false },
-  NEU_IN_ARBEIT:         { label: 'In Bearbeitung', ...GREY, app: false },
+  REP_BESTELLT:          { label: 'Bestellt', color: RED },
+  REP_IN_ARBEIT:         { label: 'In Arbeit', color: RED },
+  REP_KVA:               { label: 'KVA geschrieben – bitte melden Sie sich', color: ORANGE },
+  REP_TEILE_BESTELLT:    { label: 'Teile bestellt', color: RED },
+  REP_ABHOLBEREIT:       { label: 'Abholbereit', color: GREEN },
+  LEASING_IN_ARBEIT:     { label: 'Leasing in Bearbeitung', color: RED },
+  LEASING_ABGESCHLOSSEN: { label: 'Leasing in Bearbeitung', color: RED },
+  LEASING_ABHOLBEREIT:   { label: 'Abholbereit', color: GREEN },
+  NEU_BESTELLT:          { label: 'Neu bestellt', color: RED },
+  NEU_IN_ARBEIT:         { label: 'In Bearbeitung', color: RED },
+  NEU_RESERVIERT:        { label: 'Reserviert', color: YELLOW },
+  NEU_PROBEFAHRT:        { label: 'Fertig zur Probefahrt', color: YELLOW },
+  NEU_GELIEFERT:         { label: 'Fertig – wird geliefert', color: GREEN },
+  NEU_ABHOLBEREIT:       { label: 'Abholbereit', color: GREEN },
 };
-const statusView = (o) => APP_STATUS_VIEW[o.appStatus] || { label: o.appStatusLabel || 'In Arbeit', ...GREY, app: false };
+const statusView = (o) => APP_STATUS_VIEW[o.appStatus] || { label: o.appStatusLabel || 'In Arbeit', color: RED };
 
 function StatusBadge({ order }) {
   const v = statusView(order);
   return (
-    <span
-      className="badge"
-      style={{ fontSize: 11, marginRight: 6, background: v.bg, color: v.fg, fontStyle: v.app ? 'normal' : 'italic' }}
-      title={v.app ? 'So sieht der Kunde den Status auch in der App' : 'Nur im PC-Programm – der Kunde sieht diesen Status nicht in der App'}
-    >
-      {v.label}{v.app ? '' : ' · nicht in App'}
+    <span className="badge" style={{ fontSize: 12, marginRight: 6, background: v.color, color: '#fff', fontWeight: 700 }}>
+      {v.label}
     </span>
   );
 }
