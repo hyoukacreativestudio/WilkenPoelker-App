@@ -6514,10 +6514,17 @@
   "artNrs": [
    "AS-G90900103"
   ],
-  "title": "AS-Motor LOSI Mähbalken (Anbaugerät)",
+  "title": "Anbaugeräte AS-Motor LOSI Mähbalken",
   "officialUrl": "https://www.as-motor.de/wp-content/uploads/2025/10/W11000097_AS-Motor_Katalog_2026_DE_1.2.pdf",
-  "officialName": "LOSI Mähbalken",
-  "images": [],
+  "officialName": "LOSI Mähbalken (Anbaugerät für AS 600 MultiPro), Bestell-Nr. G90900103",
+  "images": [
+   "https://www.as-motor.at/wp-content/uploads/sites/8/2020/11/AS-Motor_AS_600_LOSI_Maehbalken_web.jpg",
+   "https://www.as-motor.ch/wp-content/uploads/sites/25/2020/12/AS_600_MultiPro_mit_LOSI_web.jpg",
+   "https://www.as-motor.at/wp-content/uploads/sites/8/2020/11/LOSI_Detail_1_web.jpg",
+   "https://www.as-motor.at/wp-content/uploads/sites/8/2020/11/LOSI_Detail_2_web.jpg",
+   "https://www.as-motor.at/wp-content/uploads/sites/8/2020/11/LOSI_Detail_3_web.jpg",
+   "https://www.as-motor.at/wp-content/uploads/sites/8/2020/11/LOSI_Detail_4_web.jpg"
+  ],
   "specs": [
    [
     "Arbeitsbreite",
@@ -6528,28 +6535,36 @@
     "4 – 12 cm"
    ],
    [
-    "Arbeitshöhen-Verstellung",
+    "Schnitthöhenverstellung",
     "stufenlos über Gleitkufen"
    ],
    [
     "Messersystem",
-    "Doppelmesser 85/42,5 gezahnt"
+    "Doppelmesser 85/42,5, gezahnt"
+   ],
+   [
+    "Messerführung",
+    "Schwinghebelführung des oberen Messers"
+   ],
+   [
+    "Antrieb",
+    "Mittelantrieb im Ölbad"
+   ],
+   [
+    "Messerhub",
+    "85 mm (relativ)"
    ],
    [
     "Gewicht",
     "49 kg"
    ],
    [
+    "Passend für",
+    "AS 600 MultiPro Geräteträger"
+   ],
+   [
     "Bestell-Nr.",
     "G90900103"
-   ],
-   [
-    "Messerhub",
-    "relativ 85 mm"
-   ],
-   [
-    "Zahnabstand",
-    "85/42,5 mm, gezahnt"
    ]
   ]
  },
@@ -7166,42 +7181,50 @@
   "artNrs": [
    "SOL-21101"
   ],
-  "title": "Solo Gartenspritze 211",
+  "title": "Gartenspritze Solo 211",
   "officialUrl": "https://shop.solo.global/media/5d/d8/69/1768381180/PSK_2026_DE_view.pdf",
-  "officialName": "SOLO 211",
+  "officialName": "SOLO 211 Druckspritze (Best.-Nr. 21101)",
   "images": [],
   "specs": [
    [
-    "Modell",
-    "211"
+    "Pumpe",
+    "Kolbenpumpe"
    ],
    [
-    "Bestell-Nr.",
-    "21101"
+    "Nennvolumen",
+    "5,0 l"
    ],
    [
-    "Nennvolumen l",
-    "5,0"
+    "Spritzdruck",
+    "max. 3 bar"
    ],
    [
-    "Spritzdruck bar max.",
-    "3"
+    "Leergewicht",
+    "1,2 kg"
    ],
    [
-    "Leergewicht kg",
-    "1,2"
-   ],
-   [
-    "Schlauchlänge m",
-    "1,2"
+    "Schlauchlänge",
+    "1,2 m"
    ],
    [
     "Spritzrohr",
     "Kunststoff, 50 cm"
    ],
    [
-    "Düsenausstattung",
+    "Düse",
     "SOLO Universal-Hohlkegeldüse, verstellbar"
+   ],
+   [
+    "Lanze fixierbar",
+    "ja"
+   ],
+   [
+    "Schultergurt",
+    "ja"
+   ],
+   [
+    "Best.-Nr.",
+    "21101"
    ]
   ]
  },
@@ -7217,11 +7240,101 @@
   "officialName": "Kalkhoff IMAGE 3 ADVANCE",
   "match": "model",
   "images": [
-   "https://resource.pon.bike/by/transform/Large/9f74516e-9833-47dc-bcc4-bd83f1907dd4/K502v2025_2026_29_DI_BLK_090_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
-   "https://resource.pon.bike/by/transform/Large/40b7f490-a2fa-4ec4-9621-4fdf51999e83/K502v2025_2026_29_DI_BLK_045_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
-   "https://resource.pon.bike/by/transform/Large/02947368-cd27-4ae3-8456-ce2a5d66d323/K502v2025_2026_29_DI_BLK_135_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
-   "https://resource.pon.bike/by/transform/Large/5b943f17-d3a4-4804-a928-1734d3c8435a/K502v2025_2026_29_DI_BLK_180_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
-   "https://resource.pon.bike/by/transform/Large/2a00a9ad-e712-46c0-948f-2227e59f5f31/K502v2025_2026_29_DI_BLK_TOP_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280"
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/02947368-cd27-4ae3-8456-ce2a5d66d323/K502v2025_2026_29_DI_BLK_135_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521193"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/5b943f17-d3a4-4804-a928-1734d3c8435a/K502v2025_2026_29_DI_BLK_180_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521193"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/9f74516e-9833-47dc-bcc4-bd83f1907dd4/K502v2025_2026_29_DI_BLK_090_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521193"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/40b7f490-a2fa-4ec4-9621-4fdf51999e83/K502v2025_2026_29_DI_BLK_045_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521193"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/2a00a9ad-e712-46c0-948f-2227e59f5f31/K502v2025_2026_29_DI_BLK_TOP_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521193"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/7a461bcb-f21d-4f07-adf8-ae1d9811931b/K502v2025_2026_29_WA_BLK_135_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521198"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/4182eccd-71d3-477a-b5df-198d5956b02b/K502v2025_2026_29_WA_BLK_180_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521198"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/5999e44a-c974-4712-a025-e2a02d93a0d4/K502v2025_2026_29_WA_BLK_090_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521198"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/c3e7c04f-c29b-4bdf-8363-736f62116c87/K502v2025_2026_29_WA_BLK_045_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521198"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/ba44997b-cdce-4480-9ffc-beb9a867c265/K502v2025_2026_29_WA_BLK_TOP_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521198"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/fde0fa10-0bfe-4350-ad18-00adf8025ee3/K502v2025_2026_29_WA_PUR_135_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521207",
+     "DER-D690521208"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/d01ec974-2a48-4593-9fd2-1ecab6e40d3a/K502v2025_2026_29_WA_PUR_180_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521207",
+     "DER-D690521208"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/cfb7b912-b8d6-4586-ac8e-16bb8d71a2a4/K502v2025_2026_29_WA_PUR_090_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521207",
+     "DER-D690521208"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/9e2c4a6b-e920-4207-885f-edd028a5dee8/K502v2025_2026_29_WA_PUR_045_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521207",
+     "DER-D690521208"
+    ]
+   },
+   {
+    "url": "https://resource.pon.bike/by/transform/Large/f6c94ef4-f19b-421c-bdcf-951c12c825bf/K502v2025_2026_29_WA_PUR_TOP_PRO_IMAGE-3-ADVANCE-tif?io=transform:fit,width:1280,height:1280",
+    "artNrs": [
+     "DER-D690521207",
+     "DER-D690521208"
+    ]
+   }
   ],
   "specs": [
    [
@@ -7283,6 +7396,1037 @@
    [
     "Max. Geschwindigkeit",
     "25 km/h"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-45110113520"
+  ],
+  "title": "Akku Heckenschere STIHL HSA 45",
+  "officialUrl": "https://www.stihl.cz/cs/p/nuzky-na-zive-ploty-hsa-45-74538",
+  "officialName": "HSA 45",
+  "match": "model",
+  "images": [
+   "https://www.stihl.cz/content/dam/stihl/media/pim/43082.jpg",
+   "https://www.stihl.cz/content/dam/stihl/media/pim/43085.jpg",
+   "https://www.stihl.cz/content/dam/stihl/media/pim/45120.jpg",
+   "https://www.stihl.cz/content/dam/stihl/media/pim/45053.jpg",
+   "https://www.stihl.cz/content/dam/stihl/media/pim/45052.jpg"
+  ],
+  "specs": [
+   [
+    "Akku-System",
+    "AI (integrierter Akku)"
+   ],
+   [
+    "Nennspannung",
+    "18 V"
+   ],
+   [
+    "Leistungsaufnahme",
+    "0,23 kW"
+   ],
+   [
+    "Leistung",
+    "0,14 kW"
+   ],
+   [
+    "Hubzahl",
+    "2.500 1/min"
+   ],
+   [
+    "Gerätegewicht",
+    "2,3 kg"
+   ],
+   [
+    "Schnittlänge",
+    "50 cm"
+   ],
+   [
+    "Zahnabstand",
+    "24,1 mm"
+   ],
+   [
+    "Max. Akku-Laufzeit",
+    "40 min"
+   ],
+   [
+    "Gerätelänge mit Messer",
+    "91 cm"
+   ],
+   [
+    "Schalldruckpegel / Schallleistungspegel",
+    "75 / 83 dB(A)"
+   ],
+   [
+    "Vibrationswert links / rechts",
+    "1,4 / 1,5 m/s²"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-HA042000018"
+  ],
+  "title": "Akku Heckenschneider STIHL HLA 135 K",
+  "officialUrl": "https://www.stihl.co.za/en/ap/hla-135-k-128751",
+  "officialName": "HLA 135 K Cordless Hedgetrimmer (HLA 135 Cordless Long-reach Hedge Trimmer – ALLPRO System)",
+  "match": "model",
+  "images": [
+   "https://www.stihl.co.za/content/dam/stihl/media/pim/97770.jpg",
+   "https://www.stihl.co.za/content/dam/stihl/media/pim/20188.jpg",
+   "https://www.stihl.co.za/content/dam/stihl/media/pim/20197.jpg",
+   "https://www.stihl.co.za/content/dam/stihl/media/pim/20196.jpg",
+   "https://www.stihl.co.za/content/dam/stihl/media/pim/21499.jpg"
+  ],
+  "specs": [
+   [
+    "Akku-System",
+    "AP (ALLPRO)"
+   ],
+   [
+    "Nennspannung",
+    "36 V"
+   ],
+   [
+    "Leistungsaufnahme",
+    "1 kW"
+   ],
+   [
+    "Leistung",
+    "0,76 kW"
+   ],
+   [
+    "Empfohlener Akku",
+    "AP 300.0 P"
+   ],
+   [
+    "Hubzahl",
+    "4.000 1/min"
+   ],
+   [
+    "Gerätegewicht ohne Akku",
+    "5 kg"
+   ],
+   [
+    "Schnittlänge",
+    "60 cm"
+   ],
+   [
+    "Zahnabstand",
+    "34 mm"
+   ],
+   [
+    "Gerätelänge mit Werkzeug",
+    "219 cm"
+   ],
+   [
+    "Max. Akku-Laufzeit mit AP 200 S",
+    "64 min"
+   ],
+   [
+    "Schalldruckpegel / Schallleistungspegel",
+    "85 / 96 dB(A)"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-LA012000002"
+  ],
+  "title": "Akku Hochentaster STIHL HTA 135",
+  "officialUrl": "https://www.stihl.nl/nl/p/hoogsnoeiers-hta-135-ap-systeem-128734",
+  "officialName": "HTA 135 - ALLPRO systeem",
+  "match": "model",
+  "images": [
+   "https://www.stihl.nl/content/dam/stihl/media/pim/21425.jpg",
+   "https://www.stihl.nl/content/dam/stihl/media/pim/97733.jpg",
+   "https://www.stihl.nl/content/dam/stihl/media/pim/21433.jpg",
+   "https://www.stihl.nl/content/dam/stihl/media/pim/21436.jpg",
+   "https://www.stihl.nl/content/dam/stihl/media/pim/21527.jpg",
+   "https://www.stihl.nl/content/dam/stihl/media/pim/21520.jpg"
+  ],
+  "specs": [
+   [
+    "Akku-System",
+    "AP (ALLPRO)"
+   ],
+   [
+    "Nennspannung",
+    "36 V"
+   ],
+   [
+    "Leistungsaufnahme",
+    "1,65 kW"
+   ],
+   [
+    "Leistung",
+    "1,10 kW"
+   ],
+   [
+    "Empfohlener Akku",
+    "AP 300.0 P"
+   ],
+   [
+    "Gerätegewicht ohne Akku",
+    "6,8 kg"
+   ],
+   [
+    "Schienenlänge",
+    "30 cm"
+   ],
+   [
+    "Sägekettenteilung",
+    "1/4\"P"
+   ],
+   [
+    "Nutbreite",
+    "1,10 mm"
+   ],
+   [
+    "Gerätelänge mit Werkzeug",
+    "285 - 405 cm"
+   ],
+   [
+    "Max. Akku-Laufzeit mit AP 300 S",
+    "54 min"
+   ],
+   [
+    "Schalldruckpegel / Schallleistungspegel",
+    "83 / 96 dB(A)"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-LA032000002"
+  ],
+  "title": "Akku Hochentaster STIHL HTA 86",
+  "officialUrl": "https://www.stihl.com.au/en/p/pole-pruners-hta-86-battery-pole-pruner-ap-system-124596",
+  "officialName": "HTA 86 Battery Pole Pruner ALLPRO System",
+  "images": [
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/97722.jpg",
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/17823.jpg",
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/17822.jpg",
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/17821.jpg",
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/22497.jpg",
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/22499.jpg"
+  ],
+  "specs": [
+   [
+    "Akku-System",
+    "AP (ALLPRO)"
+   ],
+   [
+    "Nennspannung",
+    "36 V"
+   ],
+   [
+    "Leistungsaufnahme",
+    "1,10 kW"
+   ],
+   [
+    "Leistung",
+    "0,85 kW"
+   ],
+   [
+    "Empfohlener Akku",
+    "AP 200.0 P"
+   ],
+   [
+    "Gerätegewicht ohne Akku",
+    "4,6 kg"
+   ],
+   [
+    "Schienenlänge",
+    "30 cm"
+   ],
+   [
+    "Sägekettenteilung",
+    "1/4\"P"
+   ],
+   [
+    "Nutbreite",
+    "1,10 mm"
+   ],
+   [
+    "Gerätelänge mit Werkzeug",
+    "270 - 390 cm"
+   ],
+   [
+    "Max. Akku-Laufzeit mit AP 300 S",
+    "68 min"
+   ],
+   [
+    "Schalldruckpegel / Schallleistungspegel",
+    "77 / 93 dB(A)"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-42550071000"
+  ],
+  "title": "Düsensatz Stihl",
+  "officialUrl": "https://www.stihl.it/it/ap/set-di-ugelli-per-sg-20-2398",
+  "officialName": "Set di ugelli per SG 20 (Düsensatz für SG 20)",
+  "images": [
+   "https://www.stihl.it/content/dam/stihl/media/pim/28382.jpg"
+  ],
+  "specs": [
+   [
+    "Materialnummer",
+    "4255 007 1000"
+   ],
+   [
+    "Passend für",
+    "SG 20; Variante auf der Seite: SG 11, SG 31, SG 51, SG 71"
+   ],
+   [
+    "Lieferumfang",
+    "2 Flachstrahldüsen, 2 Hohlkegeldüsen"
+   ],
+   [
+    "Flachstrahldüse",
+    "ideal für die Flächenbehandlung"
+   ],
+   [
+    "Hohlkegeldüse",
+    "optimal zum Besprühen einzelner Pflanzen"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI11472000125"
+  ],
+  "title": "Motorsäge Sondermodell 100 Jahre STIHL MS 500 i Centennial Edition",
+  "officialUrl": "https://www.stihl.de/de/100-jahre-ms500i",
+  "officialName": "Die MS 500i Benzin-Kettensäge Centennial Edition",
+  "images": [
+   "https://www.stihl.de/content/dam/stihl/media/globalvu/100-years-ms500i/FWHT-V2_5120x2930_100Years_MS500i_CutOff-TB_2025-03.jpg",
+   "https://www.stihl.de/content/dam/stihl/media/product-categories/tools/chainsaws/petrol--chainsaws/ms-500i/ms-500i-centennial-edition---100-years-of-stihl/140204.jpg",
+   "https://www.stihl.de/content/dam/stihl/media/product-categories/tools/chainsaws/petrol--chainsaws/ms-500i/ms-500i-centennial-edition---100-years-of-stihl/140203.jpg",
+   "https://www.stihl.de/content/dam/stihl/media/product-categories/tools-accessories/chainsaws--pole-pruners--tools-accessories/guide-bars/light-x/140205.jpg"
+  ],
+  "specs": [
+   [
+    "Hubraum",
+    "79,2 cm³"
+   ],
+   [
+    "Leistung",
+    "5 kW / 6,8 PS"
+   ],
+   [
+    "Gerätegewicht unbetankt",
+    "6,3 kg"
+   ],
+   [
+    "Leistungsgewicht",
+    "1,26 kg/kW"
+   ],
+   [
+    "Schienenlänge",
+    "63 cm"
+   ],
+   [
+    "Sägekettenteilung",
+    "3/8\""
+   ],
+   [
+    "Nutbreite",
+    "1,60 mm"
+   ],
+   [
+    "Gerätelänge mit Krallenanschlag",
+    "468 mm"
+   ],
+   [
+    "Schalldruckpegel",
+    "106 dB(A)"
+   ],
+   [
+    "Schallleistungspegel",
+    "117 dB(A)"
+   ],
+   [
+    "Vibrationswert links / rechts",
+    "4,2 / 4 m/s²"
+   ],
+   [
+    "Ausführung",
+    "Sonderedition 100 Jahre STIHL, schwarzes Design, streng limitiert"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-11412000647"
+  ],
+  "title": "Motorsäge STIHL MS 261 C-M",
+  "officialUrl": "https://www.stihl.pl/pl/p/pilarki-lancuchowe-ms-261-105118",
+  "officialName": "MS 261 (Variante: MS 261 C-M, 40 cm, 0.325\", RS Pro, 1,3 L04)",
+  "images": [
+   "https://www.stihl.pl/content/dam/stihl/media/pim/13547.jpg",
+   "https://www.stihl.pl/content/dam/stihl/media/pim/13546.jpg",
+   "https://www.stihl.pl/content/dam/stihl/media/pim/42498.jpg",
+   "https://www.stihl.pl/content/dam/stihl/media/pim/42006.jpg",
+   "https://www.stihl.pl/content/dam/stihl/media/pim/41399.jpg"
+  ],
+  "specs": [
+   [
+    "Hubraum",
+    "50,2 cm³"
+   ],
+   [
+    "Leistung",
+    "3 kW / 4,1 PS"
+   ],
+   [
+    "Gerätegewicht unbetankt",
+    "4,9 kg"
+   ],
+   [
+    "Systemgewicht unbetankt",
+    "5,80 kg"
+   ],
+   [
+    "Leistungsgewicht",
+    "1,60 kg/kW"
+   ],
+   [
+    "Schienenlänge",
+    "40 cm"
+   ],
+   [
+    "Sägekettenteilung",
+    ".325\""
+   ],
+   [
+    "Nutbreite",
+    "1,30 mm"
+   ],
+   [
+    "Gerätelänge mit Krallenanschlag",
+    "448 mm"
+   ],
+   [
+    "Schalldruckpegel / Schallleistungspegel",
+    "105 / 114 dB(A)"
+   ],
+   [
+    "Vibrationswert links / rechts",
+    "3,5 / 3,5 m/s²"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-11402000718"
+  ],
+  "title": "Motorsäge STIHL MS 362 C-M",
+  "officialUrl": "https://www.stihl.com.au/en/p/chainsaws-ms-362-c-m-petrol-chainsaw-2327",
+  "officialName": "MS 362 C-M Petrol Chainsaw",
+  "match": "model",
+  "images": [
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/20435.jpg",
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/20434.jpg",
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/20433.jpg",
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/45438.jpg",
+   "https://www.stihl.com.au/content/dam/stihl/media/pim/42521.jpg"
+  ],
+  "specs": [
+   [
+    "Hubraum",
+    "59 cm³"
+   ],
+   [
+    "Leistung",
+    "3,5 kW / 4,8 PS"
+   ],
+   [
+    "Gerätegewicht unbetankt",
+    "5,6 kg"
+   ],
+   [
+    "Leistungsgewicht",
+    "1,60 kg/kW"
+   ],
+   [
+    "Schienenlänge",
+    "45 / 50 cm"
+   ],
+   [
+    "Sägekettenteilung",
+    "3/8\""
+   ],
+   [
+    "Nutbreite",
+    "1,60 mm"
+   ],
+   [
+    "Gerätelänge mit Krallenanschlag",
+    "461 mm"
+   ],
+   [
+    "Schalldruckpegel",
+    "106 dB(A)"
+   ],
+   [
+    "Schallleistungspegel",
+    "115 dB(A)"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-FA032000019"
+  ],
+  "title": "STIHL FSS-KM Sense Nur für KM131R und KMA200R",
+  "officialUrl": "https://www.stihl.de/de/p/kombi-multi-system-motorsense-fss-km-197215",
+  "officialName": "Motorsense FSS-KM",
+  "images": [
+   "https://www.stihl.de/content/dam/stihl/media/pim/107057.jpg",
+   "https://www.stihl.de/content/dam/stihl/media/pim/118688.jpg",
+   "https://www.stihl.de/content/dam/stihl/media/pim/118684.jpg"
+  ],
+  "specs": [
+   [
+    "Materialnummer",
+    "FA03 200 0019"
+   ],
+   [
+    "Art",
+    "KombiWerkzeug Sense"
+   ],
+   [
+    "Mähkreis",
+    "450 mm"
+   ],
+   [
+    "Mähkopf",
+    "AutoCut C 27-2 (optional AutoCut 27-2)"
+   ],
+   [
+    "Passend für",
+    "KMA 200 R, KM 131 R, KM 235"
+   ],
+   [
+    "Schutz",
+    "Schutzschild über den rotierenden Fäden"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-42475002100"
+  ],
+  "title": "Teleskoprohr Stihl für SG 20",
+  "officialUrl": "https://www.stihl.ch/de/ap/teleskoprohr-14309?aID=42475002100",
+  "officialName": "Teleskoprohr (Variante: Teleskoprohr für SG 20)",
+  "images": [
+   "https://www.stihl.ch/content/dam/stihl/media/pim/39344.jpg"
+  ],
+  "specs": [
+   [
+    "Materialnummer",
+    "4247 500 2100"
+   ],
+   [
+    "Passend für",
+    "SG 20"
+   ],
+   [
+    "Ausführung",
+    "ausziehbar"
+   ],
+   [
+    "Funktion",
+    "erweitert den Arbeitsbereich stufenlos"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "STI-41386400201"
+  ],
+  "title": "Winkelgetriebe Stihl f. HT - KM",
+  "officialUrl": "https://www.stihl.at/de/ap/winkelgetriebe-1254",
+  "officialName": "Winkelgetriebe für HT 56 C-E, HT 101 und HTE 60.",
+  "images": [
+   "https://www.stihl.at/content/dam/stihl/media/pim/44267.jpg"
+  ],
+  "specs": [
+   [
+    "Materialnummer",
+    "4138 640 0201"
+   ],
+   [
+    "Passend für",
+    "HT 56 C-E, HT 101, HTE 60"
+   ],
+   [
+    "Kompatibel mit KombiWerkzeugen",
+    "Hochentaster HT-KM, Heckenschneider HL-KM 0°"
+   ],
+   [
+    "Funktion",
+    "Schaftwinkel des Hochentasters anpassen, auch für Horizontalschnitte"
+   ],
+   [
+    "Einbau",
+    "ersetzt das serienmäßige gerade Schaftgetriebe"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "CRA-1429381"
+  ],
+  "title": "Häcksler Cramer Kompostmeister 3500",
+  "officialUrl": "https://www.remarc.eu/gartengeraete/haecksler/kompostmeister-35",
+  "officialName": "Häcksler Kompostmeister 3.5 (REMARC, Artikelnummer 1429310)",
+  "match": "model",
+  "images": [
+   "https://www.remarc.eu/fileadmin/_processed_/9/5/csm_IMG_9054_-_Kompostmeister_3.5_-_katalog1_-_mth01_39cb8a419f.png"
+  ],
+  "specs": [
+   [
+    "Antrieb",
+    "400 V Drehstrom"
+   ],
+   [
+    "Leistung",
+    "3,5 kW"
+   ],
+   [
+    "Motorbremse",
+    "mechanisch"
+   ],
+   [
+    "Häckselleistung",
+    "420 kg/h"
+   ],
+   [
+    "Aststärke",
+    "bis 40 mm"
+   ],
+   [
+    "Messer",
+    "2 Hobelmesser + 6 Messerklingen"
+   ],
+   [
+    "Grob-/Feineinstellung",
+    "ja"
+   ],
+   [
+    "Einfüllöffnung",
+    "19 cm"
+   ],
+   [
+    "Maße (L/B/H)",
+    "102 / 54 / 134 cm"
+   ],
+   [
+    "Gewicht",
+    "55 kg"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "KAE-1.174-929.0"
+  ],
+  "title": "Hochdruckreiniger Kärcher ProHDS 9/17-4 CXA",
+  "officialUrl": "https://www.karcher.com/ch/de/professional/produkte/hds-9-17-4-cxa-p11749290",
+  "officialName": "Hochdruckreiniger HDS 9/17-4 CXA (1.174-929.0)",
+  "images": [
+   "https://d1y4tv7o00gnfq.cloudfront.net/mam/11749290/mainproduct/81bf2057-f7a3-4bf0-8d8f-7ab03130b453/d0.jpg",
+   "https://d1y4tv7o00gnfq.cloudfront.net/mam/11749290/product/034b3888-696d-4c7d-b12d-f25634a23702/d0.jpg",
+   "https://d1y4tv7o00gnfq.cloudfront.net/mam/11749290/product/df8cb3bf-5580-41b7-b4ea-7c05a5b2efa9/d0.jpg",
+   "https://d1y4tv7o00gnfq.cloudfront.net/mam/11749290/product/e883163d-7369-4c79-90b5-234803a817e7/d0.jpg",
+   "https://d1y4tv7o00gnfq.cloudfront.net/mam/11749290/detail/17570ff7-790f-43a0-98a2-f06df4532752/d0.jpg",
+   "https://d1y4tv7o00gnfq.cloudfront.net/mam/11749290/detail/5b8511c3-32e3-494f-ad4a-e57481c0557c/d0.jpg"
+  ],
+  "specs": [
+   [
+    "Stromart",
+    "3 Ph / 400 V / 50 Hz"
+   ],
+   [
+    "Fördermenge",
+    "340 – 900 l/h"
+   ],
+   [
+    "Arbeitsdruck",
+    "30 – 170 bar / 3 – 17 MPa"
+   ],
+   [
+    "Max. Druck",
+    "220 bar"
+   ],
+   [
+    "Temperatur (bei Zulauf 12 °C)",
+    "80 – 155 °C"
+   ],
+   [
+    "Anschlussleistung",
+    "6,5 kW"
+   ],
+   [
+    "Verbrauch Heizöl Volllast",
+    "5,8 kg/h"
+   ],
+   [
+    "Verbrauch Heizöl eco!efficiency",
+    "4,6 kg/h"
+   ],
+   [
+    "Brennstofftank",
+    "15 l"
+   ],
+   [
+    "Anschlusskabel",
+    "5 m"
+   ],
+   [
+    "Gewicht (mit Zubehör)",
+    "123,1 kg"
+   ],
+   [
+    "Abmessungen (L × B × H)",
+    "1260 × 650 × 920 mm"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "SDM-DIESEL4000EXL"
+  ],
+  "title": "Stromerzeuger SDMO Diesel 4000 E XL AVR",
+  "officialUrl": "https://www.portable.rehlko.com/de/stromerzeuger-diesel-4000-xl-c5-xml-403_410-1199.html",
+  "officialName": "STROMERZEUGER DIESEL 4000 E XL C5 (Referenz 3499231004302)",
+  "match": "model",
+  "images": [
+   "https://www.portable.rehlko.com/images/Image/103/DIESEL4000EXLC5.jpg",
+   "https://www.portable.rehlko.com/images/Image/103/DIESEL4000EXLC5-2.jpg",
+   "https://www.portable.rehlko.com/images/Image/103/DIESEL4000EXLC5-3.jpg"
+  ],
+  "specs": [
+   [
+    "Max. Leistung",
+    "3,4 kW"
+   ],
+   [
+    "Nennleistung (COP)",
+    "2,72 kW"
+   ],
+   [
+    "Nennspannung",
+    "230 V, einphasig"
+   ],
+   [
+    "Frequenz",
+    "50 Hz"
+   ],
+   [
+    "Motor",
+    "REHLKO KD350E_C5 (Diesel, luftgekühlt)"
+   ],
+   [
+    "Start",
+    "elektrisch"
+   ],
+   [
+    "Tank",
+    "16,0 l"
+   ],
+   [
+    "Laufzeit bei 75 % Last",
+    "17,8 h"
+   ],
+   [
+    "Steckdosen",
+    "2 × 230 V 10/16 A – Überlastschutz"
+   ],
+   [
+    "Schallleistungspegel LwA",
+    "108 dB(A)"
+   ],
+   [
+    "Abmessungen (L × B × H)",
+    "81 × 55,5 × 59 cm"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "JOI-49440"
+  ],
+  "title": "Handvenzilsatz",
+  "officialUrl": "https://shop.solo.global/Handventil-Satz-fuer-SOLO-Spritzen-und-Sprueher/49440",
+  "officialName": "Handventil-Satz für SOLO Spritzen und Sprüher (Artikel-Nr. 49440)",
+  "images": [
+   "https://shop.solo.global/media/5c/db/56/1710761200/4900440_2016_Handventil-Satz.png"
+  ],
+  "specs": [
+   [
+    "Material",
+    "Spezial-Kunststoff"
+   ],
+   [
+    "Ausführung",
+    "robust, ergonomisch"
+   ],
+   [
+    "Sicherung",
+    "Kindersicherung"
+   ],
+   [
+    "Manometer-Anschluss",
+    "ja (Manometer 49356 optional)"
+   ],
+   [
+    "Lieferumfang",
+    "inkl. aller Montageteile"
+   ],
+   [
+    "Geeignet für",
+    "Akkuspritzen, Druckspritzen, Rückenspritzen"
+   ],
+   [
+    "Empfohlen für",
+    "SOLO 461, 462, 456, 457, 458, 424, 425, 435, 473 D, 475, 416, 417, 441"
+   ],
+   [
+    "Artikel-Nr.",
+    "49440"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "LEH-49525"
+  ],
+  "title": "DUESE",
+  "officialUrl": "https://shop.solo.global/Universalduese-Kunststoff-verstellbar/49525",
+  "officialName": "Universaldüse Kunststoff, verstellbar (Artikel-Nr. 49525)",
+  "match": "model",
+  "images": [
+   "https://shop.solo.global/media/c1/2e/dc/1615489009/49525-SOLO-Hochstrahlduese-Kunststoff.png"
+  ],
+  "specs": [
+   [
+    "Düsentyp",
+    "verstellbare Hohlkegeldüse"
+   ],
+   [
+    "Spritzbild",
+    "feine Zerstäubung bis Punktstrahl"
+   ],
+   [
+    "Material",
+    "Kunststoff"
+   ],
+   [
+    "Einsatz",
+    "Behandlung von Einzelpflanzen"
+   ],
+   [
+    "Geeignet für",
+    "Akkuspritzen, Druckspritzen, Rückenspritzen"
+   ],
+   [
+    "Artikel-Nr.",
+    "49525"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "RMV-WBLV506CSP"
+  ],
+  "title": "Laubsauger Weibang WB LV 605 CSP",
+  "officialUrl": "https://www.weibang.com/en/Product.html?secCategorymxId=ae9240ed0c4447e9996adb36034c3ffa",
+  "officialName": "INTREPID 80LV (Weibang CE-Modell WBLV506C)",
+  "match": "model",
+  "images": [
+   "https://cdn.weibang.com/MVNFHM/plugins/ueditor/jsp/upload1/20250930/37281759210581447.jpg"
+  ],
+  "specs": [
+   [
+    "Arbeitsbreite",
+    "80 cm"
+   ],
+   [
+    "Fangsack",
+    "240 l"
+   ],
+   [
+    "Saugschlauch",
+    "5 Zoll × 3 m"
+   ],
+   [
+    "Motor",
+    "Weibang G200F"
+   ],
+   [
+    "Nennleistung",
+    "3,6 kW bei 3600 U/min"
+   ],
+   [
+    "Tankinhalt",
+    "3,6 l"
+   ],
+   [
+    "Fahrgeschwindigkeit",
+    "0,85 m/s"
+   ],
+   [
+    "Antriebsräder",
+    "10 Zoll, Luftreifen 4.10-4"
+   ],
+   [
+    "Lenkrollen",
+    "6 Zoll mit Bremse"
+   ],
+   [
+    "Abmessungen",
+    "1040 × 850 × 1090 mm"
+   ],
+   [
+    "Gewicht",
+    "84 kg"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "HAR-03580578"
+  ],
+  "title": "ANHÄNGER BIG BOY",
+  "officialUrl": "https://roland-werk.de/de/fahrradanhaenger/fahrradanhaenger-big-boy-mit-tiefdeichsel-c-500726",
+  "officialName": "Fahrradanhänger BIG BOY mit Tiefdeichsel (C), Produktnummer 500726, EAN 4043598393426",
+  "images": [
+   "https://roland-werk.de/thumbnail/6f/be/6c/1646146574/500726_1920x1920.jpg",
+   "https://roland-werk.de/thumbnail/73/f3/37/1758778741/BIGBOY_Tiefdeichsel_C%20%281%29_1920x1920.jpg",
+   "https://roland-werk.de/thumbnail/09/0b/8f/1758778743/BIGBOY_Tiefdeichsel_C%20%2818%29_1920x1920.jpg",
+   "https://roland-werk.de/thumbnail/79/57/35/1758778743/BIGBOY_Tiefdeichsel_C%20%2827%29_1920x1920.jpg",
+   "https://roland-werk.de/thumbnail/35/g0/68/1758778744/BIGBOY_Tiefdeichsel_C%20%2836%29_1920x1920.jpg",
+   "https://roland-werk.de/thumbnail/56/af/21/1673270129/500726_Paketinhalt_1920x1920.jpg"
+  ],
+  "specs": [
+   [
+    "Anhängertyp",
+    "Lastenanhänger"
+   ],
+   [
+    "Deichsel",
+    "Tiefdeichsel (C)"
+   ],
+   [
+    "Kupplung",
+    "Universalkupplung"
+   ],
+   [
+    "Räder",
+    "16-Zoll-Speichenräder (ETRTO 305)"
+   ],
+   [
+    "Transportwanne",
+    "90 l, aus recyceltem Kunststoff"
+   ],
+   [
+    "Rahmen",
+    "Stahlrohr, schwarz"
+   ],
+   [
+    "Gesamtbreite (inkl. Räder)",
+    "680 mm"
+   ],
+   [
+    "Gesamtlänge (ohne Deichsel)",
+    "810 mm"
+   ],
+   [
+    "Gewicht",
+    "12 kg"
+   ],
+   [
+    "Reflektoren",
+    "8"
+   ],
+   [
+    "E-Antrieb",
+    "vorbereitet für Electrail (optional)"
+   ]
+  ]
+ },
+ {
+  "artNrs": [
+   "GAZ-BGA0053"
+  ],
+  "title": "Gazelle E-Bike Avignon C380+",
+  "officialUrl": "https://www.gazelle.de/ebikes/avignon-c380",
+  "officialName": "AVIGNON C380 HMB L61 Teal grey SE (M) (BGA0053)",
+  "images": [
+   "https://resource.pon.bike/by/transform/3cf72dbd-8ea2-40d8-858f-b917089c11f6/AvignonC380tealgreymat_1456-2_Lpsvs-tif?format=jpg",
+   "https://resource.pon.bike/by/transform/6aab9ba8-ea54-4727-b31d-3d5b673af1e2/AvignonC380tealgreymat_1456-2_Lpfss-tif?format=jpg",
+   "https://resource.pon.bike/by/transform/e9fad626-9757-479c-8f1f-6326236a9424/A_1456_AvignonC380Sfeer1.tif?format=jpg",
+   "https://resource.pon.bike/by/transform/dda1e502-8a51-4862-9616-edf6a7ce8eea/A_1456_AvignonC380Sfeer2.tif?format=jpg",
+   "https://resource.pon.bike/by/transform/64900bc3-a9f3-4105-a075-e0e5509bfecf/A_1456_AvignonC380Sfeer3.tif?format=jpg",
+   "https://resource.pon.bike/by/transform/320bc1ca-55cb-47b1-aab6-81681f900d3f/A_1456_AvignonC380Sfeer4.tif?format=jpg"
+  ],
+  "specs": [
+   [
+    "Motor",
+    "Bosch Performance Line PX (Smart System), Mittelmotor"
+   ],
+   [
+    "Drehmoment",
+    "85–90 Nm"
+   ],
+   [
+    "Akku",
+    "Bosch 800 Wh / 22,2 Ah, im Rahmen integriert"
+   ],
+   [
+    "Reichweite (800 Wh)",
+    "Eco 175 km / Tour 100 km / Turbo 70 km"
+   ],
+   [
+    "Display",
+    "Bosch Kiox 500, abnehmbar"
+   ],
+   [
+    "Schaltung",
+    "Enviolo Trekking, stufenlose Nabenschaltung"
+   ],
+   [
+    "Antrieb",
+    "Gates CDX Riemen"
+   ],
+   [
+    "Bremsen",
+    "Tektro hydraulische Scheibenbremsen (180/160 mm)"
+   ],
+   [
+    "Rahmen",
+    "Aluminium, Low-Step, Größe XL (61 cm)"
+   ],
+   [
+    "Reifen",
+    "Schwalbe Green Marathon 55-622 (28 Zoll)"
+   ],
+   [
+    "Licht",
+    "Gazelle Fendervision / Spanninga Commuter Glow"
+   ],
+   [
+    "Gewicht",
+    "29,1 kg ohne Akku"
    ]
   ]
  }

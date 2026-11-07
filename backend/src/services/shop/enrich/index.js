@@ -3,6 +3,8 @@ const { ShopProduct, ShopArticle, User, Notification } = require('../../../model
 const logger = require('../../../utils/logger');
 const { storeImages, syncImages, politeFetch, isGone } = require('./http');
 const catalog = require('../shopCatalog');
+const { parseSpecs } = require('../productGrouping');
+const { lookOf } = require('../productFacets');
 
 // Automatic manufacturer data (pictures + technical data) for product pages.
 // Only manufacturers whose pages can be matched EXACTLY (by article number)
@@ -13,6 +15,20 @@ const curated = require('./curated');
 const RETRY_DAYS = 7;
 
 let running = false;
+
+// Pictures that show only some variants (curated imageArtNrs) get the look of
+// those variants, e.g. "Wave · Schwarz", so the pages can switch pictures.
+function tagLooks(images, page, articles) {
+  if (!page.imageArtNrs) return images;
+  const lookByArtNr = new Map(articles.map((a) => [String(a.artNr).toUpperCase(), lookOf(parseSpecs(a).specs)]));
+  return images.map((img) => {
+    const i = page.images.indexOf(img.original);
+    const nrs = i >= 0 ? page.imageArtNrs[i] : [];
+    const look = (nrs || []).map((n) => lookByArtNr.get(n)).find(Boolean) || null;
+    const { look: _old, ...rest } = img;
+    return look ? { ...rest, look } : rest;
+  });
+}
 
 async function findPage(product, articles) {
   const enricher = ENRICHERS.find((e) => e.brand === product.brand);
@@ -28,7 +44,7 @@ async function enrichProduct(product) {
       await product.update({ enrichStatus: 'not_found', enrichedAt: new Date() });
       return 'not_found';
     }
-    const images = await storeImages(product.slug, page.images, new URL(page.url).hostname);
+    const images = tagLooks(await storeImages(product.slug, page.images, new URL(page.url).hostname), page, articles);
     await product.update({
       images: images.length ? images : product.images,
       officialSpecs: page.specs,
@@ -106,7 +122,7 @@ async function recheckProduct(product) {
   }
   const noImagesLeft = !synced.images.length && (product.images || []).length > 0;
   await product.update({
-    images: synced.images,
+    images: tagLooks(synced.images, page, articles),
     officialSpecs: page.specs,
     officialUrl: page.url,
     officialName: page.name,

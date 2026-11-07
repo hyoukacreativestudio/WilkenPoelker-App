@@ -8,7 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useScreenEdges } from '../../hooks/useScreenEdges';
 import { useTheme } from '../../hooks/useTheme';
-import { shopApi, shopImageUrl, SHOP_PHONE, SHOP_PHONE_LABEL } from '../../api/shop';
+import { shopApi, shopImageUrl, imagesForLook, SHOP_PHONE, SHOP_PHONE_LABEL } from '../../api/shop';
 import { formatPrice } from '../../utils/formatters';
 import { offerOnDark } from '../../theme/colors';
 import Chip from '../../components/ui/Chip';
@@ -59,7 +59,12 @@ export default function ShopDetailScreen({ route, navigation }) {
   }
 
   const variant = product.variants[variantIndex] || product.variants[0];
-  const images = product.images || [];
+  // Choosing another frame shape / colour switches to its pictures
+  const images = imagesForLook(product.images, variant?.look);
+  const chooseVariant = (i) => {
+    if (product.variants[i]?.look !== variant?.look) setImageIndex(0);
+    setVariantIndex(i);
+  };
 
   // The answer arrives in the ticket chat, so the customer lands there right away.
   const sendInquiry = async () => {
@@ -92,6 +97,7 @@ export default function ShopDetailScreen({ route, navigation }) {
           {images.length ? (
             <>
               <FlatList
+                key={variant?.look || 'all'}
                 data={images}
                 horizontal
                 pagingEnabled
@@ -128,7 +134,7 @@ export default function ShopDetailScreen({ route, navigation }) {
               <Text style={[theme.typography.styles.h6, { color: theme.colors.text, marginBottom: theme.spacing.sm }]}>{t('shop.variant')}</Text>
               <View style={styles.wrap}>
                 {product.variants.map((v, i) => (
-                  <Chip key={v.artNr} size="small" label={v.label || v.artNr} selected={i === variantIndex} onPress={() => setVariantIndex(i)} />
+                  <Chip key={v.artNr} size="small" label={v.label || v.artNr} selected={i === variantIndex} onPress={() => chooseVariant(i)} />
                 ))}
               </View>
             </View>

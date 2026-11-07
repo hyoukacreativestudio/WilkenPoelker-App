@@ -193,6 +193,9 @@ function ProductDetail({ product: p, onClose, onChanged }) {
   const addImage = () => run(async () => { await api.post(`/desktop/shop/products/${p.id}/images`, { url: imgUrl.trim() }); setImgUrl(''); }, 'Bild hinzugefügt');
   const removeImage = (i) => { if (window.confirm('Dieses Bild entfernen?')) run(() => api.del(`/desktop/shop/products/${p.id}/images/${i}`), 'Bild entfernt'); };
   const makeMain = (i) => run(() => api.post(`/desktop/shop/products/${p.id}/images/${i}/main`, {}), 'Hauptbild geändert');
+  // Frame shape / colour of the variants (bikes): pictures can belong to one of them
+  const looks = p.looks || [];
+  const setLook = (i, look) => run(() => api.post(`/desktop/shop/products/${p.id}/images/${i}/look`, { look }), 'Bild zugeordnet');
   // Pictures from the PC: scaled down here (max. 2000 px, JPEG) so the upload stays small
   const uploadFiles = (files) => run(async () => {
     for (const file of [...files]) {
@@ -243,9 +246,22 @@ function ProductDetail({ product: p, onClose, onChanged }) {
                 {i === 0 ? <span style={{ color: '#2E7D32', fontWeight: 600 }}>Hauptbild</span>
                   : <button className="btn sm ghost" style={{ padding: '0 6px', fontSize: 11 }} onClick={() => makeMain(i)} disabled={busy}>★ Hauptbild</button>}
               </div>
+              {looks.length > 1 && (
+                <select className="select" style={{ width: 96, fontSize: 11, padding: '1px 2px', marginTop: 2 }} value={img.look || ''} disabled={busy}
+                  onChange={(e) => setLook(i, e.target.value)} title="Für welche Ausführung ist dieses Bild?">
+                  <option value="">Alle Ausführungen</option>
+                  {looks.map((l) => <option key={l} value={l}>{l}</option>)}
+                  {img.look && !looks.includes(img.look) ? <option value={img.look}>{img.look}</option> : null}
+                </select>
+              )}
             </div>
           ))}
         </div>
+        {looks.length > 1 && (
+          <div className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 10 }}>
+            Bilder einer Ausführung zuordnen: Wählt man in App oder Website z. B. „{looks[1]}“, werden dessen Bilder gezeigt, dazu die Bilder für alle Ausführungen.
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
           <label className="btn ghost" style={{ cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1 }}>
             📁 Bild vom PC

@@ -44,6 +44,7 @@ router.post('/shop/products/:id/enrich', authenticate, authorize(...SHOP_ADMIN),
 router.post('/shop/products/:id/images', authenticate, authorize(...SHOP_ADMIN), shopAdmin.addImage);
 router.post('/shop/products/:id/images/upload', authenticate, authorize(...SHOP_ADMIN), shopAdmin.uploadImage);
 router.post('/shop/products/:id/images/:index/main', authenticate, authorize(...SHOP_ADMIN), shopAdmin.makeMainImage);
+router.post('/shop/products/:id/images/:index/look', authenticate, authorize(...SHOP_ADMIN), shopAdmin.setImageLook);
 router.delete('/shop/products/:id/images/:index', authenticate, authorize(...SHOP_ADMIN), shopAdmin.removeImage);
 router.post('/shop/articles/:id/regroup', authenticate, authorize(...SHOP_ADMIN), shopAdmin.regroupArticle);
 router.get('/shop/brands', authenticate, authorize(...SHOP_ADMIN), shopAdmin.listBrands);

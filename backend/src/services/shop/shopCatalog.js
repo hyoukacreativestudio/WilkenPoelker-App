@@ -213,6 +213,10 @@ function productOut(p, articles, groupName, { detail = false } = {}) {
   const sorted = [...articles].sort((x, y) => String(x.artNr).localeCompare(String(y.artNr)));
   const labels = G.variantLabels(sorted);
   const variants = sorted.map((a) => variantOut(a, labels.get(a.artNr)));
+  // Frame shape / colour, only when the variants differ in it (pictures per look)
+  const looks = variants.map((v) => F.lookOf(v.specs));
+  const hasLooks = new Set(looks.filter(Boolean)).size > 1;
+  variants.forEach((v, i) => { v.look = hasLooks ? looks[i] : null; });
   // Rounded down so the page never promises more than the real discount.
   const discounts = variants.map((v) => discountOf(v)).filter((d) => d > 0);
   const device = G.deviceGroup(p.category);

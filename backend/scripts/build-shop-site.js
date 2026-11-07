@@ -288,15 +288,33 @@ const DETAIL_JS = `
     var notes = (v.notes || []).map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('');
     document.getElementById('pspecs').innerHTML = rows || notes ? '<h3>Ausstattung</h3>' + (rows ? '<dl>' + rows + '</dl>' : '') + (notes ? '<ul class="snotes">' + notes + '</ul>' : '') : '';
   }
-  if (sel) sel.addEventListener('change', function () { show(+sel.value); });
-  show(data.start);
+  function pick(b) {
+    document.getElementById('pmain').src = b.getAttribute('data-src');
+    document.querySelectorAll('.pthumb').forEach(function (x) { x.classList.remove('on'); });
+    b.classList.add('on');
+  }
+  // Another frame shape / colour: show its own pictures, then the general ones
+  var lastLook;
+  function pictures(look) {
+    if (look === lastLook) return;
+    lastLook = look;
+    var box = document.querySelector('.pd-thumbs');
+    if (!box) return;
+    var all = [].slice.call(box.querySelectorAll('.pthumb'));
+    var lk = function (b) { return b.getAttribute('data-look') || ''; };
+    var own = look ? all.filter(function (b) { return lk(b) === look; }) : [];
+    var list = own.length ? own.concat(all.filter(function (b) { return !lk(b); })) : all;
+    all.forEach(function (b) { b.style.display = list.indexOf(b) < 0 ? 'none' : ''; });
+    list.forEach(function (b) { box.appendChild(b); });
+    box.style.display = list.length > 1 ? '' : 'none';
+    if (list[0]) pick(list[0]);
+  }
+  function choose(i) { show(i); pictures(data.variants[i].look || ''); }
+  if (sel) sel.addEventListener('change', function () { choose(+sel.value); });
   document.querySelectorAll('.pthumb').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.getElementById('pmain').src = b.getAttribute('data-src');
-      document.querySelectorAll('.pthumb').forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on');
-    });
+    b.addEventListener('click', function () { pick(b); });
   });
+  choose(data.start);
 })();`;
 
 const CSS = `
@@ -371,7 +389,7 @@ async function main() {
       const small = `${IMG_DIR}/${p.slug}/${i + 1}-k.webp`;
       await saveImage(img.url, path.join(OUT, big), 1000);
       await saveImage(img.thumb || img.url, path.join(OUT, small));
-      imgs.push({ big, small });
+      imgs.push({ big, small, look: img.look || '' });
     }
     cards.push(card(item, imgs[0]?.small || null));
     if (imgs[0] && item.main && (!tileImage.has(item.main) || (item.available && !tileImage.get(item.main).available))) {
@@ -387,7 +405,7 @@ async function main() {
   <div class="pd-grid">
     <div class="pd-gallery">
       <div class="pd-main">${imgs[0] ? `<img id="pmain" src="../${esc(imgs[0].big)}" alt="${esc(p.title)}" width="900" height="900">` : '<span class="noimg">Bild folgt</span>'}</div>
-      ${imgs.length > 1 ? `<div class="pd-thumbs">${imgs.map((im, i) => `<button type="button" class="pthumb${i ? '' : ' on'}" data-src="../${esc(im.big)}" aria-label="Bild ${i + 1}"><img src="../${esc(im.small)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
+      ${imgs.length > 1 ? `<div class="pd-thumbs">${imgs.map((im, i) => `<button type="button" class="pthumb${i ? '' : ' on'}" data-src="../${esc(im.big)}"${im.look ? ` data-look="${esc(im.look)}"` : ''} aria-label="Bild ${i + 1}"><img src="../${esc(im.small)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
     </div>
     <div class="pd-info">
       <div class="pbrand big">${esc(p.brand || '')}</div>
@@ -411,7 +429,7 @@ async function main() {
   </div>
   <p class="note">Alle Angaben ohne Gewähr, Änderungen und Irrtümer vorbehalten. Abbildungen können vom Original abweichen.</p>
 </div></section>
-<script type="application/json" id="pdata">${JSON.stringify({ title: p.title, start, variants: vs.map((v) => ({ artNr: v.artNr, price: v.price, uvp: v.uvp, isOffer: v.isOffer, available: v.available, specs: v.specs, notes: v.notes })) }).replace(/</g, '\\u003c')}</script>
+<script type="application/json" id="pdata">${JSON.stringify({ title: p.title, start, variants: vs.map((v) => ({ artNr: v.artNr, look: v.look || '', price: v.price, uvp: v.uvp, isOffer: v.isOffer, available: v.available, specs: v.specs, notes: v.notes })) }).replace(/</g, '\\u003c')}</script>
 <script>${DETAIL_JS}</script>
 ${foot(1)}`;
     fs.writeFileSync(path.join(OUT, 'p', `${p.slug}.html`), html);

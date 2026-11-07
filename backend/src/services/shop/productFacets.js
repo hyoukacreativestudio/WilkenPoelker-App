@@ -118,6 +118,24 @@ function framesOf(specLists) {
   return [...out];
 }
 
+// What a variant looks like: frame shape + colour, e.g. "Wave · midnightplum matt".
+// Pictures can belong to one look, so choosing a variant shows its own pictures.
+// Sizes ('29"/ 53 cm') do not change the look.
+function lookOf(specs) {
+  let shape = null;
+  let color = null;
+  (specs || []).forEach(([k, v]) => {
+    const key = plain(k);
+    if (!shape && /^rahmenh|^rahmenform|^rahmentyp|^form$/.test(key)) {
+      const words = String(v).split('/').map((s) => s.trim()).filter((s) => /[a-zäöü]/i.test(s) && !/\d/.test(s));
+      if (words.length) shape = words[words.length - 1];
+    }
+    if (!color && /farbe/.test(key) && String(v).trim()) color = String(v).trim();
+  });
+  const parts = [shape, color].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+}
+
 // The manufacturer page often knows the drive when the Taifun text does not say it
 function driveFromSpecs(specs) {
   const labels = new Map((specs || []).map(([k, v]) => [plain(k), plain(v)]));
@@ -136,4 +154,14 @@ function systemFromSpecs(specs) {
   return m ? m[1] : null;
 }
 
-module.exports = { plain, sizesOf, colorsOf, framesOf, driveFromSpecs, systemFromSpecs, readSizes, SIZES };
+// Pictures for one look: its own pictures first, then the ones for every look.
+// If the look has no pictures of its own, all pictures (better than none).
+function imagesForLook(images, look) {
+  const list = images || [];
+  if (!look || !list.some((img) => img.look)) return list;
+  const own = list.filter((img) => img.look === look);
+  if (!own.length) return list;
+  return [...own, ...list.filter((img) => !img.look)];
+}
+
+module.exports = { lookOf, imagesForLook, plain, sizesOf, colorsOf, framesOf, driveFromSpecs, systemFromSpecs, readSizes, SIZES };

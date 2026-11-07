@@ -21,12 +21,25 @@ function load() {
   return byArtNr;
 }
 
+// An image is a URL, or { url, artNrs } for a picture that shows only some
+// variants (bike in another frame shape or colour). Up to 8 pictures, or 24 when
+// the pictures are split by variant.
 async function findOfficial(product, articles) {
   const map = load();
   for (const a of articles) {
     const e = map.get(String(a.artNr).toUpperCase());
     if (e) {
-      return { url: e.officialUrl, name: e.officialName || null, images: (e.images || []).slice(0, 8), specs: e.specs || [], match: e.match };
+      const list = (e.images || []).map((img) => (typeof img === 'string' ? { url: img } : img)).filter((img) => img && img.url);
+      const perVariant = list.some((img) => img.artNrs?.length);
+      const images = list.slice(0, perVariant ? 24 : 8);
+      return {
+        url: e.officialUrl,
+        name: e.officialName || null,
+        images: images.map((img) => img.url),
+        imageArtNrs: perVariant ? images.map((img) => (img.artNrs || []).map((n) => String(n).toUpperCase())) : null,
+        specs: e.specs || [],
+        match: e.match,
+      };
     }
   }
   return null;

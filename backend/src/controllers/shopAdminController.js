@@ -3,12 +3,20 @@ const { asyncHandler, AppError, NotFoundError } = require('../middlewares/errorH
 const { ShopProduct, ShopArticle, ShopBrand, ShopGroup } = require('../models');
 const catalog = require('../services/shop/shopCatalog');
 const { uvpFromExport } = require('../services/shop/prices');
-const { singleArticleKey, deviceGroup, mainGroup, MAIN_ORDER } = require('../services/shop/productGrouping');
+const { singleArticleKey, deviceGroup, mainGroup, MAIN_ORDER, parseSpecs } = require('../services/shop/productGrouping');
+const { lookOf } = require('../services/shop/productFacets');
 
 // PC tool "Produkte": everything about the product pages that the automatic
 // import cannot decide - visibility, pictures, variants, brand keywords.
 
 const num = (v) => (v == null ? null : Number(v));
+
+// The different looks (frame shape / colour) of a product's variants, as the
+// pages show them. Fewer than two = nothing to assign pictures to.
+function looksOf(articles) {
+  const looks = [...new Set(articles.map((a) => lookOf(parseSpecs(a).specs)).filter(Boolean))];
+  return looks.length > 1 ? looks.sort((a, b) => a.localeCompare(b, 'de')) : [];
+}
 
 // Technical data from the PC tool: up to 60 rows [label, value], empty rows dropped.
 function cleanSpecs(list) {
@@ -46,6 +54,7 @@ const listProducts = asyncHandler(async (req, res) => {
       price: num(p.price), uvp: num(p.uvp), isOffer: p.hasOffer, available: p.available,
       images: p.images || [], officialUrl: p.officialUrl, officialSpecs: p.officialSpecs || [],
       enrichStatus: p.enrichStatus, enrichedAt: p.enrichedAt,
+      looks: looksOf(p.articles),
       articles: p.articles.map((a) => ({
         id: a.id, artNr: a.artNr, stock: num(a.stock), reserved: num(a.reserved), free: catalog.freeStock(a),
         uvp: uvpFromExport({ listNet: a.listNet, listGross: a.listGrossRaw }), shopPrice: num(a.shopPrice),
@@ -139,6 +148,22 @@ const makeMainImage = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { product: p } });
 });
 
+// Which look (frame shape / colour) a picture shows; '' = all variants.
+const setImageLook = asyncHandler(async (req, res) => {
+  const p = await ShopProduct.findByPk(req.params.id, { include: [{ model: ShopArticle, as: 'articles' }] });
+  if (!p) throw new NotFoundError('Produkt');
+  const i = parseInt(req.params.index, 10);
+  const images = [...(p.images || [])];
+  if (!(i >= 0 && i < images.length)) throw new NotFoundError('Bild');
+  const look = String(req.body.look || '').trim();
+  if (look && !looksOf(p.articles).includes(look)) throw new AppError('Diese Ausführung gibt es bei dem Produkt nicht', 400, 'BAD_LOOK');
+  const { look: _old, ...img } = images[i];
+  images[i] = look ? { ...img, look } : img;
+  await p.update({ images, enrichStatus: 'manual' });
+  catalog.invalidate();
+  res.json({ success: true, data: { product: p } });
+});
+
 const removeImage = asyncHandler(async (req, res) => {
   const p = await ShopProduct.findByPk(req.params.id);
   if (!p) throw new NotFoundError('Produkt');
@@ -207,4 +232,4 @@ const runImport = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { result, rebuilt } });
 });
 
-module.exports = { listProducts, updateProduct, enrichNow, enrichAll, recheckNow, addImage, uploadImage, makeMainImage, removeImage, regroupArticle, listBrands, saveBrand, runImport, cleanSpecs };
+module.exports = { listProducts, updateProduct, enrichNow, enrichAll, recheckNow, addImage, uploadImage, makeMainImage, setImageLook, removeImage, regroupArticle, listBrands, saveBrand, runImport, cleanSpecs };
