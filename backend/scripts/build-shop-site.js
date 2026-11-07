@@ -490,6 +490,7 @@ ${foot(0)}`;
   fs.writeFileSync(path.join(OUT, 'index.html'), index);
   console.log(`fertig: ${items.length} Produkte`);
 
+  retireProductPages(items);
   if (args.includes('--redirect-old')) redirectOldPages(items);
   if (arg('sitemap')) updateSitemap(arg('sitemap'), arg('url', 'https://wilpo.net/produkte/'), items);
 }
@@ -542,6 +543,24 @@ function forwardPage(target, title) {
 </body>
 </html>
 `;
+}
+
+// Product pages from earlier runs whose product is no longer shown (sold out
+// discontinued model, accessory group, hidden in the PC tool): they would keep
+// old prices online, so each becomes a forward to the overview. Nothing is deleted.
+function retireProductPages(items) {
+  const live = new Set(items.map((it) => `${it.slug}.html`));
+  let n = 0;
+  for (const file of fs.readdirSync(path.join(OUT, 'p'))) {
+    if (!file.endsWith('.html') || live.has(file)) continue;
+    const full = path.join(OUT, 'p', file);
+    const old = fs.readFileSync(full, 'utf8');
+    if (old.includes('http-equiv="refresh"')) continue; // already a forward
+    const title = (old.match(/<h1[^>]*>([^<]*)<\/h1>/) || [])[1]?.trim() || 'Produkte';
+    fs.writeFileSync(full, forwardPage('../index.html', title));
+    n += 1;
+  }
+  if (n) console.log(`${n} nicht mehr gezeigte Produktseiten leiten jetzt zur Übersicht`);
 }
 
 function redirectOldPages(items) {
