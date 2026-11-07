@@ -139,6 +139,8 @@ export const api = {
   patch: (p, body) => request(p, { method: 'PATCH', body }),
   put: (p, body) => request(p, { method: 'PUT', body }),
   del: (p) => request(p, { method: 'DELETE' }),
+  // Same as del - Feedback and Anfragen called api.delete, which did not exist
+  delete: (p) => request(p, { method: 'DELETE' }),
 };
 
 // Unwrap the backend's { success, data } envelope
