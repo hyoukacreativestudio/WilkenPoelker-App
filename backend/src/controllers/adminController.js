@@ -90,6 +90,17 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const prevNumber = user.customerNumber;
 
+  // Service and Verkauf may only change customer accounts, and only the number
+  const isAdminUser = ['admin', 'super_admin'].includes(req.user.role);
+  if (!isAdminUser) {
+    if (user.role !== 'customer') {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Nur bei Kundenkonten möglich.' } });
+    }
+    if (email !== undefined || address !== undefined) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Nur die Kundennummer kann geändert werden.' } });
+    }
+  }
+
   // A Taifun customer number belongs to one account only
   if (customerNumber && customerNumber !== prevNumber) {
     const owner = await User.findOne({

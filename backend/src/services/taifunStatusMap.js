@@ -27,7 +27,8 @@ const APP_STATUS = {
   LEASING_ABGESCHLOSSEN: { category: 'leasing',   label: 'Leasing abgeschlossen',   repairStatus: 'leasing_in_progress' },
   LEASING_ABHOLBEREIT:   { category: 'leasing',   label: 'Leasing Abholbereit',     repairStatus: 'ready' },
   NEU_BESTELLT:          { category: 'neu',       label: 'Neu bestellt',            repairStatus: 'sale_ordered' },
-  NEU_IN_ARBEIT:        { category: 'neu',       label: 'In Bearbeitung',          repairStatus: 'sale_in_progress' },
+  // Not 'In Bearbeitung': customers would think someone is working on it right now (user 2026-11-07)
+  NEU_IN_ARBEIT:        { category: 'neu',       label: 'Auftrag angenommen',      repairStatus: 'sale_in_progress' },
   NEU_RESERVIERT:        { category: 'neu',       label: 'Reserviert',              repairStatus: 'reserved' },
   NEU_PROBEFAHRT:        { category: 'neu',       label: 'Fertig zur Probefahrt',   repairStatus: 'sale_test_drive' },
   NEU_GELIEFERT:         { category: 'neu',       label: 'Fertig - wird geliefert', repairStatus: 'sale_delivery' },
@@ -51,6 +52,8 @@ const REPAIR_STATUSES = [
 const CUSTOMER_STATUSES = [
   'parts_ordered', 'quote_created', 'reserved', 'ready', 'sale_delivery', 'sale_test_drive',
   'sale_ordered', 'leasing_in_progress', 'completed',
+  // Neu in Bearbeitung (405/409/410/411), shown as "Auftrag angenommen" since 2026-11-07
+  'sale_in_progress',
 ];
 const isCustomerStatus = (repairStatus) => CUSTOMER_STATUSES.includes(repairStatus);
 

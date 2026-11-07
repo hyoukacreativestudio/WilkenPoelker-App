@@ -26,7 +26,7 @@ const APP_STATUS_VIEW = {
   LEASING_ABGESCHLOSSEN: { label: 'Leasing in Bearbeitung', color: RED },
   LEASING_ABHOLBEREIT:   { label: 'Abholbereit', color: GREEN },
   NEU_BESTELLT:          { label: 'Neu bestellt', color: RED },
-  NEU_IN_ARBEIT:         { label: 'In Bearbeitung', color: RED },
+  NEU_IN_ARBEIT:         { label: 'Auftrag angenommen', color: RED },
   NEU_RESERVIERT:        { label: 'Reserviert', color: YELLOW },
   NEU_PROBEFAHRT:        { label: 'Fertig zur Probefahrt', color: YELLOW },
   NEU_GELIEFERT:         { label: 'Fertig – wird geliefert', color: GREEN },

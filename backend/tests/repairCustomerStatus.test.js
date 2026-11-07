@@ -25,12 +25,21 @@ describe('repair statuses shown to customers', () => {
     expect(M.REPAIR_STATUSES).toContain('sale_ordered');
   });
 
-  test('work in progress stays in the PC tool but not in the app', () => {
-    [100, 105, 107, 116, 200, 201, 405, 409, 410, 411].forEach((nr) => {
+  test('repair work in progress stays in the PC tool but not in the app', () => {
+    [100, 105, 107, 116, 200, 201].forEach((nr) => {
       const e = byNr(nr);
       expect(e.hidden).toBe(false); // still listed for staff
       expect(M.isCustomerStatus(e.repairStatus)).toBe(false);
     });
+  });
+
+  test('Neu in Bearbeitung is shown as "Auftrag angenommen", never "In Bearbeitung" (2026-11-07)', () => {
+    [405, 409, 410, 411].forEach((nr) => {
+      const e = byNr(nr);
+      expect(e.repairStatus).toBe('sale_in_progress');
+      expect(M.isCustomerStatus(e.repairStatus)).toBe(true);
+    });
+    expect(M.APP_STATUS.NEU_IN_ARBEIT.label).toBe('Auftrag angenommen');
   });
 
   test('every finished code offers the WhatsApp "fertig" message', () => {

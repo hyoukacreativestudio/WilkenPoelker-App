@@ -666,6 +666,7 @@
     "statusReserved": "Reserved",
     "statusSaleOrdered": "Ordered",
     "statusDelivery": "Done – will be delivered",
+    "statusSaleAccepted": "Order accepted",
     "statusLeasingReady": "Ready for pickup",
     "batteryNote": "Note: the battery is still charging. If you would like to ride home, please let us know shortly beforehand.",
     "quoteTitle": "Cost estimate",

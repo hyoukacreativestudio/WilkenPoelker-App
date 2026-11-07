@@ -93,6 +93,7 @@ function hasPermission(...requiredPermissions) {
       [ROLES.CLEANING_MANAGER]: ['cleaning'],
       [ROLES.MOTOR_MANAGER]: ['motor'],
       [ROLES.SERVICE_MANAGER]: ['service'],
+      sales_manager: ['sales'],
     };
 
     const rolePerms = rolePermissionMap[req.user.role] || [];

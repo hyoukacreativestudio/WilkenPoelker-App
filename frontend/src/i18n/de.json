@@ -666,6 +666,7 @@
     "statusReserved": "Reserviert",
     "statusSaleOrdered": "Neu bestellt",
     "statusDelivery": "Fertig – wird geliefert",
+    "statusSaleAccepted": "Auftrag angenommen",
     "statusLeasingReady": "Abholbereit",
     "batteryNote": "Hinweis: Der Akku wird noch geladen. Falls Sie mit dem Rad nach Hause fahren möchten, geben Sie uns bitte kurz vorher Bescheid.",
     "quoteTitle": "Kostenvoranschlag",

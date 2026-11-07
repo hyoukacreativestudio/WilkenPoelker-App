@@ -96,7 +96,7 @@ router.get(
 router.get(
   '/customers/:id/tickets',
   authenticate,
-  hasPermission('service', 'bike', 'cleaning', 'motor'),
+  hasPermission('service', 'bike', 'cleaning', 'motor', 'sales'),
   validate([validators.uuid('id')]),
   serviceController.getCustomerTickets
 );

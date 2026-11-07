@@ -36,6 +36,8 @@ function customerText(mapping) {
       return { title: 'Neu bestellt', body: `${subject} ist für Sie bestellt. Wir melden uns, sobald es da ist.` };
     case 'leasing_in_progress':
       return { title: 'Leasing in Bearbeitung', body: 'Ihr Leasing wird bearbeitet.' };
+    case 'sale_in_progress':
+      return { title: 'Auftrag angenommen', body: 'Wir haben Ihren Auftrag angenommen und melden uns, sobald es weitergeht.' };
     case 'sale_test_drive':
       return { title: 'Fertig zur Probefahrt', body: `${subject} ist fertig zur Probefahrt.` };
     default:

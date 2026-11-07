@@ -49,6 +49,9 @@ export default function CustomerProfileScreen({ route, navigation }) {
 
   // Admin actions
   const isStaff = user && ['admin', 'super_admin', 'service_manager'].includes(user.role);
+  // Customer number: Admin, Service and Verkauf only, and only on customer
+  // accounts (customers can't change their own number anywhere in the app)
+  const canEditNumber = !!user && ['admin', 'super_admin', 'service_manager', 'sales_manager'].includes(user.role);
   const [msgVisible, setMsgVisible] = useState(false);
   const [msgText, setMsgText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -266,16 +269,20 @@ export default function CustomerProfileScreen({ route, navigation }) {
           </View>
         </View>
 
-        {isStaff && (
+        {(isStaff || canEditNumber) && (
           <View style={s.adminActions}>
-            <TouchableOpacity style={[s.actionBtn, { backgroundColor: theme.colors.primary }]} onPress={() => setMsgVisible(true)} disabled={busy}>
-              <MaterialCommunityIcons name="message-text-outline" size={18} color="#FFFFFF" />
-              <Text style={s.actionBtnText}>{t('customerProfile.message', 'Nachricht')}</Text>
-            </TouchableOpacity>
+            {isStaff && (
+              <TouchableOpacity style={[s.actionBtn, { backgroundColor: theme.colors.primary }]} onPress={() => setMsgVisible(true)} disabled={busy}>
+                <MaterialCommunityIcons name="message-text-outline" size={18} color="#FFFFFF" />
+                <Text style={s.actionBtnText}>{t('customerProfile.message', 'Nachricht')}</Text>
+              </TouchableOpacity>
+            )}
+            {canEditNumber && customer.role === 'customer' && String(customer.id) !== String(currentUserId) && (
             <TouchableOpacity style={[s.actionBtn, { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border }]} onPress={openNumberEdit} disabled={busy}>
               <MaterialCommunityIcons name="card-account-details-outline" size={18} color={theme.colors.text} />
               <Text style={[s.actionBtnText, { color: theme.colors.text }]}>{t('customerProfile.removeNumber', 'Kd-Nr.')}</Text>
             </TouchableOpacity>
+            )}
             {isAdmin && (
               <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#E53E3E' }]} onPress={deleteCustomer} disabled={busy}>
                 <MaterialCommunityIcons name="trash-can-outline" size={18} color="#FFFFFF" />

@@ -1,7 +1,8 @@
 // One place for how a repair status looks in the app (list, detail, timeline).
 // Since 2026-11-06 customers only get these statuses from the server:
 // Teile bestellt, KVA geschrieben, Reserviert, Abholbereit, Fertig - wird
-// geliefert, Fertig zur Probefahrt, Neu bestellt, Leasing in Bearbeitung
+// geliefert, Fertig zur Probefahrt, Neu bestellt, Leasing in Bearbeitung,
+// Auftrag angenommen (Neu in Bearbeitung)
 // (+ completed after they confirmed the pickup).
 // The older values stay here for staff views and older data.
 
@@ -36,7 +37,8 @@ export function repairStatusLabel(t, status, category) {
     ready: t('repairs.statusReady', 'Abholbereit'),
     completed: t('repairs.statusCompleted', 'Abgeschlossen'),
     leasing_in_progress: t('repairs.statusLeasingInProgress', 'Leasing in Bearbeitung'),
-    sale_in_progress: t('repairs.statusInProgress', 'In Bearbeitung'),
+    // Not "In Bearbeitung" - that sounded like someone is working on it right now
+    sale_in_progress: t('repairs.statusSaleAccepted', 'Auftrag angenommen'),
     sale_ordered: t('repairs.statusSaleOrdered', 'Neu bestellt'),
     reserved: t('repairs.statusReserved', 'Reserviert'),
     sale_test_drive: t('repairs.statusTestDrive', 'Fertig zur Probefahrt'),

@@ -71,10 +71,11 @@ router.post(
   adminController.sendBroadcast
 );
 
-// PUT /api/admin/users/:id - update a user
+// PUT /api/admin/users/:id - update a user (customer number: Admin, Service,
+// Verkauf - never the customer themselves)
 router.put(
   '/users/:id',
-  authorize('admin', 'super_admin', 'service_manager'),
+  authorize('admin', 'super_admin', 'service_manager', 'sales_manager'),
   adminController.updateUser
 );
 
