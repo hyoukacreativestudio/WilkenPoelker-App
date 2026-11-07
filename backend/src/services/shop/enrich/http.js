@@ -27,23 +27,28 @@ const UPLOADS = path.resolve(__dirname, '../../../../uploads');
 // Downloads official pictures and stores them as webp (large + thumbnail)
 // under /uploads/shop/<folder>/. Returns [{ url, thumb, source }].
 async function storeImages(folder, urls, source) {
-  const dir = path.join(UPLOADS, 'shop', folder);
-  await fs.mkdir(dir, { recursive: true });
   const out = [];
   for (const [i, url] of urls.entries()) {
     try {
       const buf = await politeFetch(url, { binary: true });
-      const base = `${i + 1}`;
-      await sharp(buf).rotate().resize({ width: 1400, height: 1400, fit: 'inside', withoutEnlargement: true })
-        .flatten({ background: '#ffffff' }).webp({ quality: 82 }).toFile(path.join(dir, `${base}.webp`));
-      await sharp(buf).rotate().resize({ width: 480, height: 480, fit: 'inside', withoutEnlargement: true })
-        .flatten({ background: '#ffffff' }).webp({ quality: 78 }).toFile(path.join(dir, `${base}-k.webp`));
-      out.push({ url: `/uploads/shop/${folder}/${base}.webp`, thumb: `/uploads/shop/${folder}/${base}-k.webp`, source, original: url });
+      out.push({ ...(await storeImageBuffer(folder, `${i + 1}`, buf)), source, original: url });
     } catch (e) {
       // skip a broken picture, keep the others
     }
   }
   return out;
+}
+
+// One picture (downloaded or uploaded from the PC tool) -> large + thumbnail webp.
+// Throws if the data is not a readable image.
+async function storeImageBuffer(folder, base, buf) {
+  const dir = path.join(UPLOADS, 'shop', folder);
+  await fs.mkdir(dir, { recursive: true });
+  await sharp(buf).rotate().resize({ width: 1400, height: 1400, fit: 'inside', withoutEnlargement: true })
+    .flatten({ background: '#ffffff' }).webp({ quality: 82 }).toFile(path.join(dir, `${base}.webp`));
+  await sharp(buf).rotate().resize({ width: 480, height: 480, fit: 'inside', withoutEnlargement: true })
+    .flatten({ background: '#ffffff' }).webp({ quality: 78 }).toFile(path.join(dir, `${base}-k.webp`));
+  return { url: `/uploads/shop/${folder}/${base}.webp`, thumb: `/uploads/shop/${folder}/${base}-k.webp` };
 }
 
 // Monthly check: makes the stored pictures of a product match the manufacturer's
@@ -84,4 +89,4 @@ async function syncImages(folder, urls, source, current = []) {
   return { images, changed: !same };
 }
 
-module.exports = { politeFetch, storeImages, syncImages, isGone, UPLOADS };
+module.exports = { politeFetch, storeImages, storeImageBuffer, syncImages, isGone, UPLOADS };
