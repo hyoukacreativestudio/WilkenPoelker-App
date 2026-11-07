@@ -255,17 +255,23 @@ export default function ImpressumScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>{t('legal.impressum.appDevelopmentTitle')}</Text>
           <Card>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}
+              activeOpacity={0.7}
+              onPress={() => Linking.openURL('https://hyoukacreativestudio.de')}
+              accessibilityRole="link"
+            >
               <MaterialCommunityIcons
                 name="code-braces"
                 size={20}
                 color={theme.colors.primary}
                 style={{ marginRight: theme.spacing.sm }}
               />
-              <Text style={[theme.typography.styles.body, { color: theme.colors.text, fontWeight: '600' }]}>
+              <Text style={[theme.typography.styles.body, { color: theme.colors.primary, fontWeight: '600' }]}>
                 HyoukaCreativeStudio
               </Text>
-            </View>
+              <MaterialCommunityIcons name="open-in-new" size={16} color={theme.colors.primary} style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
             <Text style={[theme.typography.styles.bodySmall, { color: theme.colors.textSecondary, lineHeight: 20 }]}>
               {t('legal.impressum.appDevelopmentText')}
             </Text>

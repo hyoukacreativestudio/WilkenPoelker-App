@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Linking,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScreenEdges } from '../../hooks/useScreenEdges';
@@ -70,7 +71,9 @@ export default function RepairsListScreen({ navigation }) {
   const [outreachCounts, setOutreachCounts] = useState(emptyCounts);
   const [outreachLoading, setOutreachLoading] = useState(false);
   const [outreachFilter, setOutreachFilter] = useState('open');        // 'open' | 'reached'
-  const [outreachCategory, setOutreachCategory] = useState('reparatur'); // reparatur | neu | leasing
+  // Kontakte use the same Reparatur / Neu / Leasing choice as the tabs at the top
+  const outreachCategory = categoryTab;
+  const setOutreachCategory = setCategoryTab;
   const [outreachSearch, setOutreachSearch] = useState('');
   const [outreachExpanded, setOutreachExpanded] = useState({});        // { [groupId]: true }
   const [snackbar, setSnackbar] = useState(null);                      // { text, onUndo }
@@ -142,77 +145,81 @@ export default function RepairsListScreen({ navigation }) {
     if (myHasMore && !myLoading) loadMoreMy();
   }, [myHasMore, myLoading, loadMoreMy]);
 
-  // Active repairs for the currently selected category tab. Repairs without a
-  // category (app-created) fall back to 'reparatur'.
-  const displayedRepairs = useMemo(() => {
-    return myRepairs.filter((r) => {
-      if (!ACTIVE_STATUSES.includes(r.status)) return false;
-      if ((r.category || 'reparatur') !== categoryTab) return false;
-      if (statusFilter === 'ready') return READY_STATUS.includes(r.status);
-      if (statusFilter === 'inarbeit') return !READY_STATUS.includes(r.status);
-      return true;
-    });
-  }, [myRepairs, categoryTab, statusFilter]);
+  // The tabs at the top (Reparatur / Neu / Leasing and Alle / Abholbereit /
+  // In Arbeit) filter the own repairs and, for staff, also "Alle Reparaturen"
+  // and the Kontakte list. Repairs without a category (app-created) count as
+  // 'reparatur'.
+  const inCategory = useCallback((r) => (r.category || 'reparatur') === categoryTab, [categoryTab]);
+  const matchesStatus = useCallback((r) => {
+    if (statusFilter === 'ready') return READY_STATUS.includes(r.status);
+    if (statusFilter === 'inarbeit') return !READY_STATUS.includes(r.status);
+    return true;
+  }, [statusFilter]);
+
+  const displayedRepairs = useMemo(
+    () => myRepairs.filter((r) => ACTIVE_STATUSES.includes(r.status) && inCategory(r) && matchesStatus(r)),
+    [myRepairs, inCategory, matchesStatus]
+  );
+
+  // What the counts at the top refer to: staff see everyone's active orders
+  // (their own are included), customers their own.
+  const countBase = useMemo(
+    () => (isStaff ? allRepairs.filter((r) => !r.archivedAt) : myRepairs)
+      .filter((r) => ACTIVE_STATUSES.includes(r.status)),
+    [isStaff, allRepairs, myRepairs]
+  );
 
   // Counts for the Abholbereit / In-Arbeit sub-filter (current category only)
   const statusCounts = useMemo(() => {
     let ready = 0;
     let inarbeit = 0;
-    myRepairs.forEach((r) => {
-      if (!ACTIVE_STATUSES.includes(r.status)) return;
-      if ((r.category || 'reparatur') !== categoryTab) return;
+    countBase.forEach((r) => {
+      if (!inCategory(r)) return;
       if (READY_STATUS.includes(r.status)) ready += 1;
       else inarbeit += 1;
     });
     return { all: ready + inarbeit, ready, inarbeit };
-  }, [myRepairs, categoryTab]);
+  }, [countBase, inCategory]);
 
   // Per-category counts for the tab badges.
   const categoryCounts = useMemo(() => {
     const counts = { reparatur: 0, neu: 0, leasing: 0 };
-    myRepairs.forEach((r) => {
-      if (!ACTIVE_STATUSES.includes(r.status)) return;
+    countBase.forEach((r) => {
       const cat = r.category || 'reparatur';
       if (counts[cat] !== undefined) counts[cat] += 1;
     });
     return counts;
-  }, [myRepairs]);
+  }, [countBase]);
 
-  // Admin tab filtered repairs
-  const adminOpenRepairs = useMemo(() => {
-    return allRepairs.filter((r) => r.status !== 'ready' || (!r.acknowledgedAt && !r.archivedAt));
-  }, [allRepairs]);
+  // "Alle Reparaturen" for staff, already narrowed by the tabs at the top
+  const filteredAllRepairs = useMemo(
+    () => allRepairs.filter((r) => inCategory(r) && matchesStatus(r)),
+    [allRepairs, inCategory, matchesStatus]
+  );
 
-  const adminReadyRepairs = useMemo(() => {
-    return allRepairs.filter((r) => r.status === 'ready' && !r.archivedAt);
-  }, [allRepairs]);
+  const isArchived = (r) => !!r.archivedAt || r.status === 'completed';
+  const ADMIN_FILTERS = {
+    open: (r) => !isArchived(r) && !READY_STATUS.includes(r.status),
+    ready: (r) => !isArchived(r) && READY_STATUS.includes(r.status),
+    archived: isArchived,
+  };
 
-  const adminArchivedRepairs = useMemo(() => {
-    return allRepairs.filter((r) => r.archivedAt);
-  }, [allRepairs]);
-
-  const getAdminTabRepairs = useCallback(() => {
-    switch (adminTab) {
-      case 'open':
-        // All repairs that are still in progress (not ready, not completed, not archived)
-        return allRepairs.filter((r) => r.status !== 'ready' && r.status !== 'completed' && !r.archivedAt);
-      case 'ready':
-        // Ready repairs (not archived) - split by acknowledged/not
-        return allRepairs.filter((r) => r.status === 'ready' && !r.archivedAt);
-      case 'archived':
-        // Completed or explicitly archived repairs
-        return allRepairs.filter((r) => r.archivedAt || r.status === 'completed');
-      default:
-        return [];
-    }
-  }, [adminTab, allRepairs]);
-
-  const adminTabRepairs = useMemo(() => getAdminTabRepairs(), [getAdminTabRepairs]);
+  const adminTabRepairs = useMemo(
+    () => (ADMIN_FILTERS[adminTab] ? filteredAllRepairs.filter(ADMIN_FILTERS[adminTab]) : []),
+    [adminTab, filteredAllRepairs]
+  );
 
   // Tab counts
-  const openCount = useMemo(() => allRepairs.filter((r) => r.status !== 'ready' && r.status !== 'completed' && !r.archivedAt).length, [allRepairs]);
-  const readyCount = useMemo(() => allRepairs.filter((r) => r.status === 'ready' && !r.archivedAt).length, [allRepairs]);
-  const archivedCount = useMemo(() => allRepairs.filter((r) => r.archivedAt || r.status === 'completed').length, [allRepairs]);
+  const openCount = useMemo(() => filteredAllRepairs.filter(ADMIN_FILTERS.open).length, [filteredAllRepairs]);
+  const readyCount = useMemo(() => filteredAllRepairs.filter(ADMIN_FILTERS.ready).length, [filteredAllRepairs]);
+  const archivedCount = useMemo(() => filteredAllRepairs.filter(ADMIN_FILTERS.archived).length, [filteredAllRepairs]);
+
+  // Choosing Abholbereit / In Arbeit at the top also opens the matching staff tab
+  const chooseStatusFilter = useCallback((key) => {
+    setStatusFilter(key);
+    if (key === 'ready' && adminTab === 'open') setAdminTab('ready');
+    if (key === 'inarbeit' && adminTab === 'ready') setAdminTab('open');
+  }, [adminTab]);
 
   // Fetch the staff outreach list (grouped by customer + category)
   const fetchOutreach = useCallback(async () => {
@@ -550,7 +557,7 @@ export default function RepairsListScreen({ navigation }) {
             <TouchableOpacity
               key={tab.key}
               activeOpacity={0.7}
-              onPress={() => setStatusFilter(tab.key)}
+              onPress={() => chooseStatusFilter(tab.key)}
               style={{
                 paddingVertical: 5,
                 paddingHorizontal: theme.spacing.md,
@@ -577,11 +584,17 @@ export default function RepairsListScreen({ navigation }) {
       { key: 'open', label: t('repairs.tabOpen', 'Offen'), count: openCount, icon: 'wrench-outline' },
       { key: 'ready', label: t('repairs.tabReady', 'Fertig'), count: readyCount, icon: 'check-circle-outline' },
       { key: 'archived', label: t('repairs.tabArchived', 'Abgeschlossen'), count: archivedCount, icon: 'archive-outline' },
-      { key: 'kontakte', label: t('repairs.tabContacts', 'Kontakte'), count: outreachCounts.byCategory ? (outreachCounts.byCategory.reparatur + outreachCounts.byCategory.neu + outreachCounts.byCategory.leasing) : outreachCounts.open, icon: 'phone-outline' },
+      { key: 'kontakte', label: t('repairs.tabContacts', 'Kontakte'), count: outreachCounts.byCategory ? (outreachCounts.byCategory[categoryTab] || 0) : outreachCounts.open, icon: 'phone-outline' },
     ];
 
+    // Scrolls sideways when the labels don't fit, so nothing gets cut off
     return (
-      <View style={{ flexDirection: 'row', marginHorizontal: theme.spacing.md, marginTop: theme.spacing.sm, marginBottom: theme.spacing.xs }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginTop: theme.spacing.sm, marginBottom: theme.spacing.xs }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: theme.spacing.md }}
+      >
         {tabs.map((tab) => {
           const isActive = adminTab === tab.key;
           return (
@@ -590,11 +603,12 @@ export default function RepairsListScreen({ navigation }) {
               activeOpacity={0.7}
               onPress={() => setAdminTab(tab.key)}
               style={{
-                flex: 1,
+                flexGrow: 1,
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
                 paddingVertical: theme.spacing.sm,
+                paddingHorizontal: theme.spacing.sm,
                 borderBottomWidth: 2,
                 borderBottomColor: isActive ? theme.colors.primary : 'transparent',
               }}
@@ -604,7 +618,7 @@ export default function RepairsListScreen({ navigation }) {
                 size={16}
                 color={isActive ? theme.colors.primary : theme.colors.textTertiary}
               />
-              <Text style={[
+              <Text numberOfLines={1} style={[
                 theme.typography.styles.small,
                 {
                   color: isActive ? theme.colors.primary : theme.colors.textTertiary,
@@ -632,7 +646,7 @@ export default function RepairsListScreen({ navigation }) {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
     );
   };
 
@@ -768,6 +782,10 @@ export default function RepairsListScreen({ navigation }) {
 
   // The whole outreach (contact) list, shown under the admin "Kontakte" tab
   const renderOutreachList = () => {
+    // Abholbereit / In Arbeit at the top: a customer counts as ready once one of their orders is
+    const isReadyGroup = (g) => g.orders.some((o) => READY_STATES.includes(o.appStatus));
+    const shownOutreach = statusFilter === 'all' ? outreach
+      : outreach.filter((g) => (statusFilter === 'ready' ? isReadyGroup(g) : !isReadyGroup(g)));
     const bc = outreachCounts.byCategory || { reparatur: 0, neu: 0, leasing: 0 };
     const catTabs = [
       { key: 'reparatur', label: t('repairs.categoryReparatur', 'Reparatur'), count: bc.reparatur },
@@ -836,8 +854,14 @@ export default function RepairsListScreen({ navigation }) {
                 : t('repairs.contactsNoneReached', 'Noch keine erreichten Kontakte')}
             </Text>
           </View>
+        ) : shownOutreach.length === 0 ? (
+          <View style={{ padding: theme.spacing.lg, alignItems: 'center' }}>
+            <Text style={[theme.typography.styles.body, { color: theme.colors.textSecondary }]}>
+              {t('repairs.noRepairs')}
+            </Text>
+          </View>
         ) : (
-          outreach.map((group) => renderOutreachItem(group))
+          shownOutreach.map((group) => renderOutreachItem(group))
         )}
       </View>
     );
@@ -881,7 +905,7 @@ export default function RepairsListScreen({ navigation }) {
               ]}>
                 {t('repairs.allRepairs', 'Alle Reparaturen')}
               </Text>
-              {allRepairs.length > 0 && (
+              {filteredAllRepairs.length > 0 && (
                 <View style={{
                   backgroundColor: theme.colors.primary,
                   borderRadius: theme.borderRadius.round,
@@ -890,7 +914,7 @@ export default function RepairsListScreen({ navigation }) {
                   marginLeft: theme.spacing.sm,
                 }}>
                   <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: theme.typography.weights.bold }}>
-                    {allRepairs.length}
+                    {filteredAllRepairs.length}
                   </Text>
                 </View>
               )}

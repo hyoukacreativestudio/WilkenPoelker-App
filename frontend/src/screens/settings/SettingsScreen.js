@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Share,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScreenEdges } from '../../hooks/useScreenEdges';
@@ -461,14 +462,23 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <Divider style={{ marginVertical: theme.spacing.sm }} />
-            <View style={s.infoRow}>
+            {/* Tapping opens the developer's website */}
+            <TouchableOpacity
+              style={s.infoRow}
+              activeOpacity={0.7}
+              onPress={() => Linking.openURL('https://hyoukacreativestudio.de')}
+              accessibilityRole="link"
+            >
               <Text style={[theme.typography.styles.body, { color: theme.colors.text }]}>
                 {t('settings.developedBy')}
               </Text>
-              <Text style={[theme.typography.styles.body, { color: theme.colors.primary, fontWeight: '600' }]}>
-                {t('settings.developer')}
-              </Text>
-            </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={[theme.typography.styles.body, { color: theme.colors.primary, fontWeight: '600' }]}>
+                  {t('settings.developer')}
+                </Text>
+                <MaterialCommunityIcons name="open-in-new" size={16} color={theme.colors.primary} style={{ marginLeft: 4 }} />
+              </View>
+            </TouchableOpacity>
             <Divider style={{ marginVertical: theme.spacing.sm }} />
             <Text style={[theme.typography.styles.caption, { color: theme.colors.textTertiary, textAlign: 'center', paddingVertical: theme.spacing.xs }]}>
               {t('settings.copyright')}

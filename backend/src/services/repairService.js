@@ -49,7 +49,9 @@ async function getAllRepairs(query, models) {
   const { Repair, User } = models;
   const { filter, page = 1, limit = 20 } = query;
 
-  const where = {};
+  // Staff see the same statuses as the customers (user 2026-11-07: no
+  // "In Bearbeitung"/"In Arbeit" in the app); those stay in the PC tool.
+  const where = { status: { [Op.in]: CUSTOMER_STATUSES } };
 
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
