@@ -9,9 +9,17 @@ import react from '@vitejs/plugin-react';
 // production without any CORS setup.
 const target = process.env.VITE_PROXY_TARGET || 'http://localhost:5002';
 
+// Git Bash rewrites VITE_BASE=/pc/ into a Windows path ("/…/Git/pc/"), which
+// left the live PC tool as a blank green window (2026-11-07). Only '/', '/pc/'
+// or './' (Electron) are valid.
+const base = process.env.VITE_BASE || '/';
+if (!['/', '/pc/', './'].includes(base)) {
+  throw new Error(`VITE_BASE "${base}" ist ungueltig – in Git Bash mit MSYS_NO_PATHCONV=1 bauen.`);
+}
+
 export default defineConfig({
   // Served from the backend under /pc in production; root in dev.
-  base: process.env.VITE_BASE || '/',
+  base,
   plugins: [react()],
   server: {
     port: 5180,
