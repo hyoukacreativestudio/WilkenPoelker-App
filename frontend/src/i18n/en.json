@@ -270,6 +270,13 @@
     "forgotPasswordHint": "Enter your email address. We will send you a link to reset your password."
   },
   "feed": {
+    "serviceBarTitle": "Service & help",
+    "serviceBarHint": "Tap your device – ask a question, request a repair or appointment",
+    "serviceBarGeneral": "General",
+    "serviceBarBike": "Bike",
+    "serviceBarCleaning": "Cleaning",
+    "serviceBarMotor": "Power tools",
+    "serviceBarA11y": "Service and help: ask a question, request a repair or appointment",
     "title": "Feed",
     "createPost": "Create post",
     "whatToShare": "What would you like to share?",

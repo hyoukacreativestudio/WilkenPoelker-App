@@ -270,6 +270,13 @@
     "forgotPasswordHint": "Geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts."
   },
   "feed": {
+    "serviceBarTitle": "Service & Hilfe",
+    "serviceBarHint": "Gerät antippen – Frage stellen, Reparatur oder Termin anfragen",
+    "serviceBarGeneral": "Allgemein",
+    "serviceBarBike": "Fahrrad",
+    "serviceBarCleaning": "Reinigung",
+    "serviceBarMotor": "Motorgeräte",
+    "serviceBarA11y": "Service und Hilfe: Frage stellen, Reparatur oder Termin anfragen",
     "title": "Feed",
     "createPost": "Beitrag erstellen",
     "whatToShare": "Was möchten Sie teilen?",
