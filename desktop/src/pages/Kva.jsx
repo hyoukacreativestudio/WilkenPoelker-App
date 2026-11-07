@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { backdropHandlers } from '../backdrop.js';
-import { AppTabs, useLiveReload, whatsappNumber, kvaText, WhatsAppButton } from '../customers.jsx';
+import { AppTabs, useLiveReload, whatsappNumber, kvaText, WhatsAppButton, SALUTATION } from '../customers.jsx';
 
 const DEPT_LABEL = { fahrrad: 'Fahrrad', robby: 'Robby', rasenmaeher: 'Rasenmäher', motorgeraete: 'Motorgeräte', elektro: 'Elektrofahrzeuge' };
 const RESPONSE = {
@@ -13,7 +13,7 @@ const RESPONSE = {
 const when = (d) => (d ? new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '');
 
 // What the app customer gets by default; staff add the amount before sending.
-const appMessage = (r) => `Guten Tag${r.customerName ? ` ${r.customerName}` : ''},\n\nfür Ihre Reparatur${r.info ? ` (${r.info})` : ''} haben wir einen Kostenvoranschlag erstellt: ___ €.\n\nBitte bestätigen oder lehnen Sie ihn direkt hier in der App ab, oder rufen Sie uns an (04952 5304).\n\nViele Grüße\nIhr Team von Wilken Poelker`;
+const appMessage = () => `${SALUTATION}\n\nfür Ihre Reparatur haben wir einen Kostenvoranschlag erstellt: ___ €.\n\nBitte bestätigen oder lehnen Sie ihn direkt hier in der App ab, oder rufen Sie uns an (04952 5304).\n\nViele Grüße\nIhr Team von Wilken Poelker`;
 
 // Service: every order with a cost estimate (Taifun "Reparatur KVA erstellt").
 // Without app: WhatsApp with a ready text. With app: write the customer
@@ -98,10 +98,10 @@ export default function Kva() {
                   </td>
                   <td className="right no-print" style={{ whiteSpace: 'nowrap' }}>
                     {r.hasApp ? (
-                      <button className="btn sm" onClick={() => setCompose({ row: r, text: r.message || appMessage(r) })}>✉️ Nachricht</button>
+                      <button className="btn sm" onClick={() => setCompose({ row: r, text: r.message || appMessage() })}>✉️ Nachricht</button>
                     ) : (
                       <>
-                        <WhatsAppButton number={wa} text={kvaText({ name: r.customerName, info: r.info })} onSent={() => setContacted(r, true)} />{' '}
+                        <WhatsAppButton number={wa} text={kvaText()} onSent={() => setContacted(r, true)} />{' '}
                         {r.contactedAt
                           ? <button className="btn sm ghost" onClick={() => setContacted(r, false)}>Zurück</button>
                           : <button className="btn sm ghost" onClick={() => setContacted(r, true)} title="z. B. nach einem Anruf">Angeschrieben ✓</button>}

@@ -96,7 +96,7 @@ export default function Kundenbestellungen({ user }) {
 
   // Only a message written since the order reached the current step counts here
   const contactedNow = (g) => g.contactedAt && (!g.statusAt || new Date(g.contactedAt) >= new Date(g.statusAt));
-  const textFor = (g) => customerOrderText({ name: g.customerName, items: g.items, number: g.number, step });
+  const textFor = (g) => customerOrderText({ items: g.items, step });
   const setContacted = async (g, contacted, via) => {
     try { await api.patch(`/desktop/customer-orders/${g.year}/${g.number}/contacted`, { contacted, via }); load({ silent: true }); }
     catch (e) { toast(e.message, { type: 'error' }); }

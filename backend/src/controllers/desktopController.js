@@ -309,7 +309,7 @@ const messageCustomerOrder = asyncHandler(async (req, res) => {
   for (const u of users) {
     await models.Notification.create({
       userId: u.id,
-      title: `Ihre Bestellung Nr. ${rows[0].customerOrderNumber}`,
+      title: 'Ihre Bestellung bei Wilken Poelker',
       message: text,
       type: 'system',
       category: 'system',

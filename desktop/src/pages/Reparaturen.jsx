@@ -9,6 +9,45 @@ const DEPT_LABEL = { fahrrad: 'Fahrrad', robby: 'Robby', rasenmaeher: 'Rasenmäh
 // Finished orders (same list as READY_CODES in backend/src/services/taifunStatusMap.js)
 const READY = ['REP_ABHOLBEREIT', 'NEU_ABHOLBEREIT', 'NEU_GELIEFERT', 'LEASING_ABHOLBEREIT'];
 
+// Same wording + traffic-light colours as the customer app
+// (frontend/src/utils/repairStatus.js; mapping in backend taifunStatusMap.js).
+// app: false = the customer does not see this status in the app.
+const RED = { bg: '#fdecec', fg: '#c53030' };
+const YELLOW = { bg: '#fff6d6', fg: '#8a6d00' };
+const ORANGE = { bg: '#fdeedf', fg: '#b4530f' };
+const GREEN = { bg: '#e3f4e8', fg: '#22783f' };
+const GREY = { bg: '#eef0f2', fg: '#5c6670' };
+const APP_STATUS_VIEW = {
+  REP_TEILE_BESTELLT:    { label: 'Teile bestellt', ...RED, app: true },
+  REP_KVA:               { label: 'KVA geschrieben', ...ORANGE, app: true },
+  REP_ABHOLBEREIT:       { label: 'Abholbereit', ...GREEN, app: true },
+  LEASING_IN_ARBEIT:     { label: 'Leasing in Bearbeitung', ...RED, app: true },
+  LEASING_ABGESCHLOSSEN: { label: 'Leasing in Bearbeitung', ...RED, app: true },
+  LEASING_ABHOLBEREIT:   { label: 'Abholbereit', ...GREEN, app: true },
+  NEU_BESTELLT:          { label: 'Neu bestellt', ...RED, app: true },
+  NEU_RESERVIERT:        { label: 'Reserviert', ...YELLOW, app: true },
+  NEU_PROBEFAHRT:        { label: 'Fertig zur Probefahrt', ...YELLOW, app: true },
+  NEU_GELIEFERT:         { label: 'Fertig – wird geliefert', ...GREEN, app: true },
+  NEU_ABHOLBEREIT:       { label: 'Abholbereit', ...GREEN, app: true },
+  REP_BESTELLT:          { label: 'Bestellt', ...GREY, app: false },
+  REP_IN_ARBEIT:         { label: 'Reparatur in Arbeit', ...GREY, app: false },
+  NEU_IN_ARBEIT:         { label: 'In Bearbeitung', ...GREY, app: false },
+};
+const statusView = (o) => APP_STATUS_VIEW[o.appStatus] || { label: o.appStatusLabel || 'In Arbeit', ...GREY, app: false };
+
+function StatusBadge({ order }) {
+  const v = statusView(order);
+  return (
+    <span
+      className="badge"
+      style={{ fontSize: 11, marginRight: 6, background: v.bg, color: v.fg, fontStyle: v.app ? 'normal' : 'italic' }}
+      title={v.app ? 'So sieht der Kunde den Status auch in der App' : 'Nur im PC-Programm – der Kunde sieht diesen Status nicht in der App'}
+    >
+      {v.label}{v.app ? '' : ' · nicht in App'}
+    </span>
+  );
+}
+
 // Aufträge (Taifun outreach): customers to contact, split by category and by
 // status (Abholbereit / In Arbeit). Sales only sees Neu + Leasing.
 export default function Reparaturen({ user }) {
@@ -115,8 +154,8 @@ export default function Reparaturen({ user }) {
                 <td>{[g.zip, g.city].filter(Boolean).join(' ') || '—'}</td>
                 <td>{(g.orders || []).map((o) => (
                   <div key={o.nr} className="muted" style={{ fontSize: 13 }}>
-                    <span className={`badge ${READY.includes(o.appStatus) ? 'brought' : 'open'}`} style={{ fontSize: 11, marginRight: 6 }}>{o.appStatus === 'NEU_GELIEFERT' ? 'Fertig' : READY.includes(o.appStatus) ? 'Abholbereit' : 'In Arbeit'}</span>
-                    {o.info || `Auftrag ${o.nr}`}{o.appStatusLabel ? ` · ${o.appStatusLabel}` : ''}
+                    <StatusBadge order={o} />
+                    {o.info || `Auftrag ${o.nr}`}
                     {o.info && o.nr ? <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 6 }}>· Nr. {o.nr}</span> : null}
                   </div>
                 ))}</td>
@@ -124,7 +163,6 @@ export default function Reparaturen({ user }) {
                   {scope === 'no_app' && groupReady(g) ? (() => {
                     const done = (g.orders || []).filter((o) => READY.includes(o.appStatus));
                     const text = readyText({
-                      name: g.customerName, info: done.map((o) => o.info).filter(Boolean).join(', '),
                       category: g.category, department: g.department, delivery: done.every((o) => o.appStatus === 'NEU_GELIEFERT'),
                     });
                     return <span style={{ marginRight: 6 }}><WhatsAppButton number={whatsappNumber(g.mobile, g.phone)} text={text} label="Fertig" /></span>;

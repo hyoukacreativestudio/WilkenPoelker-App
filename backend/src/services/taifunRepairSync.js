@@ -9,36 +9,44 @@ const { appStatusToRepair, isCustomerStatus } = require('./taifunStatusMap');
 // Customer-facing text per status. Only the statuses the customer can see in the
 // app send anything (see CUSTOMER_STATUSES); "in Arbeit" and the like stay silent.
 const BATTERY_NOTE = 'Hinweis: Der Akku wird noch geladen. Falls Sie mit dem Rad nach Hause fahren möchten, geben Sie uns bitte kurz vorher Bescheid.';
-function customerText(mapping, repair, deviceName) {
+// No internal numbers in customer texts: Taifun's info field is staff
+// shorthand ("26 FA Rep 2761"), so the text names the thing by category.
+function subjectFor(category) {
+  if (category === 'neu') return 'Ihr neues Gerät';
+  if (category === 'leasing') return 'Ihr Leasing-Rad';
+  return 'Ihre Reparatur';
+}
+function customerText(mapping) {
+  const subject = subjectFor(mapping.category);
   switch (mapping.repairStatus) {
     case 'ready':
       return {
         title: 'Abholbereit!',
-        body: mapping.category === 'neu' ? `${deviceName} ist abholbereit. ${BATTERY_NOTE}` : `${deviceName} ist abholbereit.`,
+        body: mapping.category === 'neu' ? `${subject} ist abholbereit. ${BATTERY_NOTE}` : `${subject} ist abholbereit.`,
       };
     case 'quote_created':
-      return { title: 'Kostenvoranschlag erstellt', body: `${deviceName}: Wir haben einen Kostenvoranschlag geschrieben. Bitte melden Sie sich bei uns oder antworten Sie direkt in der App.` };
+      return { title: 'Kostenvoranschlag erstellt', body: 'Für Ihre Reparatur haben wir einen Kostenvoranschlag geschrieben. Bitte melden Sie sich bei uns oder antworten Sie direkt in der App.' };
     case 'parts_ordered':
-      return { title: 'Teile bestellt', body: `${deviceName}: Die Teile für Ihre Reparatur sind bestellt.` };
+      return { title: 'Teile bestellt', body: 'Die Teile für Ihre Reparatur sind bestellt.' };
     case 'reserved':
-      return { title: 'Reserviert', body: `${deviceName} ist für Sie reserviert.` };
+      return { title: 'Reserviert', body: `${subject} ist für Sie reserviert.` };
     case 'sale_delivery':
-      return { title: 'Fertig', body: `${deviceName} ist fertig und wird geliefert.` };
+      return { title: 'Fertig', body: `${subject} ist fertig und wird geliefert.` };
     case 'sale_ordered':
-      return { title: 'Neu bestellt', body: `${deviceName} ist für Sie bestellt. Wir melden uns, sobald es da ist.` };
+      return { title: 'Neu bestellt', body: `${subject} ist für Sie bestellt. Wir melden uns, sobald es da ist.` };
     case 'leasing_in_progress':
-      return { title: 'Leasing in Bearbeitung', body: `${deviceName}: Ihr Leasing wird bearbeitet.` };
+      return { title: 'Leasing in Bearbeitung', body: 'Ihr Leasing wird bearbeitet.' };
     case 'sale_test_drive':
-      return { title: 'Fertig zur Probefahrt', body: `${deviceName} ist fertig zur Probefahrt.` };
+      return { title: 'Fertig zur Probefahrt', body: `${subject} ist fertig zur Probefahrt.` };
     default:
-      return { title: 'Status aktualisiert', body: `${repair.repairNumber}: ${mapping.label}` };
+      return { title: 'Status aktualisiert', body: `${subject}: ${mapping.label}` };
   }
 }
 
 async function notifyStatusChange(repair, mapping, deviceName) {
   if (!isCustomerStatus(mapping.repairStatus)) return;
   const isReady = mapping.repairStatus === 'ready';
-  const { title, body } = customerText(mapping, repair, deviceName);
+  const { title, body } = customerText(mapping);
 
   try {
     await Notification.create({
