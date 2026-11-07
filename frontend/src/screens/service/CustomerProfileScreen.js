@@ -21,6 +21,7 @@ import { getServerUrl } from '../../api/client';
 import { formatRelativeTime } from '../../utils/formatters';
 import EmptyState from '../../components/ui/EmptyState';
 import { useToast } from '../../components/ui/Toast';
+import { STATUS_COLORS, repairStatusLabel } from '../../utils/repairStatus';
 
 const STATUS_CONFIG = {
   open: { icon: 'circle-outline', colorKey: 'info' },
@@ -68,26 +69,45 @@ export default function CustomerProfileScreen({ route, navigation }) {
     }
   };
 
-  const clearCustomerNumber = () => {
+  // Change / enter / remove the Taifun customer number (if ever needed)
+  const [numberVisible, setNumberVisible] = useState(false);
+  const [numberText, setNumberText] = useState('');
+
+  const openNumberEdit = () => {
+    setNumberText(customer?.customerNumber || '');
+    setNumberVisible(true);
+  };
+
+  const saveCustomerNumber = async (value) => {
+    setBusy(true);
+    try {
+      await adminApi.updateUser(customerId, { customerNumber: value || null });
+      setNumberVisible(false);
+      await loadCustomerTickets();
+      showToast({
+        type: 'success',
+        message: value
+          ? t('customerProfile.numberSaved', 'Kundennummer gespeichert')
+          : t('customerProfile.numberRemoved', 'Kundennummer entfernt'),
+      });
+    } catch (e) {
+      showToast({ type: 'error', message: e?.response?.data?.error?.message || t('common.error', 'Fehler') });
+    } finally { setBusy(false); }
+  };
+
+  const confirmSaveNumber = () => {
+    const value = numberText.trim();
+    if (value === (customer?.customerNumber || '')) { setNumberVisible(false); return; }
+    // The repairs shown in the customer's app come from this number
+    const hint = customer?.customerNumber
+      ? t('customerProfile.numberChangeMsg', 'Die Aufträge der bisherigen Nummer verschwinden aus der App des Kunden, die Aufträge der neuen Nummer erscheinen.')
+      : t('customerProfile.numberAddMsg', 'Die Aufträge zu dieser Nummer erscheinen in der App des Kunden.');
     Alert.alert(
-      t('customerProfile.clearNumberTitle', 'Kundennummer entfernen?'),
-      t('customerProfile.clearNumberMsg', 'Die Verknüpfung zur Taifun-Kundennummer wird entfernt.'),
+      value ? t('customerProfile.numberChangeTitle', 'Kundennummer speichern?') : t('customerProfile.clearNumberTitle', 'Kundennummer entfernen?'),
+      value ? hint : t('customerProfile.clearNumberMsg', 'Die Verknüpfung zur Taifun-Kundennummer wird entfernt.'),
       [
         { text: t('common.cancel', 'Abbrechen'), style: 'cancel' },
-        {
-          text: t('common.remove', 'Entfernen'),
-          style: 'destructive',
-          onPress: async () => {
-            setBusy(true);
-            try {
-              await adminApi.updateUser(customerId, { customerNumber: null });
-              await loadCustomerTickets();
-              showToast({ type: 'success', message: t('customerProfile.numberRemoved', 'Kundennummer entfernt') });
-            } catch (e) {
-              showToast({ type: 'error', message: t('common.error', 'Fehler') });
-            } finally { setBusy(false); }
-          },
-        },
+        { text: value ? t('common.save', 'Speichern') : t('common.remove', 'Entfernen'), style: value ? 'default' : 'destructive', onPress: () => saveCustomerNumber(value) },
       ]
     );
   };
@@ -252,12 +272,10 @@ export default function CustomerProfileScreen({ route, navigation }) {
               <MaterialCommunityIcons name="message-text-outline" size={18} color="#FFFFFF" />
               <Text style={s.actionBtnText}>{t('customerProfile.message', 'Nachricht')}</Text>
             </TouchableOpacity>
-            {customer.customerNumber ? (
-              <TouchableOpacity style={[s.actionBtn, { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border }]} onPress={clearCustomerNumber} disabled={busy}>
-                <MaterialCommunityIcons name="card-remove-outline" size={18} color={theme.colors.text} />
-                <Text style={[s.actionBtnText, { color: theme.colors.text }]}>{t('customerProfile.removeNumber', 'Kd-Nr.')}</Text>
-              </TouchableOpacity>
-            ) : null}
+            <TouchableOpacity style={[s.actionBtn, { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border }]} onPress={openNumberEdit} disabled={busy}>
+              <MaterialCommunityIcons name="card-account-details-outline" size={18} color={theme.colors.text} />
+              <Text style={[s.actionBtnText, { color: theme.colors.text }]}>{t('customerProfile.removeNumber', 'Kd-Nr.')}</Text>
+            </TouchableOpacity>
             {isAdmin && (
               <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#E53E3E' }]} onPress={deleteCustomer} disabled={busy}>
                 <MaterialCommunityIcons name="trash-can-outline" size={18} color="#FFFFFF" />
@@ -292,15 +310,6 @@ export default function CustomerProfileScreen({ route, navigation }) {
     );
   };
 
-  const REPAIR_STATUS = {
-    requested: { color: 'info', label: t('repairStatus.requested', 'Angefragt') },
-    ordered: { color: 'info', label: t('repairStatus.ordered', 'Bestellt') },
-    in_progress: { color: 'warning', label: t('repairStatus.inProgress', 'In Bearbeitung') },
-    ready: { color: 'success', label: t('repairStatus.ready', 'Abholbereit') },
-    completed: { color: 'success', label: t('repairStatus.completed', 'Abgeschlossen') },
-    picked_up: { color: 'textSecondary', label: t('repairStatus.pickedUp', 'Abgeholt') },
-    cancelled: { color: 'error', label: t('repairStatus.cancelled', 'Storniert') },
-  };
   const CATEGORY_LABEL = {
     reparatur: t('repairCategory.reparatur', 'Reparatur'),
     leasing: t('repairCategory.leasing', 'Leasing'),
@@ -308,8 +317,8 @@ export default function CustomerProfileScreen({ route, navigation }) {
   };
 
   const renderRepairItem = ({ item }) => {
-    const cfg = REPAIR_STATUS[item.status] || { color: 'textSecondary', label: item.status || '' };
-    const color = theme.colors[cfg.color] || theme.colors.textSecondary;
+    const cfg = { label: repairStatusLabel(t, item.status, item.category) };
+    const color = STATUS_COLORS[item.status] || theme.colors.textSecondary;
     const problem = item.problemDescription || item.deviceDescription;
     const cost = item.cost || item.costEstimate;
     return (
@@ -465,6 +474,40 @@ export default function CustomerProfileScreen({ route, navigation }) {
               </TouchableOpacity>
               <TouchableOpacity onPress={sendMessage} disabled={busy || !msgText.trim()} style={{ paddingVertical: 8, paddingHorizontal: theme.spacing.md, opacity: (busy || !msgText.trim()) ? 0.5 : 1 }}>
                 <Text style={{ color: theme.colors.primary, fontWeight: theme.typography.weights.bold }}>{t('common.send', 'Senden')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Customer number */}
+      <Modal visible={numberVisible} transparent animationType="fade" onRequestClose={() => setNumberVisible(false)}>
+        <View style={s.modalBackdrop}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>{t('customerProfile.customerNumber', 'Kundennummer')}</Text>
+            <TextInput
+              value={numberText}
+              onChangeText={setNumberText}
+              placeholder={t('customerProfile.numberPlaceholder', 'Taifun-Kundennummer, z. B. 42146')}
+              placeholderTextColor={theme.colors.textTertiary}
+              style={[s.modalInput, { minHeight: 0 }]}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              autoFocus
+              maxLength={20}
+            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: theme.spacing.md }}>
+              {customer?.customerNumber ? (
+                <TouchableOpacity onPress={() => setNumberText('')} disabled={busy} style={{ paddingVertical: 8, paddingRight: theme.spacing.md }}>
+                  <Text style={{ color: '#E53E3E' }}>{t('common.remove', 'Entfernen')}</Text>
+                </TouchableOpacity>
+              ) : null}
+              <View style={{ flex: 1 }} />
+              <TouchableOpacity onPress={() => setNumberVisible(false)} style={{ paddingVertical: 8, paddingHorizontal: theme.spacing.md }}>
+                <Text style={{ color: theme.colors.textSecondary }}>{t('common.cancel', 'Abbrechen')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmSaveNumber} disabled={busy} style={{ paddingVertical: 8, paddingHorizontal: theme.spacing.md, opacity: busy ? 0.5 : 1 }}>
+                <Text style={{ color: theme.colors.primary, fontWeight: theme.typography.weights.bold }}>{t('common.save', 'Speichern')}</Text>
               </TouchableOpacity>
             </View>
           </View>

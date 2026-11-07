@@ -971,7 +971,8 @@ async function getCustomerTickets(customerId, staffUserId, query, models) {
   let repairs = [];
   try {
     const repairRows = await Repair.findAll({
-      where: { userId: customerId },
+      // Same statuses as in the customer's app (user 2026-11-07)
+      where: { userId: customerId, status: { [Op.in]: require('./taifunStatusMap').CUSTOMER_STATUSES } },
       attributes: [
         'id', 'repairNumber', 'deviceName', 'deviceDescription', 'problemDescription',
         'status', 'category', 'cost', 'costEstimate', 'technicianName',

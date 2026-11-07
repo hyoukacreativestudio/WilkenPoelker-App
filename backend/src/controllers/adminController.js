@@ -76,8 +76,12 @@ const getAnalytics = asyncHandler(async (req, res) => {
 
 const updateUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { email, customerNumber, address } = req.body;
-  const { User } = require('../models');
+  const { email, address } = req.body;
+  // '' and spaces mean "no number"
+  const customerNumber = req.body.customerNumber === undefined ? undefined
+    : (String(req.body.customerNumber ?? '').trim() || null);
+  const { User, Repair } = require('../models');
+  const { Op } = require('sequelize');
 
   const user = await User.findByPk(id);
   if (!user) {
@@ -85,12 +89,38 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 
   const prevNumber = user.customerNumber;
+
+  // A Taifun customer number belongs to one account only
+  if (customerNumber && customerNumber !== prevNumber) {
+    const owner = await User.findOne({
+      where: { customerNumber, id: { [Op.ne]: user.id } },
+      paranoid: false,
+    });
+    if (owner) {
+      const name = [owner.firstName, owner.lastName].filter(Boolean).join(' ') || owner.email || '';
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'CUSTOMER_NUMBER_TAKEN',
+          message: `Die Kundennummer ${customerNumber} gehört schon zu ${name || 'einem anderen Konto'}.`,
+        },
+      });
+    }
+  }
+
   const updates = {};
   if (email !== undefined) updates.email = email;
   if (customerNumber !== undefined) updates.customerNumber = customerNumber;
   if (address !== undefined) updates.address = address;
 
   await user.update(updates);
+
+  // Changed or removed number: the Taifun orders of the old number no longer
+  // belong to this account. They are only a copy of Taifun and come back for
+  // whoever gets that number.
+  if (customerNumber !== undefined && prevNumber && customerNumber !== prevNumber) {
+    await Repair.destroy({ where: { userId: user.id, taifunRepairId: { [Op.ne]: null } } });
+  }
 
   // When a customer number is newly assigned, pull in the customer's Taifun
   // repairs and notify them — so their app immediately shows repairs and stops
