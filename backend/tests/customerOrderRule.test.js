@@ -49,4 +49,9 @@ describe('Kundenbestellungen rule', () => {
     expect(needsCustomerOrderNumber({ ...base, refNumber: '77' })).toBe(false);
     expect(needsCustomerOrderNumber({ ...base, customerOrderNumber: 3 })).toBe(false);
   });
+
+  test('an order marked "keine Kundenbestellung" never gets a number again', () => {
+    expect(needsCustomerOrderNumber({ ...base, noCustomerOrder: true })).toBe(false);
+    expect(needsCustomerOrderNumber({ ...base, noCustomerOrder: false })).toBe(true);
+  });
 });

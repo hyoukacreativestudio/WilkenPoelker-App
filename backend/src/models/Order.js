@@ -61,6 +61,13 @@ const Order = sequelize.define('Order', {
   customerOrderNumber: {
     type: DataTypes.INTEGER,
   },
+  // Set by hand when an order must never become a Kundenbestellung (no number
+  // is given out again, even after an edit).
+  noCustomerOrder: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
   // waiting -> arrived (Teil da) -> reached (Kunde erreicht) -> picked_up (abgeholt)
   customerOrderStatus: {
     type: DataTypes.STRING,

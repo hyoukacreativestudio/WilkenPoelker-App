@@ -31,7 +31,7 @@ function isForCustomer(order) {
 
 // Only customer orders without any Rep-/VK-Nr. (old combined refNumber counts too).
 function needsCustomerOrderNumber(order) {
-  if (order.customerOrderNumber) return false;
+  if (order.customerOrderNumber || order.noCustomerOrder) return false;
   if (!blank(order.repairNumber) || !blank(order.saleNumber) || !blank(order.refNumber)) return false;
   return isForCustomer(order);
 }
