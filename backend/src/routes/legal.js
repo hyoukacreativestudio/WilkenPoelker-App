@@ -13,10 +13,10 @@ const escapeHtml = (s) => String(s)
   .replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
 
-function loadPolicy(lang) {
+function loadPolicy(lang, key = 'datenschutz') {
   const file = path.join(I18N_DIR, `${lang}.json`);
   const json = JSON.parse(fs.readFileSync(file, 'utf8'));
-  return json.legal && json.legal.datenschutz;
+  return json.legal && json.legal[key];
 }
 
 function renderPage(policy, lang) {
@@ -121,5 +121,20 @@ deleteAccountRouter.get('/', (req, res) => {
   res.type('html').send(renderPage(DELETE_ACCOUNT[lang], lang));
 });
 
+// GET /agb  (optional ?lang=en) - the app's terms, same text the app shows
+const termsRouter = express.Router();
+termsRouter.get('/', (req, res, next) => {
+  try {
+    const lang = req.query.lang === 'en' ? 'en' : 'de';
+    const terms = loadPolicy(lang, 'agb');
+    if (!terms) return res.status(404).send('Not found');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.type('html').send(renderPage(terms, lang));
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
 module.exports.deleteAccountRouter = deleteAccountRouter;
+module.exports.termsRouter = termsRouter;

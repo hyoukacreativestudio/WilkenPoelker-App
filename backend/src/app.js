@@ -116,6 +116,8 @@ app.use('/api/feedback', require('./routes/feedback'));
 app.use(['/datenschutz', '/privacy'], require('./routes/legal'));
 // Account deletion request page (Google Play requires a web URL).
 app.use(['/konto-loeschen', '/delete-account'], require('./routes/legal').deleteAccountRouter);
+// Terms of use / AGB of the app (Google Play asks for a URL).
+app.use(['/agb', '/nutzungsbedingungen', '/terms'], require('./routes/legal').termsRouter);
 // Target of the link in the password-reset e-mail (works without the app)
 app.use(['/reset-password', '/passwort-zuruecksetzen'], require('./routes/resetPasswordPage'));
 
