@@ -153,6 +153,10 @@ async function changeUserRole(targetId, newRole, adminUser, { User, AuditLog }, 
 
   await target.update({ role: newRole });
 
+  // The app keeps the user (incl. role/permissions) from the login. Ending the
+  // sessions makes it sign in again within minutes and pick up the new rights.
+  await require('./authService').revokeAllSessions(target.id);
+
   // Audit log
   await AuditLog.create({
     userId: adminUser.id,
@@ -182,6 +186,11 @@ async function updatePermissions(targetId, permissions, adminUser, { User, Audit
   const previousPermissions = target.permissions || [];
 
   await target.update({ permissions });
+
+  // The app keeps the user (incl. role/permissions) from the login. Ending the
+  // sessions makes it sign in again within minutes and pick up the new rights.
+  const changed = JSON.stringify([...previousPermissions].sort()) !== JSON.stringify([...(permissions || [])].sort());
+  if (changed) await require('./authService').revokeAllSessions(target.id);
 
   // Audit log
   await AuditLog.create({
