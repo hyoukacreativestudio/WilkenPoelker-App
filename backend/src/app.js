@@ -120,6 +120,8 @@ app.use(['/konto-loeschen', '/delete-account'], require('./routes/legal').delete
 app.use(['/agb', '/nutzungsbedingungen', '/terms'], require('./routes/legal').termsRouter);
 // Target of the link in the password-reset e-mail (works without the app)
 app.use(['/reset-password', '/passwort-zuruecksetzen'], require('./routes/resetPasswordPage'));
+// "Passwort vergessen" form in the browser (requests the reset e-mail)
+app.use(['/passwort-vergessen', '/forgot-password'], require('./routes/resetPasswordPage').forgotRouter);
 
 // Serve the desktop tool (built web app) so every company PC just opens
 // <server>/pc in a browser — no install, no Node, no CORS (same origin as /api).

@@ -1,6 +1,8 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const authService = require('../services/authService');
+const emailService = require('../services/emailService');
+const logger = require('../utils/logger');
 const { User } = require('../models');
 const { PASSWORD_RULES } = require('../middlewares/validate');
 
@@ -45,8 +47,8 @@ function page({ title, body }) {
   h1{font-size:28px;line-height:1.2;margin:6px 0 0}
   p{margin:0 0 14px;color:#2c3a30}
   label{display:block;font-weight:600;margin:16px 0 6px}
-  input[type=password]{box-sizing:border-box;width:100%;font:inherit;padding:12px 14px;border:1px solid #b9c9b4;border-radius:10px;background:#fff}
-  input[type=password]:focus{outline:2px solid #43AC34;border-color:#43AC34}
+  input[type=password],input[type=email]{box-sizing:border-box;width:100%;font:inherit;padding:12px 14px;border:1px solid #b9c9b4;border-radius:10px;background:#fff}
+  input[type=password]:focus,input[type=email]:focus{outline:2px solid #43AC34;border-color:#43AC34}
   .hint{font-size:14px;color:#5b6b5d;margin-top:8px}
   .error{background:#fdecea;color:#8a1c12;border-radius:10px;padding:12px 14px;margin-bottom:6px}
   .ok{background:#e7f4e4;color:#1d5c17;border-radius:10px;padding:12px 14px}
@@ -86,7 +88,7 @@ function formPage(token, error) {
 const invalidLinkPage = () => page({
   title: 'Link ungültig',
   body: '<p class="error">Dieser Link ist ungültig oder abgelaufen (Links gelten 1 Stunde).</p>'
-    + '<p>Bitte fordern Sie in der App unter „Passwort vergessen?“ einen neuen Link an.</p>',
+    + '<p><a href="/passwort-vergessen">Neuen Link anfordern</a></p>',
 });
 
 function noStore(res) {
@@ -130,4 +132,64 @@ router.post(['/', '/:token'], submitLimiter, async (req, res, next) => {
   }));
 });
 
+// ── "Passwort vergessen" web page: request the reset e-mail in any browser ──
+// (also a fallback for app versions whose in-app form did not send the request)
+const forgotRouter = express.Router();
+
+const forgotLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => res.status(429).type('html').send(page({
+    title: 'Zu viele Versuche',
+    body: '<p>Bitte warten Sie eine Stunde und versuchen Sie es dann erneut.</p>',
+  })),
+});
+
+function forgotFormPage(email, error) {
+  return page({
+    title: 'Passwort vergessen',
+    body: `${error ? `<p class="error">${escapeHtml(error)}</p>` : ''}
+  <p>Geben Sie die E-Mail-Adresse Ihres Kontos ein. Wir senden Ihnen einen Link, mit dem Sie ein neues Passwort festlegen können.</p>
+  <form method="post" action="">
+    <label for="email">E-Mail-Adresse</label>
+    <input id="email" name="email" type="email" autocomplete="email" required value="${escapeHtml(email || '')}">
+    <button type="submit">Link senden</button>
+  </form>`,
+  });
+}
+
+forgotRouter.get('/', (req, res) => {
+  noStore(res);
+  res.type('html').send(forgotFormPage(String(req.query.email || '').slice(0, 200)));
+});
+
+forgotRouter.post('/', forgotLimiter, async (req, res, next) => {
+  noStore(res);
+  const email = String(req.body.email || '').trim().slice(0, 200);
+  if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(email)) {
+    return res.status(400).type('html').send(forgotFormPage(email, 'Bitte geben Sie eine gültige E-Mail-Adresse ein.'));
+  }
+  try {
+    const result = await authService.forgotPassword(email, User);
+    if (result) {
+      emailService
+        .sendPasswordResetEmail(result.email, result.name, result.resetToken)
+        .catch((err) => logger.error('Password reset email failed to send', {
+          to: result.email, error: err.message, code: err.code,
+        }));
+    }
+  } catch (err) {
+    return next(err);
+  }
+  // Same answer whether or not the address exists (no account enumeration).
+  res.type('html').send(page({
+    title: 'E-Mail unterwegs',
+    body: '<p class="ok">Falls ein Konto mit dieser E-Mail-Adresse existiert, haben wir Ihnen einen Link zum Zurücksetzen gesendet.</p>'
+      + '<p>Der Link gilt 1 Stunde. Bitte sehen Sie auch im Spam-Ordner nach.</p>',
+  }));
+});
+
 module.exports = router;
+module.exports.forgotRouter = forgotRouter;

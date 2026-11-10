@@ -11,3 +11,9 @@ export const authApi = {
   verifyEmail: (token) => apiClient.get(`/auth/verify-email/${token}`),
   deleteAccount: (password) => apiClient.delete('/auth/delete-account', { data: { password } }),
 };
+
+// Named exports used by ForgotPasswordScreen / ResetPasswordScreen. Without
+// them the import was undefined, the call threw, and the screen showed
+// "sent" although no request ever reached the server.
+export const forgotPassword = (email) => authApi.forgotPassword(email);
+export const resetPassword = (token, password) => authApi.resetPassword(token, password);
