@@ -11,17 +11,29 @@ export function OfflineProvider({ children }) {
   // Track online state inside the effect using a ref to avoid re-registering the listener
   const isOnlineRef = useRef(true);
   const bannerTimeoutRef = useRef(null);
+  const offlineTimerRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
-      const online = state.isConnected && state.isInternetReachable !== false;
+      const online = state.isConnected !== false && state.isInternetReachable !== false;
       setConnectionType(state.type);
 
-      if (!online && isOnlineRef.current) {
-        // Went offline
-        isOnlineRef.current = false;
-        setIsOnline(false);
-        setShowBanner(true);
+      if (online && offlineTimerRef.current) {
+        // A short blip (e.g. iOS re-checking reachability after the app comes
+        // back to the foreground, or a slow reachability probe): ignore it.
+        clearTimeout(offlineTimerRef.current);
+        offlineTimerRef.current = null;
+      }
+
+      if (!online && isOnlineRef.current && !offlineTimerRef.current) {
+        // Only treat it as offline when it lasts a few seconds, otherwise the
+        // whole app is replaced by the "Keine Verbindung" screen for nothing.
+        offlineTimerRef.current = setTimeout(() => {
+          offlineTimerRef.current = null;
+          isOnlineRef.current = false;
+          setIsOnline(false);
+          setShowBanner(true);
+        }, 6000);
       } else if (online && !isOnlineRef.current) {
         // Came back online
         isOnlineRef.current = true;
@@ -32,8 +44,10 @@ export function OfflineProvider({ children }) {
     });
 
     // Initial check
+    // Only a definite "no network" counts at start; reachability is often
+    // still unknown or wrong for a moment right after launch.
     NetInfo.fetch().then((state) => {
-      const online = state.isConnected && state.isInternetReachable !== false;
+      const online = state.isConnected !== false;
       isOnlineRef.current = online;
       setIsOnline(online);
       setConnectionType(state.type);
@@ -41,6 +55,7 @@ export function OfflineProvider({ children }) {
 
     return () => {
       unsubscribe();
+      if (offlineTimerRef.current) clearTimeout(offlineTimerRef.current);
       if (bannerTimeoutRef.current) {
         clearTimeout(bannerTimeoutRef.current);
       }
