@@ -1,6 +1,9 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import { AppState } from 'react-native';
 import { storage } from '../utils/storage';
 import { authApi } from '../api/auth';
+import { usersApi } from '../api/users';
+import { refreshAccessToken } from '../api/client';
 import { notificationsApi } from '../api/notifications';
 import { subscribeAuthEvents, AUTH_EVENT_LOGOUT } from '../utils/authEvents';
 import { setUser as setSentryUser } from '../config/sentry';
@@ -33,6 +36,45 @@ export function AuthProvider({ children }) {
     });
     return unsubscribe;
   }, []);
+
+  // The user (incl. role) is stored at login. Reload it from the server on app
+  // start and when the app comes back to the foreground, so a role changed by
+  // an admin (e.g. customer -> admin) takes effect without logging out.
+  const lastProfileLoad = useRef(0);
+  const reloadProfile = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastProfileLoad.current < 60 * 1000) return;
+    lastProfileLoad.current = now;
+    try {
+      const token = await storage.getItem('accessToken');
+      if (!token) return;
+      const { data } = await usersApi.getProfile();
+      const fresh = data?.data?.user;
+      if (!fresh?.id) return;
+      const stored = await storage.getItem('user');
+      const prev = stored ? JSON.parse(stored) : {};
+      if (prev.id && prev.id !== fresh.id) return;
+      const merged = { ...prev, ...fresh };
+      await storage.setItem('user', JSON.stringify(merged));
+      setUser(merged);
+      // The access token carries the role too: get a new one right away so the
+      // server accepts the new rights immediately.
+      if (prev.role && prev.role !== fresh.role) {
+        await refreshAccessToken().catch(() => {});
+      }
+    } catch {
+      // Offline or signed out: keep the stored user.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    reloadProfile();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') reloadProfile();
+    });
+    return () => sub.remove();
+  }, [isAuthenticated, reloadProfile]);
 
   const checkAuth = async () => {
     try {
