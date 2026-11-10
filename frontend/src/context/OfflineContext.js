@@ -1,5 +1,21 @@
 import React, { createContext, useState, useEffect, useRef, useCallback } from 'react';
 import NetInfo from '@react-native-community/netinfo';
+import apiClient from '../api/client';
+
+// By default NetInfo checks "internet reachable" against a Google URL. Ad or
+// tracking blockers, VPNs, iCloud Private Relay or company networks can block
+// or slow that URL, so the app would claim "Keine Verbindung" while our server
+// works fine. Check against our own server instead.
+try {
+  const base = String(apiClient.defaults.baseURL || '').replace(/\/+$/, '');
+  if (/^https?:\/\//.test(base)) {
+    NetInfo.configure({
+      reachabilityUrl: `${base}/health`,
+      reachabilityTest: async (response) => response.status === 200,
+      reachabilityRequestTimeout: 15 * 1000,
+    });
+  }
+} catch {}
 
 export const OfflineContext = createContext(null);
 
