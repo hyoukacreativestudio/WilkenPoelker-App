@@ -140,7 +140,9 @@ export function TicketDetail({ id, onClose, onChanged, toast }) {
               {ticket.creator?.phone ? ` · ☎ ${ticket.creator.phone}` : ''}
             </div>
 
-            {(ticket.description || (ticket.attachments || []).length) ? (
+            {/* Newer tickets carry the description as their first chat message; show the card only for older ones. */}
+            {(ticket.description || (ticket.attachments || []).length)
+              && !messages.some((m) => !m.isSystemMessage && m.message === ticket.description) ? (
               <div className="card" style={{ padding: 12, marginBottom: 14 }}>
                 {ticket.description}
                 <Attachments list={ticket.attachments} />

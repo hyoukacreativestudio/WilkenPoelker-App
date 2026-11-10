@@ -69,6 +69,17 @@ async function createTicket(data, userId, models) {
     productArtNr: product?.artNr || null,
   });
 
+  // The customer's text (and photos) also become the first chat message, so it
+  // can be read again in the ticket chat later on.
+  if (models.ChatMessage && String(description || '').trim()) {
+    await models.ChatMessage.create({
+      ticketId: ticket.id,
+      userId,
+      message: description,
+      attachments: attachments || [],
+    });
+  }
+
   // Determine which managers to notify — by department if given, else category.
   const categoryRoleMap = {
     bike: ['bike_manager'],
