@@ -57,7 +57,7 @@ export function modulesForRole(role) {
     { key: 'kva',          label: 'KVA',          icon: '🧾', show: all || role === 'service_manager' },
     { key: 'tickets',      label: 'Tickets',      icon: '💬', show: role !== 'warehouse_worker' },
     { key: 'robbykunden',  label: 'Robby-Kunden', icon: '🤖', show: all || role === 'robby_manager' },
-    { key: 'kundennummern', label: 'Kundennummern', icon: '🔢', show: all || role === 'service_manager' || role === 'sales_manager' },
+    { key: 'kundennummern', label: 'Kundennummern', icon: '🔢', show: true },
     { key: 'bestellungen', label: 'Bestellungen', icon: '📦', show: true },
     { key: 'kundenbestellungen', label: 'Kundenbestellungen', icon: '🧾', show: all || role === 'orders_manager' || role === 'service_manager' },
     { key: 'quellen',      label: 'Quellenbearbeitung', icon: '🏷️', show: all || role === 'orders_manager' || role === 'service_manager' },

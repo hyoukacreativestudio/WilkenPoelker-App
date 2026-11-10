@@ -219,12 +219,12 @@ export default function AppointmentsScreen({ navigation }) {
     <AppointmentCard
       appointment={item}
       onPress={() => handleAppointmentPress(item)}
-      onAccept={!isStaff && item.status === 'proposed' ? handleAcceptProposal : undefined}
-      onDecline={!isStaff && item.status === 'proposed' ? handleDeclineProposal : undefined}
+      onAccept={(!isStaff || item.userId === user?.id) && item.status === 'proposed' ? handleAcceptProposal : undefined}
+      onDecline={(!isStaff || item.userId === user?.id) && item.status === 'proposed' ? handleDeclineProposal : undefined}
       actionLoading={actionLoadingId === (item._id || item.id)}
       style={{ marginHorizontal: theme.spacing.xs, marginBottom: theme.spacing.md, maxWidth: 600, alignSelf: 'center', width: '100%' }}
     />
-  ), [handleAppointmentPress, handleAcceptProposal, handleDeclineProposal, actionLoadingId, isStaff, theme]);
+  ), [handleAppointmentPress, handleAcceptProposal, handleDeclineProposal, actionLoadingId, isStaff, user, theme]);
 
   const renderFooter = () => {
     if (!loading || refreshing) return null;

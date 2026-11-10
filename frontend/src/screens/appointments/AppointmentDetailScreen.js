@@ -105,6 +105,9 @@ export default function AppointmentDetailScreen({ route, navigation }) {
   const appointment = appointmentApi.data?.data || appointmentApi.data;
 
   const isAdmin = user && ADMIN_ROLES.includes(user.role);
+  // Whoever booked the appointment answers a proposal - also a staff account
+  const ownerId = appointment?.userId || appointment?.user?.id;
+  const isOwner = !!user && !!ownerId && ownerId === (user.id || user._id);
 
   const getStatusConfig = useCallback((status) => {
     switch (status) {
@@ -517,7 +520,7 @@ export default function AppointmentDetailScreen({ route, navigation }) {
       )}
 
       {/* Customer: Accept/Decline when proposed */}
-      {!isAdmin && appointment.status === 'proposed' && (
+      {(!isAdmin || isOwner) && appointment.status === 'proposed' && (
         <View style={s.actionCard}>
           <View style={s.proposalInfo}>
             <MaterialCommunityIcons name="calendar-question" size={20} color="#3182CE" />

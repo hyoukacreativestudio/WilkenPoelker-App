@@ -551,6 +551,8 @@ async function respondToProposal(appointmentId, userId, { accept, message }) {
     appointment.startTime = null;
     appointment.endTime = null;
     appointment.proposedText = null;
+    // Keep the customer's wish so staff see it in the app and the PC program
+    appointment.customerNote = message ? `Anderer Termin gewünscht: ${message}` : 'Anderer Termin gewünscht';
     await appointment.save();
 
     // Notify assigned staff

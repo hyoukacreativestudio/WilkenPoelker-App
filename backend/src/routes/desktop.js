@@ -99,6 +99,7 @@ router.get('/tickets', authenticate, authorize(...STAFF), desktop.listTickets);
 router.get('/tickets/:id', authenticate, authorize(...STAFF), desktop.getTicket);
 router.post('/tickets/:id/message', authenticate, authorize(...STAFF), desktop.addTicketMessage);
 router.patch('/tickets/:id', authenticate, authorize(...STAFF), desktop.updateTicket);
+router.post('/tickets/:id/forward', authenticate, authorize(...STAFF), desktop.forwardTicketDesktop);
 
 // ── Fahrrad repair jobs (worklist: assign + tick off) ──
 const repairJobs = require('../controllers/repairJobController');

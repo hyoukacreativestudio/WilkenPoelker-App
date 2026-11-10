@@ -28,6 +28,18 @@ function Attachments({ list }) {
 // Department tickets. Each department only sees its own category's tickets
 // (backend-scoped). Open a ticket to read the chat, reply, and change status.
 const CAT_LABEL = { bike: 'Fahrrad', cleaning: 'Reinigung', motor: 'Motor', service: 'Service' };
+// Departments a ticket can be forwarded to (keys = ticket.department)
+const TICKET_DEPTS = [
+  { key: 'service', label: 'Service' },
+  { key: 'fahrrad', label: 'Fahrrad' },
+  { key: 'elektro', label: 'Neuradwerkstatt' },
+  { key: 'verkauf', label: 'Verkauf' },
+  { key: 'reinigung', label: 'Kärcher' },
+  { key: 'rasenmaeher', label: 'Rasenmäher' },
+  { key: 'motorgeraete', label: 'Motorgeräte' },
+  { key: 'robby', label: 'Robby' },
+  { key: 'lieferungen', label: 'Lieferungen' },
+];
 const STATUS_LABEL = { open: 'Offen', in_progress: 'In Bearbeitung', confirmed: 'Bestätigt', completed: 'Erledigt', cancelled: 'Storniert', closed: 'Geschlossen' };
 // Closed tickets leave the list and wait under "Erledigt"
 export const DONE_TICKET = ['completed', 'cancelled', 'closed'];
@@ -102,6 +114,9 @@ export function TicketDetail({ id, onClose, onChanged, toast }) {
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState('');
   const [busy, setBusy] = useState(false);
+  const [fwdOpen, setFwdOpen] = useState(false);
+  const [fwdDept, setFwdDept] = useState('');
+  const [fwdNote, setFwdNote] = useState('');
 
   const load = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -125,6 +140,18 @@ export function TicketDetail({ id, onClose, onChanged, toast }) {
     catch (e) { toast(e.message, { type: 'error' }); }
   };
 
+  const forward = async () => {
+    if (!fwdDept) { toast('Bitte Abteilung wählen', { type: 'error' }); return; }
+    setBusy(true);
+    try {
+      await api.post(`/desktop/tickets/${id}/forward`, { department: fwdDept, note: fwdNote.trim() || undefined });
+      toast(`Ticket an ${TICKET_DEPTS.find((d) => d.key === fwdDept)?.label || fwdDept} weitergeleitet`);
+      setFwdOpen(false); setFwdDept(''); setFwdNote('');
+      onChanged?.();
+      onClose();
+    } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
+  };
+
   const isStaff = (m) => m.sender && m.sender.role && m.sender.role !== 'customer';
 
   return (
@@ -134,7 +161,7 @@ export function TicketDetail({ id, onClose, onChanged, toast }) {
           <>
             <h2 style={{ marginBottom: 6 }}>#{ticket.ticketNumber} · {ticket.title || ticket.type}</h2>
             <div className="muted" style={{ marginBottom: 14 }}>
-              {CAT_LABEL[ticket.category] || ticket.category} · {STATUS_LABEL[ticket.status] || ticket.status}
+              {TICKET_DEPTS.find((d) => d.key === ticket.department)?.label || CAT_LABEL[ticket.category] || ticket.category} · {STATUS_LABEL[ticket.status] || ticket.status}
               {ticket.creator ? ` · ${ticket.creator.firstName || ''} ${ticket.creator.lastName || ''}`.trimEnd() : ''}
               {ticket.creator?.customerNumber ? ` · Kd ${ticket.creator.customerNumber}` : ''}
               {ticket.creator?.phone ? ` · ☎ ${ticket.creator.phone}` : ''}
@@ -174,8 +201,27 @@ export function TicketDetail({ id, onClose, onChanged, toast }) {
               <button className="btn" onClick={send} disabled={busy || !reply.trim()}>Senden</button>
             </div>
 
+            {/* Forward to another department: it moves to their ticket list */}
+            {fwdOpen ? (
+              <div className="card" style={{ padding: 12, marginBottom: 14 }}>
+                <div className="sub2" style={{ marginBottom: 6, fontWeight: 700 }}>Ticket weiterleiten an</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <select className="input" style={{ maxWidth: 220 }} value={fwdDept} onChange={(e) => setFwdDept(e.target.value)}>
+                    <option value="">Abteilung wählen…</option>
+                    {TICKET_DEPTS.filter((d) => d.key !== ticket.department).map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+                  </select>
+                  <input className="input" style={{ flex: 1, minWidth: 180 }} value={fwdNote} placeholder="Hinweis (optional – steht im Chat, der Kunde sieht ihn auch)" onChange={(e) => setFwdNote(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
+                  <button className="btn ghost" onClick={() => setFwdOpen(false)} disabled={busy}>Abbrechen</button>
+                  <button className="btn" onClick={forward} disabled={busy || !fwdDept}>Weiterleiten</button>
+                </div>
+              </div>
+            ) : null}
+
             <div className="modal-actions" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {!fwdOpen && <button className="btn ghost" onClick={() => setFwdOpen(true)}>Weiterleiten ➜</button>}
                 {ticket.status !== 'in_progress' && ticket.status !== 'closed' && <button className="btn ghost" onClick={() => setStatus('in_progress')}>In Bearbeitung</button>}
                 {/* "Fertig" marks it done but keeps it in the list + chat open */}
                 {ticket.status !== 'completed' && ticket.status !== 'closed' && <button className="btn ghost" onClick={() => setStatus('completed')}>Fertig ✓</button>}

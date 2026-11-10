@@ -767,6 +767,74 @@ const updateTicket = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { ticket: updated } });
 });
 
+// Forward a ticket to another department (PC tool). The ticket moves to that
+// department's list, gets unassigned so they can pick it up, and its managers
+// are notified. The customer sees a short note in the chat.
+const TICKET_DEPARTMENT_LABELS = {
+  fahrrad: 'Fahrrad', reinigung: 'Kärcher', rasenmaeher: 'Rasenmäher', service: 'Service',
+  robby: 'Robby', motorgeraete: 'Motorgeräte', elektro: 'Neuradwerkstatt', verkauf: 'Verkauf',
+  lieferungen: 'Lieferungen',
+};
+const forwardTicketDesktop = asyncHandler(async (req, res) => {
+  const ticket = await Ticket.findByPk(req.params.id);
+  if (!ticket) throw new NotFoundError('Ticket');
+  assertTicketAccess(req.user.role, ticket);
+  const target = String(req.body.department || '');
+  if (!serviceService.DEPARTMENT_CATEGORY[target]) throw new AppError('Unbekannte Abteilung', 400, 'INVALID_DEPARTMENT');
+  if (ticket.department === target) throw new AppError('Das Ticket ist schon in dieser Abteilung', 400, 'SAME_DEPARTMENT');
+  const note = String(req.body.note || '').trim().slice(0, 1000);
+
+  const fromLabel = TICKET_DEPARTMENT_LABELS[ticket.department] || 'Service';
+  const toLabel = TICKET_DEPARTMENT_LABELS[target];
+  await ticket.update({
+    department: target,
+    category: serviceService.DEPARTMENT_CATEGORY[target],
+    assignedTo: null,
+    forwardedFrom: req.user.id,
+    status: ['completed', 'closed', 'cancelled'].includes(ticket.status) ? 'open' : ticket.status,
+  });
+  const sys = await ChatMessage.create({
+    ticketId: ticket.id,
+    userId: req.user.id,
+    message: `Ticket wurde von ${fromLabel} an ${toLabel} weitergeleitet.`,
+    isSystemMessage: true,
+  });
+  const created = [sys];
+  if (note) {
+    created.push(await ChatMessage.create({ ticketId: ticket.id, userId: req.user.id, message: `Hinweis für ${toLabel}: ${note}` }));
+  }
+
+  const io = req.app.get('io');
+  if (io) {
+    const full = await ChatMessage.findAll({
+      where: { id: created.map((m) => m.id) },
+      include: [{ model: User, as: 'sender', attributes: ['id', 'username', 'firstName', 'lastName', 'profilePicture'] }],
+      order: [['createdAt', 'ASC']],
+    });
+    full.forEach((m) => io.to(`ticket:${ticket.id}`).emit('newMessage', m));
+  }
+
+  try {
+    const { Notification } = models;
+    const roles = serviceService.DEPARTMENT_ROLES[target] || ['service_manager'];
+    const managers = await User.findAll({ where: { role: { [Op.in]: roles }, isActive: true }, attributes: ['id'] });
+    if (managers.length) {
+      await Notification.bulkCreate(managers.map((m) => ({
+        userId: m.id,
+        title: 'Ticket weitergeleitet',
+        message: `Ticket ${ticket.ticketNumber} wurde von ${fromLabel} an ${toLabel} weitergeleitet.${note ? ` Hinweis: ${note.slice(0, 80)}` : ''}`,
+        type: 'system',
+        category: 'system',
+        relatedId: ticket.id,
+        relatedType: 'ticket',
+        deepLink: `/service/tickets/${ticket.id}`,
+      })));
+    }
+  } catch (e) { /* notification failure must not block the forwarding */ }
+
+  res.json({ success: true, data: { ticket } });
+});
+
 // ── Robby customers (who bought a Robby) ──────────────────────────────
 const listRobbyCustomers = asyncHandler(async (req, res) => {
   const q = String(req.query.search || '').trim().toLowerCase();
@@ -882,6 +950,6 @@ module.exports = {
   listWarehouse, createWarehouseItem, updateWarehouseItem, deleteWarehouseItem,
   listAppointments, createAppointment, updateAppointment, deleteAppointment,
   proposeAppointment, confirmAppointmentDesktop, askAppointmentQuestion,
-  listTickets, getTicket, addTicketMessage, updateTicket,
+  listTickets, getTicket, addTicketMessage, updateTicket, forwardTicketDesktop,
   departmentForRole,
 };

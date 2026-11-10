@@ -90,7 +90,7 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const prevNumber = user.customerNumber;
 
-  // Service and Verkauf may only change customer accounts, and only the number
+  // Other staff may only change customer accounts, and only the number
   const isAdminUser = ['admin', 'super_admin'].includes(req.user.role);
   if (!isAdminUser) {
     if (user.role !== 'customer') {

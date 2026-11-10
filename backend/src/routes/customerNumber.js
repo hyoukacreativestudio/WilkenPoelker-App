@@ -5,8 +5,8 @@ const { isAdmin, authorize } = require('../middlewares/roles');
 const { validate, body, param } = require('../middlewares/validate');
 const customerNumberController = require('../controllers/customerNumberController');
 
-// Admin, Service and Verkauf may handle customer-number requests (app + PC tool)
-const canHandleRequests = authorize('admin', 'super_admin', 'service_manager', 'sales_manager');
+// Every staff member may handle customer-number requests (app + PC tool)
+const canHandleRequests = authorize('admin', 'super_admin', 'bike_manager', 'cleaning_manager', 'motor_manager', 'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker', 'delivery_manager', 'motor_equipment_manager', 'ev_manager');
 
 // Customer routes
 router.post(
@@ -27,7 +27,7 @@ router.get('/request/my', authenticate, customerNumberController.getMyRequest);
 // Re-check Taifun for the current user (on repairs open / request tap)
 router.post('/self-check', authenticate, customerNumberController.selfCheck);
 
-// Staff routes (Admin, Service, Verkauf) — used by the app admin UI and the PC tool
+// Staff routes (every staff member) — used by the app admin UI and the PC tool
 router.get('/requests', authenticate, canHandleRequests, customerNumberController.getAllRequests);
 
 router.put(

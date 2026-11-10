@@ -1019,6 +1019,8 @@ module.exports = {
   closeTicket,
   forwardTicket,
   rateTicket,
+  DEPARTMENT_CATEGORY,
+  DEPARTMENT_ROLES,
   getStaffRatings,
   getAvailableStaff,
   getCustomerTickets,

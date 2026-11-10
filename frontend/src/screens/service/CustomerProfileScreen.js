@@ -49,9 +49,9 @@ export default function CustomerProfileScreen({ route, navigation }) {
 
   // Admin actions
   const isStaff = user && ['admin', 'super_admin', 'service_manager'].includes(user.role);
-  // Customer number: Admin, Service and Verkauf only, and only on customer
-  // accounts (customers can't change their own number anywhere in the app)
-  const canEditNumber = !!user && ['admin', 'super_admin', 'service_manager', 'sales_manager'].includes(user.role);
+  // Customer number: every staff member, only on customer accounts
+  // (customers can't change their own number anywhere in the app)
+  const canEditNumber = !!user && !!user.role && user.role !== 'customer';
   const [msgVisible, setMsgVisible] = useState(false);
   const [msgText, setMsgText] = useState('');
   const [busy, setBusy] = useState(false);
