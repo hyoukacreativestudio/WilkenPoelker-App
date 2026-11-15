@@ -91,7 +91,16 @@
           "project": "wilkenpoelker-frontend"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "extra": {
       "apiBaseUrl": "https://api.wilkenpoelker.de/api",
