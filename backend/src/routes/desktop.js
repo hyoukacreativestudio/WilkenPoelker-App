@@ -16,6 +16,7 @@ const STAFF = [
 ];
 
 // ── Bestellungen ──
+router.get('/customer-profile', authenticate, authorize(...STAFF), desktop.getCustomerProfile);
 router.get('/orders', authenticate, authorize(...STAFF), desktop.listOrders);
 router.post('/orders', authenticate, authorize(...STAFF), desktop.createOrder);
 router.get('/orders/sources', authenticate, authorize('admin', 'super_admin', 'orders_manager', 'service_manager'), desktop.listOrderSources);

@@ -3,6 +3,7 @@ import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap, mediaUrl } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { useLiveReload } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 
 // Render image/file attachments (ticket or chat message).
 function Attachments({ list }) {
@@ -92,7 +93,7 @@ export default function Tickets() {
             {shown.map((t) => (
               <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => setOpenId(t.id)}>
                 <td>#{t.ticketNumber || '—'}</td>
-                <td>{custName(t) || '—'}{t.creator?.customerNumber ? <div className="muted">Kd {t.creator.customerNumber}</div> : null}</td>
+                <td><CustomerName name={custName(t)} userId={t.creator?.id} customerNumber={t.creator?.customerNumber}>{custName(t) || '—'}</CustomerName>{t.creator?.customerNumber ? <div className="muted">Kd {t.creator.customerNumber}</div> : null}</td>
                 <td>{t.title || t.type || '—'}<div className="muted" style={{ fontSize: 12 }}>{(t.description || '').slice(0, 80)}</div></td>
                 <td>{CAT_LABEL[t.category] || t.category || '—'}</td>
                 <td>{STATUS_LABEL[t.status] || t.status || '—'}</td>
@@ -162,7 +163,7 @@ export function TicketDetail({ id, onClose, onChanged, toast }) {
             <h2 style={{ marginBottom: 6 }}>#{ticket.ticketNumber} · {ticket.title || ticket.type}</h2>
             <div className="muted" style={{ marginBottom: 14 }}>
               {TICKET_DEPTS.find((d) => d.key === ticket.department)?.label || CAT_LABEL[ticket.category] || ticket.category} · {STATUS_LABEL[ticket.status] || ticket.status}
-              {ticket.creator ? ` · ${ticket.creator.firstName || ''} ${ticket.creator.lastName || ''}`.trimEnd() : ''}
+              {ticket.creator ? <> · <CustomerName name={`${ticket.creator.firstName || ''} ${ticket.creator.lastName || ''}`.trim()} userId={ticket.creator.id} customerNumber={ticket.creator.customerNumber} /></> : ''}
               {ticket.creator?.customerNumber ? ` · Kd ${ticket.creator.customerNumber}` : ''}
               {ticket.creator?.phone ? ` · ☎ ${ticket.creator.phone}` : ''}
             </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { useLiveReload } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 import { TicketDetail } from './Tickets.jsx';
 
 // Product inquiries for Verkauf + Admin, split by where they came from.
@@ -99,7 +100,7 @@ export default function Anfragen() {
               <tr key={r.id}>
                 <td className="nowrap">{fmt(r.createdAt)}</td>
                 <td>
-                  {r.name}
+                  <CustomerName name={r.name} email={r.email} phone={r.phone} />
                   <div><a href={mailto(r)} onClick={() => r.status === 'new' && setWebStatus(r, 'in_progress')}>{r.email}</a></div>
                   <div><a href={`tel:${r.phone}`}>☎ {r.phone}</a></div>
                 </td>

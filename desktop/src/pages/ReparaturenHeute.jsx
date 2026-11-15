@@ -3,6 +3,7 @@ import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { useLiveReload, AppBadge } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 
 const savedHandle = () => localStorage.getItem('wp_handle') || '';
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -92,7 +93,7 @@ export default function ReparaturenHeute({ user }) {
                   </td>
                   <td><strong>{j.repairNumber}</strong></td>
                   <td>
-                    {j.customerName || '—'}<AppBadge on={j.hasApp} />{j.customerNumber ? <span className="muted"> · Kd {j.customerNumber}</span> : null}
+                    <CustomerName name={j.customerName} customerNumber={j.customerNumber}>{j.customerName || '—'}</CustomerName><AppBadge on={j.hasApp} />{j.customerNumber ? <span className="muted"> · Kd {j.customerNumber}</span> : null}
                     {j.phone ? <div className="muted" style={{ fontSize: 12 }}>☎ {j.phone}</div> : null}
                     {j.note ? <div className="muted" style={{ fontSize: 12 }}>{j.note}</div> : null}
                     {j.warnNote ? <div style={{ color: '#c53030', fontWeight: 700, fontSize: 12 }}>⚠ {j.warnNote}</div> : null}

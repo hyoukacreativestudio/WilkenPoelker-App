@@ -3,6 +3,7 @@ import { api, unwrap } from '../api.js';
 import { ORDER_DEPARTMENTS } from '../config.js';
 import { useToast } from '../toast.jsx';
 import { AppTabs, useLiveReload, scopeCounts, whatsappNumber, customerOrderText, WhatsAppButton, MessageModal } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 
 // Customer orders = orders without Rep-/VK-Nr. that got an automatic number.
 // Flow: Offen -> "Teil da" -> "Erreicht" -> "Abgeholt" (kept there, can be undone).
@@ -148,7 +149,7 @@ export default function Kundenbestellungen({ user }) {
                   <div className="muted" style={{ fontSize: 12 }}>{g.year}</div>
                 </td>
                 <td>
-                  <strong>{g.customerName || '—'}</strong>
+                  <strong><CustomerName name={g.customerName} customerNumber={g.customerNumber} phone={g.customerPhone}>{g.customerName || '—'}</CustomerName></strong>
                   {g.customerNumber ? <div className="muted">Kd {g.customerNumber}</div> : null}
                 </td>
                 <td className="nowrap">{g.customerPhone ? <a href={`tel:${g.customerPhone}`}>{g.customerPhone}</a> : <span className="muted">—</span>}</td>

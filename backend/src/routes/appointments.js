@@ -127,7 +127,8 @@ router.post(
   validate([
     validators.uuid(),
     body('date').isISO8601().withMessage('Ungültiges Datum'),
-    body('proposedText').notEmpty().withMessage('Terminvorschlag-Text ist erforderlich').trim(),
+    // The text is optional (2026-11-15): a date alone is a valid proposal
+    body('proposedText').optional({ nullable: true }).isString().trim().isLength({ max: 500 }),
   ]),
   appointmentController.proposeTime
 );

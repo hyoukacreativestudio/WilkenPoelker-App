@@ -457,7 +457,12 @@ async function createAppointment(userId, data, isAdminUser = false) {
 /**
  * Admin/Service Manager proposes a date + free text for a pending appointment request.
  */
-async function proposeTime(appointmentId, adminUserId, { date, proposedText }) {
+// Shown when staff propose only a date. Store app 1.2.0 shows the proposed date
+// only together with a text, so the proposal is never stored without one.
+const DEFAULT_PROPOSAL_TEXT = 'Uhrzeit nach Absprache';
+
+async function proposeTime(appointmentId, adminUserId, { date, proposedText: rawText }) {
+  const proposedText = String(rawText || '').trim() || DEFAULT_PROPOSAL_TEXT;
   const appointment = await Appointment.findByPk(appointmentId);
   if (!appointment) {
     throw new NotFoundError('Appointment');

@@ -64,6 +64,9 @@ export default function RepairsListScreen({ navigation }) {
   const [adminTab, setAdminTab] = useState('open');
   const [categoryTab, setCategoryTab] = useState('reparatur');
   const [statusFilter, setStatusFilter] = useState('all'); // all | ready | inarbeit
+  // Staff switch between everyone's repairs and their own (2026-11-15)
+  const [staffView, setStaffView] = useState('all'); // all | own
+  const ownMode = !isStaff || staffView === 'own';
 
   // Staff outreach list (Taifun orders without an app account), grouped by customer
   const emptyCounts = { open: 0, reached: 0, total: 0, byCategory: { reparatur: 0, neu: 0, leasing: 0 } };
@@ -85,8 +88,6 @@ export default function RepairsListScreen({ navigation }) {
     snackbarTimer.current = setTimeout(() => setSnackbar(null), 5000);
   }, []);
 
-  // Admin-Bereich: aufklappbar
-  const [adminSectionOpen, setAdminSectionOpen] = useState(false);
 
   // Eigene Reparaturen
   const {
@@ -164,9 +165,9 @@ export default function RepairsListScreen({ navigation }) {
   // What the counts at the top refer to: staff see everyone's active orders
   // (their own are included), customers their own.
   const countBase = useMemo(
-    () => (isStaff ? allRepairs.filter((r) => !r.archivedAt) : myRepairs)
+    () => (ownMode ? myRepairs : allRepairs.filter((r) => !r.archivedAt))
       .filter((r) => ACTIVE_STATUSES.includes(r.status)),
-    [isStaff, allRepairs, myRepairs]
+    [ownMode, allRepairs, myRepairs]
   );
 
   // Counts for the Abholbereit / In-Arbeit sub-filter (current category only)
@@ -243,10 +244,10 @@ export default function RepairsListScreen({ navigation }) {
 
   // Debounced refetch whenever the Kontakte tab is open and filters/search change
   useEffect(() => {
-    if (!(isStaff && adminSectionOpen && adminTab === 'kontakte')) return undefined;
+    if (!(isStaff && !ownMode && adminTab === 'kontakte')) return undefined;
     const h = setTimeout(fetchOutreach, 300);
     return () => clearTimeout(h);
-  }, [isStaff, adminSectionOpen, adminTab, fetchOutreach]);
+  }, [isStaff, ownMode, adminTab, fetchOutreach]);
 
   // Toggle "reached" for a whole customer group (optimistic). Open and Reached
   // are separate views, so the group leaves the current list immediately.
@@ -469,12 +470,56 @@ export default function RepairsListScreen({ navigation }) {
 
   const renderEmpty = () => {
     if (myLoading || initialLoad) return null;
+    // Staff see their own repairs once their account has a customer number
+    if (isStaff && !hasCustomerNumber) {
+      return (
+        <EmptyState
+          icon="card-account-details-outline"
+          title={t('repairs.ownNoNumberTitle', 'Noch keine Kundennummer')}
+          message={t('repairs.ownNoNumberMsg', 'Ihre eigenen Reparaturen erscheinen hier, sobald Ihr Konto eine Kundennummer hat. Ein Kollege kann sie im PC-Programm über Ihr Profil eintragen.')}
+        />
+      );
+    }
     return (
       <EmptyState
         icon="wrench-outline"
         title={t('repairs.noRepairs')}
         message={t('repairs.noRepairsMsg')}
       />
+    );
+  };
+
+  // Staff: "Alle" (everyone's repairs, Kontakte) or "Eigene" (own account)
+  const renderStaffViewTabs = () => {
+    const ownCount = myRepairs.filter((r) => ACTIVE_STATUSES.includes(r.status)).length;
+    const tabs = [
+      { key: 'all', label: t('repairs.allRepairs', 'Alle Reparaturen'), icon: 'shield-account-outline' },
+      { key: 'own', label: t('repairs.ownRepairs', 'Eigene Reparaturen'), icon: 'account-outline', count: ownCount },
+    ];
+    return (
+      <View style={{ flexDirection: 'row', gap: theme.spacing.sm, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, backgroundColor: theme.colors.headerBackground }}>
+        {tabs.map((tab) => {
+          const active = staffView === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              activeOpacity={0.8}
+              onPress={() => setStaffView(tab.key)}
+              style={{
+                flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                paddingVertical: theme.spacing.sm, borderRadius: theme.borderRadius.md,
+                backgroundColor: active ? theme.colors.primary : theme.colors.card,
+                borderWidth: 1, borderColor: active ? theme.colors.primary : theme.colors.border,
+              }}
+            >
+              <MaterialCommunityIcons name={tab.icon} size={16} color={active ? '#FFFFFF' : theme.colors.text} />
+              <Text style={[theme.typography.styles.bodySmall, { marginLeft: 6, color: active ? '#FFFFFF' : theme.colors.text, fontWeight: theme.typography.weights.semiBold }]}>
+                {tab.label}{tab.count ? ` (${tab.count})` : ''}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     );
   };
 
@@ -875,59 +920,8 @@ export default function RepairsListScreen({ navigation }) {
       {/* Admin/Service-Manager Bereich */}
       {isStaff && !initialLoad && (
         <View style={{ marginTop: theme.spacing.lg }}>
-          {/* Admin-Balken */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              setAdminSectionOpen((prev) => !prev);
-              if (!adminSectionOpen && allRepairs.length === 0) {
-                fetchAllRepairs();
-              }
-            }}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: theme.colors.primary + '15',
-              borderTopWidth: 2,
-              borderTopColor: theme.colors.primary,
-              paddingHorizontal: theme.spacing.md,
-              paddingVertical: theme.spacing.sm + 2,
-              marginHorizontal: theme.spacing.md,
-              borderRadius: theme.borderRadius.md,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <MaterialCommunityIcons name="shield-account-outline" size={20} color={theme.colors.primary} />
-              <Text style={[
-                theme.typography.styles.body,
-                { color: theme.colors.primary, fontWeight: theme.typography.weights.bold, marginLeft: theme.spacing.sm },
-              ]}>
-                {t('repairs.allRepairs', 'Alle Reparaturen')}
-              </Text>
-              {filteredAllRepairs.length > 0 && (
-                <View style={{
-                  backgroundColor: theme.colors.primary,
-                  borderRadius: theme.borderRadius.round,
-                  paddingHorizontal: 8,
-                  paddingVertical: 1,
-                  marginLeft: theme.spacing.sm,
-                }}>
-                  <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: theme.typography.weights.bold }}>
-                    {filteredAllRepairs.length}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <MaterialCommunityIcons
-              name={adminSectionOpen ? 'chevron-up' : 'chevron-down'}
-              size={22}
-              color={theme.colors.primary}
-            />
-          </TouchableOpacity>
-
           {/* Admin-Reparaturliste mit Tabs */}
-          {adminSectionOpen && (
+          {!ownMode && (
             <View style={{ marginTop: theme.spacing.xs }}>
               {/* Tab Bar */}
               {renderAdminTabs()}
@@ -1008,6 +1002,9 @@ export default function RepairsListScreen({ navigation }) {
         <SearchButton />
       </View>
 
+      {/* Staff: everyone's repairs or their own ones */}
+      {isStaff && !initialLoad && renderStaffViewTabs()}
+
       {/* Category tabs: Reparatur / Neu / Leasing */}
       {!initialLoad && renderCategoryTabs()}
 
@@ -1019,11 +1016,11 @@ export default function RepairsListScreen({ navigation }) {
         renderSkeletons()
       ) : (
         <FlatList
-          data={displayedRepairs}
+          data={ownMode ? displayedRepairs : []}
           renderItem={renderRepairItem}
           keyExtractor={(item) => String(item._id || item.id)}
           contentContainerStyle={
-            displayedRepairs.length === 0 && !isStaff
+            ownMode && displayedRepairs.length === 0
               ? { flex: 1 }
               : { paddingTop: theme.spacing.md }
           }
@@ -1037,8 +1034,8 @@ export default function RepairsListScreen({ navigation }) {
           }
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={renderListFooter()}
-          ListEmptyComponent={!isStaff ? renderEmpty : null}
+          ListFooterComponent={ownMode ? renderFooter() : renderListFooter()}
+          ListEmptyComponent={ownMode ? renderEmpty : null}
           showsVerticalScrollIndicator={false}
         />
       )}

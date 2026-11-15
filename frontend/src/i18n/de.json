@@ -598,6 +598,9 @@
     }
   },
   "repairs": {
+    "ownRepairs": "Eigene Reparaturen",
+    "ownNoNumberTitle": "Noch keine Kundennummer",
+    "ownNoNumberMsg": "Ihre eigenen Reparaturen erscheinen hier, sobald Ihr Konto eine Kundennummer hat. Ein Kollege kann sie im PC-Programm über Ihr Profil eintragen.",
     "title": "Reparaturen",
     "myRepairs": "Meine Reparaturen",
     "activeRepairs": "Aktive Reparaturen",
@@ -754,7 +757,7 @@
     "ongoing": "Laufende Termine",
     "noOngoing": "Keine laufenden Termine",
     "noOngoingMessage": "Es gibt derzeit keine bestätigten Termine.",
-    "proposedTextLabel": "Terminvorschlag",
+    "proposedTextLabel": "Hinweis zum Termin (optional)",
     "proposedTextPlaceholder": "z.B. gegen 10 Uhr vormittags, nach 14 Uhr...",
     "proposedTextRequired": "Bitte geben Sie einen Terminvorschlag ein.",
     "customerNote": "Kundennotiz",

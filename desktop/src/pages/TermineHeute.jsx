@@ -4,6 +4,7 @@ import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { TYPES } from './Termine.jsx';
 import { useLiveReload, AppBadge } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 
 const TYPE_LABEL = Object.fromEntries(TYPES.map((t) => [t.key, t.label]));
 const typeLabel = (t) => TYPE_LABEL[t] || t || 'Termin';
@@ -69,7 +70,7 @@ export default function TermineHeute({ user }) {
                   <td>{hm(a.startTime) || (a.proposedText ? <span className="muted">{a.proposedText}</span> : '—')}</td>
                   <td><strong>{a.repairNumber || '—'}</strong></td>
                   <td>
-                    {a.customerName || '—'}<AppBadge on={a.hasApp} />{a.customerNumber ? <span className="muted"> · Kd {a.customerNumber}</span> : null}
+                    <CustomerName name={a.customerName} userId={a.userId} customerNumber={a.customerNumber}>{a.customerName || '—'}</CustomerName><AppBadge on={a.hasApp} />{a.customerNumber ? <span className="muted"> · Kd {a.customerNumber}</span> : null}
                     {a.phone ? <div className="muted" style={{ fontSize: 12 }}>☎ {a.phone}</div> : null}
                     {a.warnNote ? <div style={{ color: '#c53030', fontWeight: 700, fontSize: 12 }}>⚠ {a.warnNote}</div> : null}
                   </td>

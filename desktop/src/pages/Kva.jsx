@@ -3,6 +3,7 @@ import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { backdropHandlers } from '../backdrop.js';
 import { AppTabs, useLiveReload, whatsappNumber, kvaText, WhatsAppButton, SALUTATION } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 
 const DEPT_LABEL = { fahrrad: 'Fahrrad', robby: 'Robby', rasenmaeher: 'Rasenmäher', motorgeraete: 'Motorgeräte', elektro: 'Elektrofahrzeuge' };
 const RESPONSE = {
@@ -86,7 +87,7 @@ export default function Kva() {
               const tel = r.mobile || r.phone;
               return (
                 <tr key={r.nr} className={r.contactedAt && !r.response ? 'done' : ''}>
-                  <td><strong>{r.customerName || r.kdNr}</strong><div className="muted">Kd {r.kdNr}{r.department ? ` · ${DEPT_LABEL[r.department] || r.department}` : ''}{r.city ? ` · ${r.city}` : ''}</div></td>
+                  <td><strong><CustomerName name={r.customerName} customerNumber={r.kdNr}>{r.customerName || r.kdNr}</CustomerName></strong><div className="muted">Kd {r.kdNr}{r.department ? ` · ${DEPT_LABEL[r.department] || r.department}` : ''}{r.city ? ` · ${r.city}` : ''}</div></td>
                   <td>{tel ? <a href={`tel:${tel}`}>{tel}</a> : '—'}</td>
                   <td>{r.info || `Auftrag ${r.nr}`}<div className="muted" style={{ fontSize: 12 }}>Nr. {r.nr}{r.date ? ` · ${new Date(r.date).toLocaleDateString('de-DE')}` : ''}</div></td>
                   <td>

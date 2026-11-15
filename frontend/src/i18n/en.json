@@ -598,6 +598,9 @@
     }
   },
   "repairs": {
+    "ownRepairs": "My repairs",
+    "ownNoNumberTitle": "No customer number yet",
+    "ownNoNumberMsg": "Your own repairs appear here once your account has a customer number. A colleague can enter it in the PC program via your profile.",
     "title": "Repairs",
     "myRepairs": "My repairs",
     "activeRepairs": "Active repairs",
@@ -754,7 +757,7 @@
     "ongoing": "Ongoing",
     "noOngoing": "No ongoing appointments",
     "noOngoingMessage": "There are currently no confirmed appointments.",
-    "proposedTextLabel": "Time proposal",
+    "proposedTextLabel": "Note on the appointment (optional)",
     "proposedTextPlaceholder": "e.g. around 10 AM, after 2 PM...",
     "proposedTextRequired": "Please enter a time proposal.",
     "customerNote": "Customer note",

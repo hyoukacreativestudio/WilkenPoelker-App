@@ -3,6 +3,7 @@ import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { useLiveReload } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 import { TYPES } from './Termine.jsx';
 import { KUERZEL_COLOR, URLAUB_COLOR, FALLBACK_COLOR, apptColor, contrastText, LEGEND_BY_DEPT, kuerzelName } from '../apptColors.js';
 
@@ -422,7 +423,7 @@ export default function Kalender({ user }) {
                           </>
                         )}
                         <div style={{ flex: 1, minWidth: 150 }}>
-                          <strong>{a.customerName || a.title || typeLabel(a.type)}</strong>
+                          <strong><CustomerName name={a.customerName} userId={a.userId} customerNumber={a.customerNumber}>{a.customerName || a.title || typeLabel(a.type)}</CustomerName></strong>
                           {a.customerNumber ? <span className="muted"> · Kd {a.customerNumber}</span> : null}
                           {a.workDone ? <span className="badge" style={{ background: '#d3f2df', color: '#1f7a45', marginLeft: 6 }}>✓ erledigt</span> : null}
                           <div className="muted" style={{ fontSize: 12 }}>{grund(a)}{a.title ? ` · ${a.title}` : ''}{a.repairNumber ? ` · Rep ${a.repairNumber}` : ''}{a.phone ? ` · ☎ ${a.phone}` : ''}</div>

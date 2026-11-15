@@ -484,6 +484,7 @@ const listAppointments = asyncHandler(async (req, res) => {
     const number = a.createdByStaff ? (a.customerNumber || '') : (c?.customerNumber || a.customerNumber || '');
     return {
       hasApp: (!a.createdByStaff && !!c) || appNumbers.has(String(number).trim()),
+      userId: a.createdByStaff ? null : (c?.id || null),
       id: a.id,
       date: a.date,
       startTime: a.startTime,
@@ -600,8 +601,8 @@ const deleteAppointment = asyncHandler(async (req, res) => {
 const proposeAppointment = asyncHandler(async (req, res) => {
   const { date, proposedText } = req.body;
   if (!date) throw new AppError('Datum ist erforderlich', 400, 'DATE_REQUIRED');
-  if (!proposedText || !String(proposedText).trim()) throw new AppError('Vorschlag-Text ist erforderlich', 400, 'TEXT_REQUIRED');
-  const appointment = await appointmentService.proposeTime(req.params.id, req.user.id, { date, proposedText: String(proposedText).trim() });
+  // The text is optional: a date alone is a valid proposal
+  const appointment = await appointmentService.proposeTime(req.params.id, req.user.id, { date, proposedText: String(proposedText || '').trim() });
   res.json({ success: true, data: { appointment } });
 });
 
@@ -940,7 +941,69 @@ const lookupGeo = asyncHandler(async (req, res) => {
   return res.json({ success: true, data: {} });
 });
 
+// ── Customer profile (2026-11-15): click on a customer name anywhere in the PC
+// tool. Finds the app account (by id, customer number or e-mail) and the Taifun
+// customer (by number) and lists tickets, appointments, repairs and orders.
+const fullName = (u) => (u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username || '' : '');
+
+const getCustomerProfile = asyncHandler(async (req, res) => {
+  const { TaifunCustomer, TaifunOrder } = models;
+  const q = (k) => String(req.query[k] || '').trim();
+  const userAttrs = ['id', 'username', 'firstName', 'lastName', 'email', 'phone', 'address', 'customerNumber', 'role', 'createdAt'];
+
+  let user = null;
+  if (q('userId') && /^[0-9a-f-]{36}$/i.test(q('userId'))) user = await User.findByPk(q('userId'), { attributes: userAttrs });
+  if (!user && q('customerNumber')) user = await User.findOne({ where: { customerNumber: q('customerNumber') }, attributes: userAttrs });
+  if (!user && q('email').includes('@')) {
+    user = await User.findOne({ where: { email: q('email').toLowerCase() }, attributes: userAttrs });
+  }
+  const kdNr = String(user?.customerNumber || q('customerNumber') || '').trim();
+  const taifun = kdNr && TaifunCustomer ? await TaifunCustomer.findOne({ where: { kdNr } }) : null;
+
+  const [tickets, appointments, repairs, orders] = await Promise.all([
+    user ? Ticket.findAll({
+      where: { userId: user.id },
+      attributes: ['id', 'ticketNumber', 'title', 'type', 'status', 'department', 'createdAt'],
+      order: [['createdAt', 'DESC']], limit: 30,
+    }) : [],
+    (user || kdNr) ? Appointment.findAll({
+      where: { [Op.or]: [
+        ...(user ? [{ userId: user.id, createdByStaff: { [Op.not]: true } }] : []),
+        ...(kdNr ? [{ customerNumber: kdNr }] : []),
+      ] },
+      attributes: ['id', 'title', 'type', 'status', 'date', 'startTime', 'department'],
+      order: [['date', 'DESC']], limit: 30,
+    }) : [],
+    kdNr && TaifunOrder ? TaifunOrder.findAll({
+      where: { kdNr },
+      attributes: ['id', 'nr', 'date', 'info', 'appStatusLabel', 'appCategory', 'erledigt', 'storno'],
+      order: [['date', 'DESC']], limit: 30,
+    }) : [],
+    kdNr ? Order.findAll({
+      where: { customerNumber: kdNr },
+      attributes: ['id', 'description', 'status', 'customerOrderStatus', 'department', 'createdAt'],
+      order: [['createdAt', 'DESC']], limit: 30,
+    }) : [],
+  ]);
+
+  const t = taifun;
+  res.json({ success: true, data: {
+    account: user ? {
+      id: user.id, name: fullName(user), email: user.email, phone: user.phone || '', address: user.address || null,
+      role: user.role, customerNumber: user.customerNumber || '', since: user.createdAt,
+    } : null,
+    taifun: t ? {
+      kdNr: t.kdNr, name: [t.name1, t.name2].filter(Boolean).join(' '),
+      street: [t.street, t.houseNumber].filter(Boolean).join(' '), zip: t.zip || '', city: t.city || '',
+      phone: t.phone || '', mobile: t.mobile || '', email: t.email || '',
+    } : null,
+    customerNumber: kdNr,
+    tickets, appointments, repairs, orders,
+  } });
+});
+
 module.exports = {
+  getCustomerProfile,
   desktopLogin,
   lookupGeo,
   listRobbyCustomers, createRobbyCustomer, updateRobbyCustomer, deleteRobbyCustomer,

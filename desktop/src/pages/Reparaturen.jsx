@@ -3,6 +3,7 @@ import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { auftragCategoriesForRole, REPAIR_DEPARTMENT_ROLE, REPAIR_DEPARTMENTS } from '../config.js';
 import { AppTabs, useLiveReload, whatsappNumber, readyText, WhatsAppButton } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 
 const CAT_LABEL = { reparatur: 'Reparatur', neu: 'Neu', leasing: 'Leasing' };
 const DEPT_LABEL = { fahrrad: 'Fahrrad', robby: 'Robby', rasenmaeher: 'Rasenmäher', motorgeraete: 'Motorgeräte', elektro: 'Elektrofahrzeuge' };
@@ -144,7 +145,7 @@ export default function Reparaturen({ user }) {
           <tbody>
             {items.map((g) => (
               <tr key={g.id} className={g.reached ? 'done' : ''}>
-                <td><strong>{g.customerName || g.kdNr}</strong><div className="muted">Kd {g.kdNr}{g.department ? ` · ${DEPT_LABEL[g.department] || g.department}` : ''}</div></td>
+                <td><strong><CustomerName name={g.customerName} customerNumber={g.kdNr}>{g.customerName || g.kdNr}</CustomerName></strong><div className="muted">Kd {g.kdNr}{g.department ? ` · ${DEPT_LABEL[g.department] || g.department}` : ''}</div></td>
                 <td>{g.phone || g.mobile ? <a href={`tel:${g.phone || g.mobile}`}>{g.phone || g.mobile}</a> : '—'}</td>
                 <td>{[g.zip, g.city].filter(Boolean).join(' ') || '—'}</td>
                 <td>{(g.orders || []).map((o) => (

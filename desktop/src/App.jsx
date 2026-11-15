@@ -4,11 +4,14 @@ import Login from './Login.jsx';
 import Shell from './Shell.jsx';
 import { ToastProvider } from './toast.jsx';
 import ContextMenu from './contextmenu.jsx';
+import { CustomerProfileProvider } from './customerProfile.jsx';
 
 export default function App() {
   return (
     <ToastProvider>
-      <Root />
+      <CustomerProfileProvider>
+        <Root />
+      </CustomerProfileProvider>
       <ContextMenu />
     </ToastProvider>
   );

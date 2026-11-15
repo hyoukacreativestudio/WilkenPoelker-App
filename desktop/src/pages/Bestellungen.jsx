@@ -5,6 +5,7 @@ import { ORDER_DEPARTMENTS, departmentForRole } from '../config.js';
 // (unwrap used for the purge response)
 import { useToast } from '../toast.jsx';
 import { useLiveReload } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 
 // Service acts exactly like the Bestellungen account for orders (see all, edit,
 // tick off).
@@ -274,7 +275,7 @@ export default function Bestellungen({ user }) {
                   {r.notes ? <div className="muted">{r.notes}</div> : null}
                 </td>
                 <td>
-                  {r.customerName || '—'}{r.customerNumber ? <div className="muted">Kd {r.customerNumber}</div> : null}
+                  <CustomerName name={r.customerName} customerNumber={r.customerNumber}>{r.customerName || '—'}</CustomerName>{r.customerNumber ? <div className="muted">Kd {r.customerNumber}</div> : null}
                   {r.customerPhone ? <div className="muted" style={{ fontSize: 12 }}>☎ {r.customerPhone}</div> : null}
                   {orderNumberLabels(r).length ? <div style={{ fontSize: 12, fontWeight: 700 }}>{orderNumberLabels(r).join(' · ')}</div> : null}
                 </td>
@@ -310,7 +311,7 @@ export default function Bestellungen({ user }) {
               <span className="muted">Quelle</span><span>{detail.sourceText || 'Shop'}</span>
               <span className="muted">Artikel-Nr.</span><span>{detail.articleNumber || '—'}</span>
               <span className="muted">Was</span><span><strong>{detail.description}</strong></span>
-              <span className="muted">Für wen</span><span>{detail.customerName || '—'}{detail.customerNumber ? ` (Kd ${detail.customerNumber})` : ''}</span>
+              <span className="muted">Für wen</span><span><CustomerName name={detail.customerName} customerNumber={detail.customerNumber}>{detail.customerName || '—'}</CustomerName>{detail.customerNumber ? ` (Kd ${detail.customerNumber})` : ''}</span>
               <span className="muted">Telefon</span><span>{detail.customerPhone ? <a href={`tel:${detail.customerPhone}`}>{detail.customerPhone}</a> : '—'}</span>
               <span className="muted">Nummer</span><span>{orderNumberLabels(detail).join(' · ') || '—'}</span>
               <span className="muted">Anzahl</span><span>{detail.quantity}{detail.quantityForStock ? ` · davon fürs Lager: ${detail.quantityForStock}` : ''}</span>

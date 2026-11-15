@@ -23,7 +23,7 @@ export default function AppointmentCard({ appointment, onPress, onAccept, onDecl
   const { title, type, date, startTime, endTime, status, location, proposedText } = appointment;
 
   const typeColor = TYPE_COLORS[type] || TYPE_COLORS.other;
-  const hasDate = date && (startTime || proposedText);
+  const hasDate = date && (startTime || proposedText || ['proposed', 'confirmed', 'completed'].includes(status));
 
   const getStatusConfig = (statusValue) => {
     switch (statusValue) {

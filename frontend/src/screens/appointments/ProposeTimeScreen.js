@@ -104,11 +104,6 @@ export default function ProposeTimeScreen({ route, navigation }) {
   };
 
   const handleSubmit = useCallback(() => {
-    if (!proposedText.trim()) {
-      showToast({ type: 'error', message: t('appointments.proposedTextRequired') });
-      return;
-    }
-
     const doSubmit = async () => {
       const payload = {
         date: formatDateISO(date),
@@ -293,7 +288,6 @@ export default function ProposeTimeScreen({ route, navigation }) {
           variant="primary"
           fullWidth
           loading={proposeApi.loading}
-          disabled={!proposedText.trim()}
           icon={
             <MaterialCommunityIcons name="send" size={20} color="#FFFFFF" />
           }

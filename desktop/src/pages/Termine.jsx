@@ -4,6 +4,7 @@ import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { apptColor, contrastText, KUERZEL_COLOR } from '../apptColors.js';
 import { useLiveReload } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 
 // Appointments created in the app show up here automatically (same backend).
 // Staff can also create their own by hand with a free-text customer.
@@ -124,7 +125,6 @@ export default function Termine({ user }) {
   const confirmAppt = async (a) => { setBusy(true); try { await api.post(`/desktop/appointments/${a.id}/confirm`); setDetail(null); load(); toast('Termin bestätigt'); } catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); } };
   const proposeAppt = async () => {
     if (!propDate) { toast('Bitte Datum wählen', { type: 'error' }); return; }
-    if (!propText.trim()) { toast('Bitte Text für den Vorschlag', { type: 'error' }); return; }
     setBusy(true);
     try { await api.post(`/desktop/appointments/${detail.id}/propose`, { date: propDate, proposedText: propText.trim() }); setDetail(null); load(); toast('Vorschlag an Kunde gesendet'); }
     catch (e) { toast(e.message, { type: 'error' }); } finally { setBusy(false); }
@@ -187,7 +187,7 @@ export default function Termine({ user }) {
                 <td>{a.date || '—'}</td>
                 <td>{a.startTime ? String(a.startTime).slice(0, 5) : (a.proposedText ? <span className="muted" title={a.proposedText}>{a.proposedText}</span> : '')}</td>
                 <td>
-                  {a.customerName || '—'}
+                  <CustomerName name={a.customerName} userId={a.userId} customerNumber={a.customerNumber}>{a.customerName || '—'}</CustomerName>
                   {a.customerNumber ? <div className="muted">Kd {a.customerNumber}</div> : null}
                   {a.phone ? <div className="sub2">☎ {a.phone}</div> : null}
                 </td>
@@ -222,7 +222,7 @@ export default function Termine({ user }) {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Terminanfrage</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '8px 12px', fontSize: 14, marginBottom: 14 }}>
-              <span className="muted">Kunde</span><span>{detail.customerName || '—'}{detail.customerNumber ? ` (Kd ${detail.customerNumber})` : ''}</span>
+              <span className="muted">Kunde</span><span><CustomerName name={detail.customerName} userId={detail.userId} customerNumber={detail.customerNumber}>{detail.customerName || '—'}</CustomerName>{detail.customerNumber ? ` (Kd ${detail.customerNumber})` : ''}</span>
               {detail.phone ? <><span className="muted">Telefon</span><span>☎ {detail.phone}</span></> : null}
               <span className="muted">Wunsch</span><span><strong>{detail.title || '—'}</strong> · {typeLabel(detail.type)}</span>
               {detail.description ? <><span className="muted">Notiz</span><span>{detail.description}</span></> : null}
@@ -240,7 +240,7 @@ export default function Termine({ user }) {
               <div className="sub2" style={{ marginBottom: 6, fontWeight: 700 }}>Termin vorschlagen</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <input className="input" type="date" style={{ maxWidth: 170 }} value={propDate} onChange={(e) => setPropDate(e.target.value)} />
-                <input className="input" style={{ flex: 1, minWidth: 160 }} value={propText} placeholder="z. B. 10:00 Uhr, bitte Gerät mitbringen" onChange={(e) => setPropText(e.target.value)} />
+                <input className="input" style={{ flex: 1, minWidth: 160 }} value={propText} placeholder="Text optional, z. B. 10:00 Uhr, bitte Gerät mitbringen" onChange={(e) => setPropText(e.target.value)} />
                 <button className="btn" onClick={proposeAppt} disabled={busy}>Vorschlagen</button>
               </div>
             </div>

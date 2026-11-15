@@ -90,11 +90,19 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const prevNumber = user.customerNumber;
 
-  // Other staff may only change customer accounts, and only the number
+  // Other staff may only change the number. On customer accounts they may set,
+  // change or remove it; on staff accounts they may only enter one where none
+  // exists yet (2026-11-15: staff have their own repairs too). Admin accounts
+  // stay with the admins.
   const isAdminUser = ['admin', 'super_admin'].includes(req.user.role);
   if (!isAdminUser) {
-    if (user.role !== 'customer') {
-      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Nur bei Kundenkonten möglich.' } });
+    const firstNumberForStaff = user.role !== 'customer' && !['admin', 'super_admin'].includes(user.role)
+      && !prevNumber && customerNumber;
+    if (user.role !== 'customer' && !firstNumberForStaff) {
+      const message = ['admin', 'super_admin'].includes(user.role)
+        ? 'Admin-Konten kann nur ein Admin ändern.'
+        : 'Bei Mitarbeiterkonten kann nur eine fehlende Kundennummer eingetragen werden.';
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message } });
     }
     if (email !== undefined || address !== undefined) {
       return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Nur die Kundennummer kann geändert werden.' } });
@@ -141,6 +149,15 @@ const updateUser = asyncHandler(async (req, res) => {
     try {
       const repairSync = require('../services/taifunRepairSync');
       await repairSync.syncRepairsForUser({ id: user.id, customerNumber });
+    } catch (e) { /* non-blocking */ }
+    // An open request of this person is answered by this (2026-11-15: numbers
+    // can be entered from the profile without a request)
+    try {
+      const { CustomerNumberRequest } = require('../models');
+      await CustomerNumberRequest.update(
+        { status: 'approved', assignedCustomerNumber: customerNumber, reviewedBy: req.user.id, reviewedAt: new Date() },
+        { where: { userId: user.id, status: 'pending' } },
+      );
     } catch (e) { /* non-blocking */ }
     try {
       const { Notification } = require('../models');

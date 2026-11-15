@@ -3,6 +3,7 @@ import { backdropHandlers } from '../backdrop.js';
 import { api, unwrap } from '../api.js';
 import { useToast } from '../toast.jsx';
 import { useLiveReload } from '../customers.jsx';
+import { CustomerName } from '../customerProfile.jsx';
 
 // Customer-number requests. Admin/Service/Verkauf can view, assign a number
 // (approve) or reject. Talks to the same /api/customer-number endpoints as the app.
@@ -70,7 +71,7 @@ export default function Kundennummern() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => openDetail(r)}>
-                <td><strong>{name(r)}</strong>{r.requester?.email ? <div className="muted">{r.requester.email}</div> : null}</td>
+                <td><strong><CustomerName name={name(r)} userId={r.requester?.id || r.userId} email={r.requester?.email} /></strong>{r.requester?.email ? <div className="muted">{r.requester.email}</div> : null}</td>
                 <td>{r.phone || r.requester?.phone || '—'}</td>
                 <td>{addr(r) || '—'}</td>
                 <td>{r.isExistingCustomer ? 'Ja' : 'Nein'}</td>
@@ -87,7 +88,7 @@ export default function Kundennummern() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Kundennummer-Anfrage</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '8px 12px', fontSize: 14, marginBottom: 14 }}>
-              <span className="muted">Kunde</span><span><strong>{name(detail)}</strong></span>
+              <span className="muted">Kunde</span><span><strong><CustomerName name={name(detail)} userId={detail.requester?.id || detail.userId} email={detail.requester?.email} /></strong></span>
               <span className="muted">E-Mail</span><span>{detail.requester?.email || '—'}</span>
               <span className="muted">Telefon</span><span>{detail.phone || detail.requester?.phone || '—'}</span>
               <span className="muted">Adresse</span><span>{addr(detail) || '—'}</span>

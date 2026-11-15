@@ -337,7 +337,7 @@ export default function AppointmentDetailScreen({ route, navigation }) {
   const statusConfig = getStatusConfig(appointment.status);
   const typeColor = TYPE_COLORS[appointment.type] || TYPE_COLORS.other;
   const isCancellable = appointment.status !== 'cancelled' && appointment.status !== 'completed' && appointment.status !== 'rescheduled';
-  const hasDate = appointment.date && (appointment.startTime || appointment.proposedText);
+  const hasDate = appointment.date && (appointment.startTime || appointment.proposedText || ['proposed', 'confirmed', 'completed'].includes(appointment.status));
 
   return (
     <ScrollView

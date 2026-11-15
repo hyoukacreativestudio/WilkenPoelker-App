@@ -243,3 +243,7 @@ tr.done td { opacity: .5; }
 .notif-title { font-weight: 700; font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
 .notif-title .dot { width: 8px; height: 8px; border-radius: 50%; background: #E53E3E; display: inline-block; }
 .notif-msg { color: var(--text-2); font-size: 12.5px; margin-top: 2px; }
+
+/* Clickable customer name -> customer profile (customerProfile.jsx) */
+.custlink { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; text-decoration-color: var(--text-3); }
+.custlink:hover, .custlink:focus-visible { color: var(--dept); text-decoration-color: var(--dept); outline: none; }
