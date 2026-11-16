@@ -39,6 +39,15 @@ router.get('/customer-lookup', authenticate, authorize(...STAFF), desktop.lookup
 // ── Produkte (Taifun stock -> app + website product pages) ──
 const shopAdmin = require('../controllers/shopAdminController');
 const SHOP_ADMIN = ['admin', 'super_admin', 'sales_manager'];
+const websiteBuilder = require('../services/websiteBuilder');
+// Every saved change to the product pages also goes to the website, a few
+// minutes later (several changes in a row become one update)
+router.use('/shop', (req, res, next) => {
+  if (req.method !== 'GET') {
+    res.on('finish', () => { if (res.statusCode < 400) websiteBuilder.schedule('Produkte im PC-Programm geändert', 5 * 60 * 1000); });
+  }
+  next();
+});
 router.get('/shop/products', authenticate, authorize(...SHOP_ADMIN), shopAdmin.listProducts);
 router.patch('/shop/products/:id', authenticate, authorize(...SHOP_ADMIN), shopAdmin.updateProduct);
 router.post('/shop/products/:id/enrich', authenticate, authorize(...SHOP_ADMIN), shopAdmin.enrichNow);
@@ -55,14 +64,30 @@ router.post('/shop/import', authenticate, authorize(...SHOP_ADMIN), shopAdmin.ru
 router.post('/shop/enrich-all', authenticate, authorize(...SHOP_ADMIN), shopAdmin.enrichAll);
 router.post('/shop/recheck', authenticate, authorize(...SHOP_ADMIN), shopAdmin.recheckNow);
 
-// ── Produktanfragen (app + website) ──
+// ── Website (built here, hosted at STRATO) ──
+router.get('/website/status', authenticate, authorize(...SHOP_ADMIN), (req, res) => {
+  res.json({ success: true, data: websiteBuilder.status() });
+});
+router.post('/website/build', authenticate, authorize(...SHOP_ADMIN), (req, res) => {
+  const who = [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') || req.user.username || 'PC-Programm';
+  if (!websiteBuilder.runSoon(`Von Hand angestoßen (${who})`)) {
+    return res.status(409).json({ success: false, error: { code: 'WEBSITE_NOT_CONFIGURED', message: 'Der Zugang zum Webspace ist noch nicht eingerichtet.' } });
+  }
+  res.json({ success: true, data: websiteBuilder.status() });
+});
+
+// ── Anfragen (app + website) ──
+// App inquiries (tickets with chat) are for Verkauf + Admin. Website inquiries
+// also reach the department they belong to (workshop, bikes, Kärcher, ...);
+// the controller limits a department to its own rows.
 const inquiries = require('../controllers/inquiryController');
-const INQUIRY_ROLES = ['admin', 'super_admin', 'sales_manager'];
-router.get('/inquiries/counts', authenticate, authorize(...INQUIRY_ROLES), inquiries.inquiryCounts);
+const INQUIRY_ROLES = inquiries.SEES_ALL;
+const WEB_INQUIRY_ROLES = [...new Set([...INQUIRY_ROLES, ...Object.values(inquiries.DEPARTMENT_ROLES).flat()])];
+router.get('/inquiries/counts', authenticate, authorize(...WEB_INQUIRY_ROLES), inquiries.inquiryCounts);
 router.get('/inquiries/app', authenticate, authorize(...INQUIRY_ROLES), inquiries.listAppInquiries);
-router.get('/inquiries/website', authenticate, authorize(...INQUIRY_ROLES), inquiries.listWebInquiries);
-router.patch('/inquiries/website/:id', authenticate, authorize(...INQUIRY_ROLES), inquiries.updateWebInquiry);
-router.delete('/inquiries/website/:id', authenticate, authorize(...INQUIRY_ROLES), inquiries.deleteWebInquiry);
+router.get('/inquiries/website', authenticate, authorize(...WEB_INQUIRY_ROLES), inquiries.listWebInquiries);
+router.patch('/inquiries/website/:id', authenticate, authorize(...WEB_INQUIRY_ROLES), inquiries.updateWebInquiry);
+router.delete('/inquiries/website/:id', authenticate, authorize(...WEB_INQUIRY_ROLES), inquiries.deleteWebInquiry);
 
 // ── Feedback aus der App (nur Admin) ──
 const feedback = require('../controllers/feedbackController');

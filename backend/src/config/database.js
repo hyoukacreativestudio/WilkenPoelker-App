@@ -201,6 +201,8 @@ async function connectDatabase() {
       // Legacy columns that used to be NOT NULL but are optional now.
       const dropNotNull = [
         { table: 'warehouse_items', column: 'description' },
+        // Callback requests from the website have no e-mail (2026-11-16)
+        { table: 'web_inquiries', column: 'email' },
       ];
       for (const { table, column } of dropNotNull) {
         try {

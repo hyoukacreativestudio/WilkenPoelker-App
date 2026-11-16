@@ -1,0 +1,269 @@
+   :root {
+      --primary: #43AC34;
+      --primary-font-color: #fff;
+      --secondary: #EEEEEE;
+      --light: #DDDDDD;
+      --light-font-color: #000;
+      --lighter: #ffffff;
+      --lighter-font-color: #000;
+      --dark: #636363;
+      --dark-font-color: #fff;
+      --action: #43AC34;
+      --black: #000;
+   }
+
+   #BidexCatalog {
+      max-width: 100% !important;
+   }
+
+   #bl-content .stickyButton .productscount {
+      background-color: var(--action) !important;
+      color: #fff !important;
+      border: 0px !important;
+   }
+
+   .bx-btn-primary {
+      background-color: var(--action) !important;
+      color: var(--primary-font-color);
+      border-radius: 0px !important;
+   }
+
+   #bl-content .bx-card ul {
+      padding: 0 !important;
+   }
+
+   #bl-content h5 {
+      padding: 0 !important;
+   }
+
+   #bl-content .bx-btn {
+      border: 0;
+      padding-left: 20px;
+      padding-right: 20px;
+   }
+
+
+
+   #bl-content .bx-img-thumbnail p .bx-btn-primary {
+      color: var(--primary-font-color);
+   }
+
+
+   #bl-content main.shopBikeInfoDetails .bx-share .bx-list-unstyled a {
+      color: var(--primary-font-color);
+   }
+
+   #bl-content .bx-nav-tabs .bx-nav-item a {
+      color: var(--black);
+   }
+
+   #bl-content .bx-h5 {
+      font-family: inherit !important;
+   }
+
+   #bl-content #sign-left, #bl-content #sign-right {
+      color: var(--primary-font-color);
+      background-color: var(--action) !important;
+   }
+
+   #bl-content #ajax-spinner .spinner::after {
+      border: 15px solid var(--primary);
+      border-color: var(--secondary) transparent var(--secondary) transparent;
+   }
+
+   .stickyButton .productscount {
+      background-color: var(--action) !important;
+      color: var(--primary-font-color) !important;
+   }
+
+   .bikeInfoPlus #reservate {
+      background-color: var(--action) !important;
+      border-color: var(--action) !important;
+      color: var(--primary-font-color) !important;
+   }
+
+   #bl-content main.shopBikeInfoDetails .bx-nav-tabs .bx-nav-link.bx-active span {
+      border-bottom: 4px solid var(--action);
+   }
+
+   #bl-content a {
+      color: var(--black);
+   }
+
+      #bl-content a:hover {
+         color: var(--primary);
+      }
+
+   #bl-content #sidebar .bx-modal-content #filters #accordionKategorie .bx-card h5 a.bx-active,
+   #bl-content #sidebar-modal .bx-modal-content #filters #accordionKategorie .bx-card h5 a.bx-active,
+   #bl-content #sidebar .bx-modal-content #filters #accordionKategorie .bx-card .bx-card-body ul ul a.bx-active {
+      color: var(--primary-font-color);
+      background-color: var(--primary);
+   }
+
+      #bl-content #sidebar .bx-modal-content #filters #accordionKategorie .bx-card h5 a.bx-active:hover,
+      #bl-content #sidebar-modal .bx-modal-content #filters #accordionKategorie .bx-card h5 a.bx-active:hover,
+      #bl-content #sidebar .bx-modal-content #filters #accordionKategorie .bx-card h5 a:hover,
+      #bl-content #sidebar-modal .bx-modal-content #filters #accordionKategorie .bx-card h5 a:hover {
+         color: var(--dark-font-color);
+         background-color: var(--dark);
+      }
+
+   #bl-content #sidebar .bx-modal-content #filters #accordionKategorie .bx-card .bx-card-body ul a.bx-active,
+   #bl-content #sidebar-modal .bx-modal-content #filters #accordionKategorie .bx-card .bx-card-body ul a.bx-active {
+      color: var(--primary-font-color);
+      background-color: var(--primary);
+   }
+
+   #bl-content #sidebar .bx-modal-content #filters #accordionKategorie .bx-card .bx-card-body ul a,
+   #bl-content #sidebar-modal .bx-modal-content #filters #accordionKategorie .bx-card .bx-card-body ul a {
+      color: var(--lighter-font-color);
+      background-color: var(--lighter);
+   }
+
+   #bl-content .bx-btn-primary, #bl-content .bx-btn-primary:not(:disabled):not(.bx-disabled):active,
+   #bl-content .bx-btn-primary:not(:disabled):not(.bx-disabled).bx-active,
+   .bx-show > #bl-content .bx-btn-primary.bx-dropdown-toggle {
+      color: var(--primary-font-color);
+      background-color: var(--primary);
+      border-color: var(--primary);
+   }
+
+      #bl-content .bx-btn-primary:focus, #bl-content .bx-btn-primary.bx-focus {
+         color: var(--primary-font-color);
+         background-color: var(--primary);
+         border-color: var(--primary);
+         box-shadow: 0 0 0 .2rem var(--lighter);
+      }
+
+      #bl-content .bx-btn-primary:hover {
+         color: var(--primary-font-color);
+         background-color: var(--dark);
+         border-color: var(--dark);
+      }
+
+   #bl-content #sidebar .bx-modal-content #slider-distance[slider] > div > [sign]::after,
+   #bl-content #sidebar-modal .bx-modal-content #slider-distance[slider] > div > [sign]::after {
+      border-top-color: var(--primary) !important;
+   }
+
+   #bl-content #sidebar .bx-modal-content #slider-distance[slider] > div > [sign],
+   #bl-content #sidebar-modal .bx-modal-content #slider-distance[slider] > div > [sign],
+   #bl-content #sidebar .bx-modal-content #slider-distance[slider] > div > [range],
+   #bl-content #sidebar-modal .bx-modal-content #slider-distance[slider] > div > [range] {
+      color: var(--primary-font-color) !important;
+      background-color: var(--primary) !important;
+   }
+
+   #bl-content .bx-custom-control-input:checked ~ .bx-custom-control-label::before {
+      color: var(--primary-font-color);
+      background-color: var(--primary);
+      border-color: var(--primary);
+   }
+
+   #bl-content .bx-form-control:focus {
+      border-color: var(--light);
+      box-shadow: 0 0 0 .2rem var(--lighter);
+   }
+
+   #bl-content .bx-custom-control-input:focus:not(:checked) ~ .bx-custom-control-label::before {
+      border-color: var(--light);
+   }
+
+   #bl-content .bx-custom-control-input:focus ~ .bx-custom-control-label::before {
+      box-shadow: 0 0 0 .2rem var(--lighter);
+   }
+
+   #bl-content .bx-custom-control-input:not(:disabled):active ~ .bx-custom-control-label::before {
+      color: var(--light-font-color);
+      background-color: var(--light);
+      border-color: var(--light);
+   }
+
+   #bl-content main.shopBikeInfoDetails .bx-nav-tabs .bx-nav-link.bx-active span {
+      border-bottom: 4px solid var(--secondary);
+   }
+
+
+   #bl-content #accordionKategorie .bx-card h5 a.bx-active {
+      background-color: var(--primary);
+      color: #fff;
+      text-shadow: 1px 1px 0 rgb(0 0 0 / 32%);
+   }
+
+   #bl-content #accordionKategorie .bx-card h5 a:hover {
+      background-color: var(--dark);
+      color: #fff;
+   }
+
+   #bl-content #accordionKategorie .bx-card .bx-card-body ul a.bx-active {
+      background-color: var(--primary);
+      color: #fff;
+      text-shadow: 1px 1px 0 rgb(0 0 0 / 32%);
+   }
+
+   #bl-content input[type=radio],
+   #bl-content input[type=checkbox] {
+      accent-color: var(--primary);
+   }
+
+   .swal-button {
+      color: var(--primary-font-color);
+      background-color: var(--primary);
+   }
+
+      .swal-button:focus {
+         outline: none;
+         box-shadow: 0 0 0 1px #fff, 0 0 0 3px var(--lighter);
+      }
+
+      .swal-button:not([disabled]):hover {
+         color: var(--dark-font-color);
+         background-color: var(--dark);
+      }
+
+   .bx-card-header h5 {
+      width: 100%;
+   }
+
+   .bx-card-body .bx-h5 {
+      width: 100% !important;
+   }
+
+
+   #bl-content *:not(.fas):not(.fa):not(.fab):not(.far):not(h2 span):not(.bidex):not(.priceBox) {
+      font-family: inherit !important;
+   }
+
+   #bl-content .bx-card {
+      border: 0px solid rgba(0,0,0,.125) !important;
+      border-radius: 0 !important;
+   }
+
+   #bl-content main.shopBikeInfoList .bikeBox .bx-card {
+      box-shadow: 0px 0px 12px 0px #b7b7b7 !important;
+      transition: box-shadow .3s ease-in-out;
+      transition: padding .2s ease-in-out;
+   }
+
+   #bl-content div.priceBox div.price span.price {
+      display: inline-block;
+      font-size: 30px !important;
+      color: #dc3545;
+      font-family: Termina !important;
+   }
+
+
+   #bl-content main.shopBikeInfoDetails #details li.bx-border {
+      box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 15%);
+      border: 0px !important;
+   }
+
+   #bl-content main.shopBikeInfoDetails ul.icons li {
+      display: flex;
+      align-items: baseline;
+   }
+
+   .fa-2x {
+      font-size: 1em;
+   }

@@ -112,6 +112,7 @@ export default function Produkte() {
         <button className="btn ghost" onClick={recheckNow} title="Läuft sonst automatisch am ersten Sonntag im Monat">🔍 Bilder und Daten prüfen</button>
         <button className="btn" onClick={importNow} disabled={busy}>⟳ Bestand jetzt einlesen</button>
       </div>
+      <WebsiteSync />
 
       {loading ? <div className="empty"><div className="spinner" style={{ margin: '0 auto' }} /></div> : shown.length === 0 ? (
         <div className="empty"><div className="big">🛒</div>{q || main ? 'Nichts gefunden.' : 'Keine Produkte. Bruno legt die Bestandsdateien im SFTP-Ordner „Bestand“ ab.'}</div>
@@ -366,6 +367,59 @@ function Brands({ onClose, onChanged }) {
         </table></div>
         <div className="modal-actions"><button className="btn ghost" onClick={onClose}>Schließen</button></div>
       </div>
+    </div>
+  );
+}
+
+// The website (built on the app server, hosted at STRATO) follows the product
+// pages by itself: after a stock import, after changes here and every night.
+// Here: when that last happened, and a button for an update right now.
+const clock = (d) => new Date(d).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+const when = (d) => {
+  const t = new Date(d);
+  const today = new Date().toDateString() === t.toDateString();
+  return today ? `heute ${clock(d)}` : `${t.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${clock(d)}`;
+};
+
+function WebsiteSync() {
+  const toast = useToast();
+  const [s, setS] = useState(null);
+  const load = async () => {
+    try { setS(unwrap(await api.get('/desktop/website/status'))); } catch { /* older server: no line */ }
+  };
+  useEffect(() => { load(); }, []);
+  useLiveReload(load, []);
+  // While an update is due or running: look again every few seconds
+  const busyNow = !!(s && (s.running || s.scheduledFor));
+  useEffect(() => {
+    if (!busyNow) return undefined;
+    const t = setInterval(load, 4000);
+    return () => clearInterval(t);
+  }, [busyNow]);
+  if (!s) return null;
+
+  const start = async () => {
+    try {
+      setS(unwrap(await api.post('/desktop/website/build', {})));
+      toast('Die Website wird aktualisiert. Das dauert meist unter einer Minute.');
+    } catch (e) { toast(e.message, { type: 'error' }); }
+  };
+  const last = s.last;
+  let text;
+  let error = false;
+  if (!s.configured) text = 'Zugang zum Webspace ist auf dem Server noch nicht eingerichtet';
+  else if (s.running) text = s.step === 'upload' ? 'wird gerade hochgeladen …' : 'wird gerade erstellt …';
+  else if (s.scheduledFor) text = `wird um ${clock(s.scheduledFor)} Uhr aktualisiert`;
+  else if (last?.ok) text = `aktuell, zuletzt ${when(last.finishedAt)} Uhr`;
+  else if (last) { text = `Fehler ${when(last.finishedAt)} Uhr: ${last.error}`; error = true; }
+  else text = 'noch nicht aktualisiert';
+
+  return (
+    <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '-4px 0 12px', flexWrap: 'wrap' }}>
+      <span className="muted" style={error ? { color: '#c53030' } : undefined} title={last ? [last.summary, (last.reasons || []).join(', ')].filter(Boolean).join(' / ') : ''}>
+        🌐 Website{s.mode === 'test' ? ' (Testseite)' : ''}: {text}
+      </span>
+      {s.configured && <button className="btn sm ghost" onClick={start} disabled={s.running}>Website jetzt aktualisieren</button>}
     </div>
   );
 }

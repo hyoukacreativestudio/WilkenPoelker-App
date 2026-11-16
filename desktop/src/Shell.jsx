@@ -51,7 +51,7 @@ const SUBTITLES = {
   bestellungen: 'Bestellungen sammeln und aufgeben',
   kundenbestellungen: 'Teil da → Kunde erreicht → abgeholt',
   produkte: 'Produktseiten für App und Website – automatisch aus Taifun',
-  anfragen: 'Produktanfragen aus App und Website',
+  anfragen: 'Anfragen aus App und Website',
   feedback: 'Was Kunden in der App schreiben',
   quellen: 'Doppelte Quellen zusammenführen',
   lager: 'Was aus dem Lager nach vorne soll',
@@ -124,7 +124,7 @@ export default function Shell({ user, onLogout }) {
   const notifTarget = (n) => {
     const c = `${n.category || ''} ${n.relatedType || ''} ${n.type || ''}`.toLowerCase();
     let key = 'uebersicht';
-    if (/produktanfrage/i.test(n.title || '')) key = 'anfragen';
+    if (/produktanfrage|anfrage von der website|rückrufbitte/i.test(n.title || '')) key = 'anfragen';
     else if (c.includes('kva')) key = 'kva';
     else if (c.includes('shop_recheck')) key = 'produkte';
     else if (c.includes('app_feedback')) key = 'feedback';

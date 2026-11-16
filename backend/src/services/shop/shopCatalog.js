@@ -404,8 +404,15 @@ async function getProduct(slug) {
   return productOut(p, p.articles, c.groupNames.get(p.whg), { detail: true });
 }
 
+// Every visible product with its details, for the website generator
+// (one request instead of one per product)
+async function getAllProducts() {
+  const c = await loadCatalog();
+  return c.list.map((e) => productOut(e.raw, e.raw.articles, c.groupNames.get(e.raw.whg), { detail: true }));
+}
+
 module.exports = {
   isInternalArticle,
-  upsertArticles, applyReservations, rebuildProducts, listProducts, getProduct, invalidate, productOut,
+  upsertArticles, applyReservations, rebuildProducts, listProducts, getProduct, getAllProducts, invalidate, productOut,
   freeStock,
 };

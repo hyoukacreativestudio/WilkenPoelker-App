@@ -5,22 +5,32 @@ import { useLiveReload } from '../customers.jsx';
 import { CustomerName } from '../customerProfile.jsx';
 import { TicketDetail } from './Tickets.jsx';
 
-// Product inquiries for Verkauf + Admin, split by where they came from.
-//  App: chat with the customer, the answer arrives in the app.
-//  Website: the customer has no account and is reached by e-mail or phone.
+// Inquiries, split by where they came from.
+//  App: chat with the customer, the answer arrives in the app (Verkauf + Admin).
+//  Website: the customer has no account and is reached by e-mail or phone. Each
+//  inquiry has a topic; the server sends it to the matching department
+//  (Werkstatt, Fahrrad, Kärcher, Mähroboter, Motorgeräte). Verkauf and admins
+//  see all of them, a department only its own.
 const APP_STATUS = { open: 'Neu', in_progress: 'In Bearbeitung', confirmed: 'In Bearbeitung', completed: 'Erledigt', cancelled: 'Erledigt', closed: 'Erledigt' };
 const WEB_STATUS = { new: 'Neu', in_progress: 'In Bearbeitung', done: 'Erledigt' };
+const SEES_APP = ['admin', 'super_admin', 'sales_manager'];
+const TOPIC_ICON = { produkt: '🛒', allgemein: '💬', werkstatt: '🛠️', ersatzteile: '🔩', fahrrad: '🚲', kaercher: '🧽', maehroboter: '🤖', rueckruf: '📞' };
 // Finished inquiries leave the list and wait under "Erledigt"
 const isDone = (r) => ['completed', 'cancelled', 'closed', 'done'].includes(r.status);
 const fmt = (d) => (d ? new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
 const mailto = (r) => `mailto:${r.email}?subject=${encodeURIComponent(`Ihre Anfrage bei Wilken Poelker${r.productTitle ? `: ${r.productTitle}` : ''}`)}`;
+const telHref = (p) => `tel:${String(p || '').replace(/[^\d+]/g, '')}`;
 
-export default function Anfragen() {
+export default function Anfragen({ user }) {
   const toast = useToast();
-  const [source, setSource] = useState('app');
+  const seesApp = SEES_APP.includes(user?.role);
+  const [source, setSource] = useState(seesApp ? 'app' : 'website');
   const [tab, setTab] = useState('open'); // open | done
   const [rows, setRows] = useState([]);
   const [counts, setCounts] = useState({});
+  const [labels, setLabels] = useState({ topics: {}, departments: {} });
+  const [topic, setTopic] = useState('');
+  const [dept, setDept] = useState('');
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState(null);
 
@@ -33,14 +43,22 @@ export default function Anfragen() {
       ]);
       const d = unwrap(list);
       setRows((source === 'app' ? d.tickets : d.inquiries) || []);
+      if (d.topics) setLabels({ topics: d.topics, departments: d.departments || {} });
       setCounts(unwrap(c));
     } catch (e) { if (!silent) { toast(e.message, { type: 'error' }); setRows([]); } } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [source]);
   useLiveReload(load, [source]);
-  const openRows = rows.filter((r) => !isDone(r));
-  const doneRows = rows.filter(isDone);
+
+  const filtered = source === 'website'
+    ? rows.filter((r) => (!topic || (r.topic || 'produkt') === topic) && (!dept || (r.department || 'verkauf') === dept))
+    : rows;
+  const openRows = filtered.filter((r) => !isDone(r));
+  const doneRows = filtered.filter(isDone);
   const shown = tab === 'done' ? doneRows : openRows;
+  // Only filters that make a difference in the current list
+  const topicsInList = [...new Set(rows.map((r) => r.topic || 'produkt'))];
+  const depsInList = [...new Set(rows.map((r) => r.department || 'verkauf'))];
 
   const setWebStatus = async (r, next) => {
     try { await api.patch(`/desktop/inquiries/website/${r.id}`, { status: next }); load(); }
@@ -51,22 +69,35 @@ export default function Anfragen() {
     try { await api.delete(`/desktop/inquiries/website/${r.id}`); load(); }
     catch (e) { toast(e.message, { type: 'error' }); }
   };
+  const topicText = (r) => labels.topics[r.topic || 'produkt'] || 'Produktanfrage';
 
   return (
     <div>
       <div className="toolbar no-print">
-        <span className={`pill tab ${source === 'app' ? 'active' : ''}`} onClick={() => setSource('app')}>📱 App{counts.app ? ` (${counts.app} neu)` : ''}</span>
+        {seesApp && <span className={`pill tab ${source === 'app' ? 'active' : ''}`} onClick={() => setSource('app')}>📱 App{counts.app ? ` (${counts.app} neu)` : ''}</span>}
         <span className={`pill tab ${source === 'website' ? 'active' : ''}`} onClick={() => setSource('website')}>🌐 Website{counts.website ? ` (${counts.website} neu)` : ''}</span>
         <div style={{ width: 12 }} />
         <span className={`pill tab ${tab === 'open' ? 'active' : ''}`} onClick={() => setTab('open')}>Offen{openRows.length ? <span className="n">{openRows.length}</span> : null}</span>
         <span className={`pill tab ${tab === 'done' ? 'active' : ''}`} onClick={() => setTab('done')}>Erledigt{doneRows.length ? <span className="n">{doneRows.length}</span> : null}</span>
+        {source === 'website' && topicsInList.length > 1 && (
+          <select className="select" value={topic} onChange={(e) => setTopic(e.target.value)} style={{ marginLeft: 12 }}>
+            <option value="">Alle Themen</option>
+            {topicsInList.map((k) => <option key={k} value={k}>{labels.topics[k] || k}</option>)}
+          </select>
+        )}
+        {source === 'website' && seesApp && depsInList.length > 1 && (
+          <select className="select" value={dept} onChange={(e) => setDept(e.target.value)} style={{ marginLeft: 8 }}>
+            <option value="">Alle Abteilungen</option>
+            {depsInList.map((k) => <option key={k} value={k}>{labels.departments[k] || k}</option>)}
+          </select>
+        )}
         <div className="spacer" />
         <button className="btn ghost" onClick={load}>Aktualisieren</button>
       </div>
       <div className="muted" style={{ marginBottom: 12 }}>
         {source === 'app'
           ? 'Antworten kommen beim Kunden direkt in der App an.'
-          : 'Kunde hat kein Konto: Antwort per E-Mail oder Telefon.'}
+          : `Kunde hat kein Konto: Antwort per E-Mail oder Telefon. Rückrufbitten haben nur eine Telefonnummer.${seesApp ? '' : ' Sie sehen die Anfragen Ihrer Abteilung.'}`}
         {' '}Eine Anfrage ist keine Bestellung. Wir liefern nur im Umkreis und versenden nichts.
       </div>
 
@@ -94,26 +125,40 @@ export default function Anfragen() {
         </table></div>
       ) : (
         <div className="table-wrap"><table>
-          <thead><tr><th>Eingang</th><th>Kunde</th><th>Produkt</th><th>Nachricht</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Eingang</th><th>Thema</th><th>Kunde</th><th>Anliegen</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {shown.map((r) => (
-              <tr key={r.id}>
-                <td className="nowrap">{fmt(r.createdAt)}</td>
-                <td>
-                  <CustomerName name={r.name} email={r.email} phone={r.phone} />
-                  <div><a href={mailto(r)} onClick={() => r.status === 'new' && setWebStatus(r, 'in_progress')}>{r.email}</a></div>
-                  <div><a href={`tel:${r.phone}`}>☎ {r.phone}</a></div>
-                </td>
-                <td>{r.productTitle || 'Allgemeine Anfrage'}{r.artNr ? <div className="muted">Art.-Nr. {r.artNr}</div> : null}</td>
-                <td style={{ whiteSpace: 'pre-wrap', fontSize: 13 }}>{r.message || <span className="muted">Keine Nachricht</span>}</td>
-                <td>
-                  <select className="select" value={r.status} onChange={(e) => setWebStatus(r, e.target.value)}>
-                    {Object.entries(WEB_STATUS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-                  </select>
-                </td>
-                <td className="right"><button className="btn sm ghost" onClick={() => remove(r)}>Löschen</button></td>
-              </tr>
-            ))}
+            {shown.map((r) => {
+              const callback = r.topic === 'rueckruf';
+              return (
+                <tr key={r.id}>
+                  <td className="nowrap">{fmt(r.createdAt)}</td>
+                  <td>
+                    <span className="pill" style={callback ? { background: '#fff4e5', color: '#9a4a00', fontWeight: 600 } : undefined}>
+                      {TOPIC_ICON[r.topic || 'produkt'] || '✉️'} {topicText(r)}
+                    </span>
+                    {seesApp && r.department ? <div className="muted" style={{ marginTop: 4 }}>{labels.departments[r.department] || r.department}</div> : null}
+                  </td>
+                  <td>
+                    <CustomerName name={r.name} email={r.email} phone={r.phone} />
+                    <div><a href={telHref(r.phone)} style={callback ? { fontWeight: 700 } : undefined} onClick={() => callback && r.status === 'new' && setWebStatus(r, 'in_progress')}>☎ {r.phone}</a>{callback ? <span className="muted"> (bittet um Rückruf)</span> : null}</div>
+                    {r.email
+                      ? <div><a href={mailto(r)} onClick={() => r.status === 'new' && setWebStatus(r, 'in_progress')}>{r.email}</a></div>
+                      : <div className="muted">Keine E-Mail angegeben</div>}
+                  </td>
+                  <td>
+                    {r.productTitle ? <div style={{ fontWeight: 600 }}>{r.productTitle}{r.artNr ? <span className="muted" style={{ fontWeight: 400 }}> · Art.-Nr. {r.artNr}</span> : null}</div> : null}
+                    <div style={{ whiteSpace: 'pre-wrap', fontSize: 13 }}>{r.message || <span className="muted">Keine Nachricht</span>}</div>
+                    {r.pageUrl ? <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>Gesendet von {r.pageUrl}</div> : null}
+                  </td>
+                  <td>
+                    <select className="select" value={r.status} onChange={(e) => setWebStatus(r, e.target.value)}>
+                      {Object.entries(WEB_STATUS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+                    </select>
+                  </td>
+                  <td className="right"><button className="btn sm ghost" onClick={() => remove(r)}>Löschen</button></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table></div>
       )}

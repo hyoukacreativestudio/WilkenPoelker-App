@@ -17,20 +17,69 @@ const clip = (v, n) => (v == null ? null : String(v).trim().slice(0, n) || null)
 const INQUIRY_MAILBOX = () => process.env.INQUIRY_EMAIL || 'info@wilkenpoelker.de';
 const escapeHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// Website forms since 2026-11-16: every inquiry has a topic, and the topic (or the
+// product's category) decides which department answers it. Verkauf and admins
+// see all of them in the PC program, a department only its own.
+const TOPICS = {
+  produkt: 'Produktanfrage',
+  allgemein: 'Allgemeine Frage',
+  werkstatt: 'Werkstatt / Reparatur',
+  ersatzteile: 'Ersatzteile',
+  fahrrad: 'Fahrrad / E-Bike / Leasing',
+  kaercher: 'Kärcher / Reinigungstechnik',
+  maehroboter: 'Mähroboter',
+  rueckruf: 'Rückruf',
+};
+const TOPIC_DEPARTMENT = {
+  allgemein: 'verkauf', rueckruf: 'verkauf', werkstatt: 'service', ersatzteile: 'service',
+  fahrrad: 'fahrrad', kaercher: 'kaercher', maehroboter: 'robby',
+};
+const DEPARTMENT_LABEL = {
+  verkauf: 'Verkauf', service: 'Service / Werkstatt', fahrrad: 'Fahrrad', motor: 'Motorgeräte', kaercher: 'Kärcher', robby: 'Mähroboter',
+};
+// Department staff who get a notification and see the inquiry (besides Verkauf + Admin)
+const DEPARTMENT_ROLES = {
+  service: ['service_manager'],
+  fahrrad: ['bike_manager'],
+  motor: ['motor_manager', 'motor_equipment_manager'],
+  kaercher: ['cleaning_manager'],
+  robby: ['robby_manager'],
+  verkauf: [],
+};
+const SEES_ALL = ['admin', 'super_admin', 'sales_manager'];
+// Which departments a role may see (null = all)
+function departmentsForRole(role) {
+  if (SEES_ALL.includes(role)) return null;
+  return Object.entries(DEPARTMENT_ROLES).filter(([, roles]) => roles.includes(role)).map(([d]) => d);
+}
+// Product inquiries go to the department of the product's category
+function productDepartment(product) {
+  if (!product) return 'verkauf';
+  if (product.main === 'Fahrräder') return 'fahrrad';
+  if (product.main === 'Reinigen' || product.brand === 'Kärcher') return 'kaercher';
+  if (/mähroboter/i.test(`${product.device || ''} ${product.category || ''}`)) return 'robby';
+  return 'motor';
+}
+const topicLabel = (inquiry) => (inquiry.topic === 'produkt' || !inquiry.topic
+  ? (inquiry.productTitle || 'Allgemeine Anfrage')
+  : `${TOPICS[inquiry.topic] || 'Anfrage'}${inquiry.productTitle ? `: ${inquiry.productTitle}` : ''}`);
+
 // The staff can answer with a plain "reply": it goes straight to the customer.
 async function mailInquiry(inquiry) {
   const emailService = require('../services/emailService');
-  const topic = inquiry.productTitle || 'Allgemeine Anfrage';
   const rows = [
+    ['Thema', TOPICS[inquiry.topic] || 'Produktanfrage'], ['Abteilung', DEPARTMENT_LABEL[inquiry.department]],
     ['Name', inquiry.name], ['E-Mail', inquiry.email], ['Telefon', inquiry.phone],
     ['Produkt', inquiry.productTitle], ['Art.-Nr.', inquiry.artNr], ['Nachricht', inquiry.message],
+    ['Gesendet von', inquiry.pageUrl],
   ].filter(([, v]) => v);
+  const callback = inquiry.topic === 'rueckruf';
   await emailService.sendEmail({
     to: INQUIRY_MAILBOX(),
-    replyTo: inquiry.email,
-    subject: `Website-Anfrage: ${topic}`.replace(/[\r\n]+/g, ' ').slice(0, 150),
+    ...(inquiry.email ? { replyTo: inquiry.email } : {}),
+    subject: `Website-${callback ? 'Rückrufbitte' : 'Anfrage'}: ${topicLabel(inquiry)}`.replace(/[\r\n]+/g, ' ').slice(0, 150),
     text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nDie Anfrage steht auch im PC-Programm unter "Anfragen". Keine Bestellung: wir liefern nur im Umkreis und versenden nichts.`,
-    html: `<h2>Neue Anfrage von der Website</h2><table cellpadding="4">${rows.map(([k, v]) => `<tr><td valign="top"><b>${k}</b></td><td style="white-space:pre-wrap">${escapeHtml(v)}</td></tr>`).join('')}</table><p>Die Anfrage steht auch im PC-Programm unter &bdquo;Anfragen&ldquo;. Eine Antwort auf diese E-Mail geht direkt an den Kunden.</p>`,
+    html: `<h2>${callback ? 'Rückrufbitte' : 'Neue Anfrage'} von der Website</h2><table cellpadding="4">${rows.map(([k, v]) => `<tr><td valign="top"><b>${k}</b></td><td style="white-space:pre-wrap">${escapeHtml(v)}</td></tr>`).join('')}</table><p>Die Anfrage steht auch im PC-Programm unter &bdquo;Anfragen&ldquo;.${inquiry.email ? ' Eine Antwort auf diese E-Mail geht direkt an den Kunden.' : ' Der Kunde bittet um einen Anruf.'}</p>`,
   });
 }
 
@@ -61,7 +110,14 @@ const createWebInquiry = asyncHandler(async (req, res) => {
   if (b.website) return res.status(201).json({ success: true, data: { received: true } });
 
   const product = b.slug ? await catalog.getProduct(String(b.slug)) : null;
+  // Older pages send no topic: a product inquiry
+  const topic = TOPICS[b.topic] ? b.topic : 'produkt';
+  const department = topic === 'produkt' ? productDepartment(product) : TOPIC_DEPARTMENT[topic];
+  // Only the path of our own page, never a full URL with query parameters
+  const pageUrl = clip(String(b.pageUrl || '').split(/[?#]/)[0].replace(/^https?:\/\/[^/]+/i, ''), 200);
   const inquiry = await WebInquiry.create({
+    topic,
+    department,
     name: clip(b.name, 120),
     email: clip(b.email, 200),
     phone: clip(b.phone, 40),
@@ -69,17 +125,19 @@ const createWebInquiry = asyncHandler(async (req, res) => {
     productTitle: clip(product?.title || b.productTitle, 250),
     productSlug: product?.slug || null,
     artNr: clip(b.artNr, 80),
+    pageUrl: pageUrl && pageUrl.startsWith('/') ? pageUrl : null,
   });
 
   const staff = await User.findAll({
-    where: { role: { [Op.in]: ['admin', 'super_admin', 'sales_manager'] }, isActive: true },
+    where: { role: { [Op.in]: [...SEES_ALL, ...(DEPARTMENT_ROLES[department] || [])] }, isActive: true },
     attributes: ['id'],
   });
   try {
     await Notification.bulkCreate(staff.map((u) => ({
       userId: u.id,
-      title: 'Neue Produktanfrage von der Website',
-      message: `${inquiry.name}: ${inquiry.productTitle || 'Allgemeine Anfrage'}`,
+      // "Anfrage von der Website" opens the Anfragen page in the PC program (Shell.jsx)
+      title: topic === 'rueckruf' ? 'Rückrufbitte von der Website' : 'Neue Anfrage von der Website',
+      message: `${inquiry.name}: ${topicLabel(inquiry)}`,
       type: 'system',
       category: 'system',
       relatedId: inquiry.id,
@@ -112,36 +170,50 @@ const listAppInquiries = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { tickets } });
 });
 
+// Department staff only see their own department's inquiries. Older rows have
+// no department: they were product inquiries for Verkauf.
+function departmentWhere(role) {
+  const deps = departmentsForRole(role);
+  return deps ? { department: { [Op.in]: deps } } : {};
+}
+
 const listWebInquiries = asyncHandler(async (req, res) => {
-  const where = {};
+  const where = { ...departmentWhere(req.user.role) };
   if (WEB_STATUS.includes(req.query.status)) where.status = req.query.status;
+  if (TOPICS[req.query.topic]) where.topic = req.query.topic;
   const inquiries = await WebInquiry.findAll({ where, order: [['createdAt', 'DESC']] });
-  res.json({ success: true, data: { inquiries } });
+  res.json({ success: true, data: { inquiries, topics: TOPICS, departments: DEPARTMENT_LABEL } });
 });
 
 const inquiryCounts = asyncHandler(async (req, res) => {
+  const seesApp = SEES_ALL.includes(req.user.role);
   const [app, website] = await Promise.all([
-    Ticket.count({ where: { productTitle: { [Op.ne]: null }, status: 'open' } }),
-    WebInquiry.count({ where: { status: 'new' } }),
+    seesApp ? Ticket.count({ where: { productTitle: { [Op.ne]: null }, status: 'open' } }) : 0,
+    WebInquiry.count({ where: { status: 'new', ...departmentWhere(req.user.role) } }),
   ]);
-  res.json({ success: true, data: { app, website } });
+  res.json({ success: true, data: { app, website, seesApp } });
 });
 
-const updateWebInquiry = asyncHandler(async (req, res) => {
-  const inquiry = await WebInquiry.findByPk(req.params.id);
+async function findOwnInquiry(req) {
+  const inquiry = await WebInquiry.findOne({ where: { id: req.params.id, ...departmentWhere(req.user.role) } });
   if (!inquiry) throw new NotFoundError('Anfrage');
+  return inquiry;
+}
+
+const updateWebInquiry = asyncHandler(async (req, res) => {
+  const inquiry = await findOwnInquiry(req);
   if (!WEB_STATUS.includes(req.body.status)) throw new AppError('Ungültiger Status', 400, 'INVALID_STATUS');
   await inquiry.update({ status: req.body.status, handledBy: req.user.id });
   res.json({ success: true, data: { inquiry } });
 });
 
 const deleteWebInquiry = asyncHandler(async (req, res) => {
-  const inquiry = await WebInquiry.findByPk(req.params.id);
-  if (!inquiry) throw new NotFoundError('Anfrage');
+  const inquiry = await findOwnInquiry(req);
   await inquiry.destroy();
   res.json({ success: true });
 });
 
 module.exports = {
   createAppInquiry, createWebInquiry, listAppInquiries, listWebInquiries, inquiryCounts, updateWebInquiry, deleteWebInquiry,
+  TOPICS, DEPARTMENT_ROLES, SEES_ALL,
 };

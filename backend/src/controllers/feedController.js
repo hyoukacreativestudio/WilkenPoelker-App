@@ -28,6 +28,7 @@ const createPost = asyncHandler(async (req, res) => {
     { content, type, userId: req.user.id, file: req.file },
     { Post, User }
   );
+  require('../services/websiteBuilder').schedule('Beitrag in der App');
 
   res.status(201).json({
     success: true,
@@ -57,6 +58,7 @@ const updatePost = asyncHandler(async (req, res) => {
     { content, type },
     { Post }
   );
+  require('../services/websiteBuilder').schedule('Beitrag in der App');
 
   res.json({
     success: true,
@@ -68,6 +70,7 @@ const deletePost = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   await feedService.deletePost(id, req.user.id, req.user.role, { Post, Like, Comment, ShareTracking });
+  require('../services/websiteBuilder').schedule('Beitrag in der App');
 
   res.json({
     success: true,
@@ -148,6 +151,7 @@ const reportPost = asyncHandler(async (req, res) => {
   const { reason } = req.body;
 
   await feedService.reportPost(id, req.user.id, reason, { Post });
+  require('../services/websiteBuilder').schedule('Beitrag in der App');
 
   res.json({
     success: true,

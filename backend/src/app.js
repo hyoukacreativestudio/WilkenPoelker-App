@@ -110,6 +110,7 @@ app.use('/api/customer-number', customerNumberRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/desktop', desktopRoutes);
 app.use('/api/shop', shopRoutes);
+app.use('/api/website', require('./routes/website'));
 app.use('/api/feedback', require('./routes/feedback'));
 
 // Public privacy policy of the app (URL for App Store / Google Play).
@@ -397,6 +398,16 @@ cron.schedule('2-59/5 * * * *', async () => {
     await scanAndImport();
   } catch (err) {
     logger.error('Cron: shop stock import failed', { error: err.message });
+  }
+});
+
+// Company website (STRATO): nightly build + upload of the changed files. Also
+// triggered by stock imports, opening hours and product changes (websiteBuilder).
+cron.schedule('30 4 * * *', () => {
+  try {
+    require('./services/websiteBuilder').schedule('Nächtliche Aktualisierung', 0);
+  } catch (err) {
+    logger.error('Cron: website update failed', { error: err.message });
   }
 });
 

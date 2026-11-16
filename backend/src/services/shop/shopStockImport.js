@@ -85,9 +85,15 @@ async function scanAndImport() {
     const rebuilt = await catalog.rebuildProducts();
     await pruneArchive();
     logger.info('Shop stock import', { ...result, products: rebuilt.products });
-    // New pages: fetch manufacturer pictures + data in the background
+    // New pages: fetch manufacturer pictures + data in the background. The
+    // website follows a few minutes later (with the pictures of new products).
+    const website = () => require('../websiteBuilder').schedule('Bestand aus Taifun');
     if (result.inserted > 0) {
-      require('./enrich').enrichMissing({ limit: 400 }).catch((e) => logger.error('Shop enrich failed', { error: e.message }));
+      require('./enrich').enrichMissing({ limit: 400 })
+        .catch((e) => logger.error('Shop enrich failed', { error: e.message }))
+        .finally(website);
+    } else if (result.articles > 0 || result.reservations > 0) {
+      website();
     }
     return { ...result, products: rebuilt.products };
   } finally {

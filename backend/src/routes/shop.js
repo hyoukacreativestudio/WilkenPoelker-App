@@ -34,16 +34,22 @@ router.post(
   inquiries.createAppInquiry,
 );
 
-// Product inquiry from the website form: e-mail AND phone are required, the
-// customer has no account and is contacted there.
+// Inquiry from a website form (product, workshop, general question, callback):
+// e-mail AND phone are required, the customer has no account and is contacted
+// there. A callback request ("rueckruf") only needs the phone number.
+const isCallback = (req) => req.body && req.body.topic === 'rueckruf';
 router.post(
   '/inquiries',
   inquiryLimiter,
   validate([
+    body('topic').optional({ nullable: true }).isIn(Object.keys(inquiries.TOPICS)).withMessage('Unbekanntes Thema'),
     body('name').trim().isLength({ min: 2, max: 120 }).withMessage('Bitte geben Sie Ihren Namen an'),
-    body('email').trim().isEmail().isLength({ max: 200 }).withMessage('Bitte geben Sie eine gültige E-Mail-Adresse an'),
+    body('email')
+      .if((value, { req }) => !(isCallback(req) && !String(value || '').trim()))
+      .trim().isEmail().isLength({ max: 200 }).withMessage('Bitte geben Sie eine gültige E-Mail-Adresse an'),
     body('phone').trim().matches(/^[+()\d][\d\s()/+-]{5,30}$/).withMessage('Bitte geben Sie eine gültige Telefonnummer an'),
     body('message').optional({ nullable: true }).isLength({ max: 2000 }).withMessage('Nachricht ist zu lang'),
+    body('pageUrl').optional({ nullable: true }).isLength({ max: 300 }),
   ]),
   inquiries.createWebInquiry,
 );

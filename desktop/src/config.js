@@ -22,6 +22,8 @@ export const labelForRole = (role) => ROLE_INFO[role]?.label || role;
 export const colorForRole = (role) => ROLE_INFO[role]?.color || '#2E7D32';
 
 const SEE_ALL = ['admin', 'super_admin'];
+// Departments that get the website inquiries of their topic (contact form, workshop form, product pages)
+const WEB_INQUIRY_DEPARTMENT_ROLES = ['bike_manager', 'service_manager', 'cleaning_manager', 'robby_manager', 'motor_manager', 'motor_equipment_manager'];
 
 // Which "Aufträge/Reparaturen" department a role is limited to. Repairs are
 // tagged by their title/number prefix (FA→Fahrrad, RY→Robby, RM/RT→Rasenmäher,
@@ -62,7 +64,7 @@ export function modulesForRole(role) {
     { key: 'kundenbestellungen', label: 'Kundenbestellungen', icon: '🧾', show: all || role === 'orders_manager' || role === 'service_manager' },
     { key: 'quellen',      label: 'Quellenbearbeitung', icon: '🏷️', show: all || role === 'orders_manager' || role === 'service_manager' },
     { key: 'produkte',     label: 'Produkte',     icon: '🛒', show: all || role === 'sales_manager' },
-    { key: 'anfragen',     label: 'Anfragen',     icon: '✉️', show: all || role === 'sales_manager' },
+    { key: 'anfragen',     label: 'Anfragen',     icon: '✉️', show: all || role === 'sales_manager' || WEB_INQUIRY_DEPARTMENT_ROLES.includes(role) },
     { key: 'feedback',     label: 'Feedback',     icon: '💡', show: all },
     { key: 'lager',        label: 'Lager',        icon: '🏬', show: all || role === 'sales_manager' || role === 'warehouse_worker' || role === 'orders_manager' },
   ].filter((m) => m.show);

@@ -62,6 +62,12 @@ google-play-service-account.json
 
 # SQLite dev database
 backend/data/*.sqlite
+# Runtime state of the server (Google reviews counter, website updates)
+backend/data/*-state.json
+
+# Company website: build output and picture cache (built on the server, hosted at STRATO)
+backend/website/dist/
+backend/website/.cache/
 
 # Backend public (built by Render from frontend/dist)
 backend/public/

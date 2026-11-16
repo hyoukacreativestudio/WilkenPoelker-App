@@ -9,7 +9,8 @@ const logger = require('../utils/logger');
  */
 const getOpeningHours = asyncHandler(async (req, res) => {
   const now = new Date();
-  const season = getSeason(now);
+  // ?season=standard|winter: the website shows both (summer and winter hours)
+  const season = ['standard', 'winter'].includes(req.query.season) ? req.query.season : getSeason(now);
 
   const schedule = await getWeekSchedule(season);
 
@@ -105,6 +106,8 @@ const updateOpeningHours = asyncHandler(async (req, res) => {
   }
 
   logger.info('Opening hours updated', { season, dayOfWeek, isClosed });
+  // The website shows the hours and closed days too
+  require('../services/websiteBuilder').schedule('Öffnungszeiten oder Schließtage geändert', 60 * 1000);
 
   res.json({
     success: true,
@@ -135,6 +138,8 @@ const addHoliday = asyncHandler(async (req, res) => {
   });
 
   logger.info('Holiday added', { holidayId: holiday.id, date, name });
+  // The website shows the hours and closed days too
+  require('../services/websiteBuilder').schedule('Öffnungszeiten oder Schließtage geändert', 60 * 1000);
 
   res.status(201).json({
     success: true,
@@ -157,6 +162,8 @@ const removeHoliday = asyncHandler(async (req, res) => {
   await holiday.destroy();
 
   logger.info('Holiday removed', { holidayId: req.params.id });
+  // The website shows the hours and closed days too
+  require('../services/websiteBuilder').schedule('Öffnungszeiten oder Schließtage geändert', 60 * 1000);
 
   res.json({
     success: true,
