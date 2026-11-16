@@ -96,9 +96,14 @@ function footer(ctx) {
   const year = new Date().getFullYear();
   return `<footer class="foot">
 <div class="wrap">
+<div class="foot-cta">
+<p class="foot-claim">Wir freuen uns auf Ihren Besuch in Ostrhauderfehn.</p>
+<div class="btns"><a class="btn" href="${MAPS.route}" rel="noopener" target="_blank">${icon('route')}Route planen</a><a class="btn btn-line" href="${COMPANY.phoneHref}">${icon('phone')}${COMPANY.phone}</a></div>
+</div>
 <div class="foot-grid">
 <div class="foot-brand">
 <img src="/assets/img/logo.png" alt="Wilken Poelker" width="520" height="93" loading="lazy">
+<img class="claim" src="/assets/img/logo-claim.png" alt="Für jedermann, ob Privat oder Profi" width="340" height="116" loading="lazy">
 <p>Familienbetrieb in dritter Generation. Seit 1951 beraten, verkaufen und reparieren wir in Ostrhauderfehn: E-Bikes und Fahrräder, Motor- und Gartengeräte, Reinigungstechnik.</p>
 <div class="foot-social"><a href="${COMPANY.facebook}" rel="noopener" target="_blank" aria-label="Wilken Poelker bei Facebook">${icon('facebook')}</a><a href="${COMPANY.instagram}" rel="noopener" target="_blank" aria-label="Wilken Poelker bei Instagram">${icon('instagram')}</a></div>
 </div>
@@ -147,8 +152,8 @@ function page(ctx, o) {
 <link rel="canonical" href="${esc(canonical)}">
 <meta name="robots" content="${robots}">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#d5edcf" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0a1a0a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1520" media="(prefers-color-scheme: dark)">
 <meta name="format-detection" content="telephone=no">
 ${o.smartBanner ? `<meta name="apple-itunes-app" content="app-id=${COMPANY.appleAppId}">\n` : ''}<meta property="og:type" content="${o.ogType || 'website'}">
 <meta property="og:locale" content="de_DE">
@@ -162,7 +167,7 @@ ${o.smartBanner ? `<meta name="apple-itunes-app" content="app-id=${COMPANY.apple
 <link rel="icon" type="image/png" sizes="192x192" href="/assets/img/favicon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preload" href="/assets/fonts/HankenGrotesk-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/assets/fonts/Fraunces-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/BricolageGrotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${ctx.asset('assets/site.css')}">
 <script>(function(d){d.classList.add('js');try{var t=localStorage.getItem('wp-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t)}catch(e){}})(document.documentElement)</script>
 <script src="${ctx.asset('assets/site.js')}" defer></script>${scripts}

@@ -37,7 +37,7 @@ function overview(ctx) {
   const tiles = ctx.categories.map((c) => {
     const img = c.image;
     const devs = c.devices.slice(0, 4).map((d) => d.name).join(', ');
-    return `<a class="tile" href="${c.url}"><span class="pimg">${img ? `<img src="${img.small}" alt="" width="${img.sw}" height="${img.sh}" loading="lazy">` : ''}</span><span><b>${esc(c.name)}</b><small>${plural(c.count, 'Produkt', 'Produkte')}${devs ? `: ${esc(devs)}` : ''}</small></span></a>`;
+    return `<a class="tile" href="${c.url}"><span class="pimg">${img ? `<img src="${img.small}" alt="" width="${img.sw}" height="${img.sh}" loading="lazy">` : ''}</span><span class="tile-text"><b>${esc(c.name)}</b><small>${plural(c.count, 'Produkt', 'Produkte')}</small>${devs ? `<span class="tile-devs">${esc(devs)}</span>` : ''}</span></a>`;
   }).join('');
   const offers = ctx.products.filter((p) => p.isOffer && p.available).sort(recommended).slice(0, 12);
   const brands = ctx.brands.slice(0, 16);

@@ -57,9 +57,9 @@
     var forced = root.getAttribute('data-theme');
     $$('meta[name="theme-color"]').forEach(function (m) {
       if (!m.hasAttribute('data-media')) m.setAttribute('data-media', m.getAttribute('media') || '');
-      if (forced) { m.removeAttribute('media'); m.setAttribute('content', forced === 'dark' ? '#0a1a0a' : '#d5edcf'); } else {
+      if (forced) { m.removeAttribute('media'); m.setAttribute('content', forced === 'dark' ? '#0b1520' : '#ffffff'); } else {
         m.setAttribute('media', m.getAttribute('data-media'));
-        m.setAttribute('content', /dark/.test(m.getAttribute('data-media')) ? '#0a1a0a' : '#d5edcf');
+        m.setAttribute('content', /dark/.test(m.getAttribute('data-media')) ? '#0b1520' : '#ffffff');
       }
     });
   }
@@ -73,7 +73,20 @@
         }
         syncThemeColor();
       };
-      if (d.startViewTransition && !reduceMotion) d.startViewTransition(apply); else apply();
+      if (!d.startViewTransition || reduceMotion) { apply(); return; }
+      // The new design spreads in a circle from the button
+      var r = btn.getBoundingClientRect();
+      var x = Math.round(r.left + r.width / 2);
+      var y = Math.round(r.top + r.height / 2);
+      var end = Math.ceil(Math.sqrt(Math.pow(Math.max(x, innerWidth - x), 2) + Math.pow(Math.max(y, innerHeight - y), 2)));
+      var done = function () { root.classList.remove('vt-theme'); };
+      root.classList.add('vt-theme');
+      var t = d.startViewTransition(apply);
+      t.ready.then(function () {
+        root.animate({ clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + end + 'px at ' + x + 'px ' + y + 'px)'] },
+          { duration: 560, easing: 'cubic-bezier(.2,.7,.2,1)', pseudoElement: '::view-transition-new(root)' });
+      }).catch(done);
+      t.finished.then(done, done);
     });
   });
   syncThemeColor();
@@ -305,6 +318,40 @@
   function setToday(periods, name) {
     $$('[data-today-hours]').forEach(function (el) { el.textContent = todayLine(periods, name); });
   }
+  // The bars: today's hours on the sign of the home page, today's row of the
+  // week and the line that shows the current time on them
+  function trackRange(tr) { var m = /^(\d+)-(\d+)$/.exec(tr.getAttribute('data-range') || ''); return m ? [+m[1], +m[2]] : null; }
+  function pctOf(v, r) { return Math.round(((v - r[0]) / (r[1] - r[0])) * 10000) / 100; }
+  function drawToday(now, periods) {
+    $$('[data-dow]').forEach(function (row) { row.classList.toggle('today', +row.getAttribute('data-dow') === now.dow); });
+    $$('[data-today-track]').forEach(function (tr) {
+      var range = trackRange(tr);
+      var sig = JSON.stringify(periods || []);
+      if (!range || tr.getAttribute('data-sig') === sig) return; // unchanged: no new animation
+      tr.setAttribute('data-sig', sig);
+      $$('i', tr).forEach(function (i) { i.parentNode.removeChild(i); });
+      var line = $('.now', tr);
+      (periods || []).forEach(function (p, k) {
+        var a = Math.max(range[0], toMin(p[0]));
+        var b = Math.min(range[1], toMin(p[1]));
+        if (b <= a) return;
+        var bar = d.createElement('i');
+        bar.style.left = pctOf(a, range) + '%';
+        bar.style.width = Math.round((pctOf(b, range) - pctOf(a, range)) * 100) / 100 + '%';
+        bar.style.setProperty('--k', k);
+        tr.insertBefore(bar, line);
+      });
+    });
+    $$('.track').forEach(function (tr) {
+      var line = $('.now', tr);
+      var range = trackRange(tr);
+      if (!line || !range) return;
+      var row = tr.closest('[data-dow]');
+      var on = (tr.hasAttribute('data-today-track') || (row && row.classList.contains('today'))) && now.min >= range[0] && now.min <= range[1];
+      line.classList.toggle('on', !!on);
+      if (on) line.style.left = pctOf(now.min, range) + '%';
+    });
+  }
   function computeStatus() {
     if (!hoursData) return;
     var now = berlin();
@@ -313,7 +360,7 @@
     if (current) setStatus(true, 'Geöffnet bis ' + hhmm(current[1]) + ' Uhr');
     else setStatus(false, closedText(nextOpening(now, now.min)));
     setToday(today.periods, today.name);
-    $$('tr[data-dow]').forEach(function (tr) { tr.classList.toggle('today', +tr.getAttribute('data-dow') === now.dow); });
+    drawToday(now, today.periods);
   }
   function renderClosedDays(days) {
     var today = berlin().iso;
@@ -359,6 +406,7 @@
         // From now on the minute-by-minute update uses the server's view of today
         todayOverride = { iso: now.iso, periods: th.isClosed ? [] : (th.periods || []).map(function (p) { return [p.open, p.close]; }), name: th.holidayName || null };
         setToday(todayOverride.periods, todayOverride.name);
+        drawToday(now, todayOverride.periods);
       }
     }).catch(function () { /* computed status stays */ });
   }
