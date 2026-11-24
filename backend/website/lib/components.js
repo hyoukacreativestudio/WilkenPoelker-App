@@ -208,7 +208,7 @@ ${mapArt()}
 </div>`;
 }
 
-function visitSection(ctx, { heading = 'Besuchen Sie uns in Ostrhauderfehn', text = 'Mitten im südlichen Ostfriesland, an der Langholter Straße: große Ausstellung, Werkstätten, Ersatzteillager und die Teststrecke im Freien.', id = 'besuch', band = false } = {}) {
+function visitSection(ctx, { heading = 'Besuchen Sie uns in Ostrhauderfehn', text = 'Mitten im südlichen Ostfriesland, an der Langholter Straße: große Ausstellung, Werkstätten, Ersatzteillager und die Teststrecke im Freien. Gut erreichbar aus Rhauderfehn, Westoverledingen, Leer, Papenburg und dem Saterland.', id = 'besuch', band = false } = {}) {
   return `<section class="sec${band ? ' band' : ''}" id="${id}">
 <div class="wrap">
 <div class="sec-head"><div class="head-text"><h2>${heading}</h2><p>${text}</p></div></div>

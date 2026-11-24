@@ -433,7 +433,7 @@ ${directNumbers(ctx)}
 </div>
 </div>
 </section>
-${C.visitSection(ctx, { heading: 'Öffnungszeiten und Anfahrt', text: 'Mitten im südlichen Ostfriesland, an der Langholter Straße in Ostrhauderfehn.', id: 'anfahrt', band: true })}
+${C.visitSection(ctx, { heading: 'Öffnungszeiten und Anfahrt', text: 'Mitten im südlichen Ostfriesland, an der Langholter Straße in Ostrhauderfehn, gut erreichbar aus Rhauderfehn, Westoverledingen, Leer, Papenburg und dem Saterland.', id: 'anfahrt', band: true })}
 <section class="sec">
 <div class="wrap">
 <div class="sec-head"><div class="head-text"><h2>Gut zu wissen</h2></div></div>

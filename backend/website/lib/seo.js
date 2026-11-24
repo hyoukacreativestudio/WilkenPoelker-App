@@ -49,6 +49,8 @@ function business(ctx) {
       addressRegion: COMPANY.region,
       addressCountry: COMPANY.country,
     },
+    geo: { '@type': 'GeoCoordinates', latitude: COMPANY.geo.lat, longitude: COMPANY.geo.lng },
+    areaServed: COMPANY.area.map((name) => ({ '@type': 'City', name })),
     hasMap: MAPS.open,
     foundingDate: String(COMPANY.founded),
     founder: { '@type': 'Person', name: COMPANY.founder },
@@ -128,6 +130,7 @@ function product(ctx, p, images, description) {
     description,
     sku: p.variants?.[0]?.artNr,
     brand: p.brand ? { '@type': 'Brand', name: p.brand } : undefined,
+    model: p.model || undefined,
     category: [p.main, p.device].filter(Boolean).join(' > '),
     offers,
   };

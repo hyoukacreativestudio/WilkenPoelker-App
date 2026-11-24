@@ -594,8 +594,12 @@
     function initials(n) { return String(n || '?').split(/\s+/).filter(Boolean).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase(); }
     function fallback(links) {
       var url = (links && (links.reviewsUri || links.mapsUri)) || (write ? write.href : '#');
-      top.innerHTML = '<p style="margin:0">Lesen Sie, was unsere Kundinnen und Kunden über uns schreiben, direkt bei ' + GM + '.</p>'
-        + '<a class="btn btn-quiet btn-sm" href="' + esc(url) + '" target="_blank" rel="noopener">Bewertungen bei Google ansehen</a>';
+      var writeUrl = (links && links.writeAReviewUri) || (write ? write.href : url);
+      top.innerHTML = '<div class="rv-empty"><span class="rv-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons.svg#star"/></svg></span>'
+        + '<div class="rv-text"><b>Ihre Erfahrungen zählen</b><p>Lesen Sie, was unsere Kundinnen und Kunden über uns schreiben, direkt bei ' + GM + '. Und wenn Sie bei uns waren: Wir freuen uns über Ihre Bewertung.</p></div>'
+        + '<div class="btns"><a class="btn btn-sm" href="' + esc(url) + '" target="_blank" rel="noopener">Bewertungen ansehen</a>'
+        + '<a class="btn btn-quiet btn-sm" href="' + esc(writeUrl) + '" target="_blank" rel="noopener">Bewertung schreiben</a></div></div>';
+      sec.classList.add('no-reviews');
       list.hidden = true;
       if (note) note.textContent = '';
     }

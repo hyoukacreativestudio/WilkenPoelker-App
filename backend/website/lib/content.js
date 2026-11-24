@@ -25,6 +25,10 @@ const COMPANY = {
   appStore: 'https://apps.apple.com/de/app/wilken-poelker/id6832653097',
   playStore: 'https://play.google.com/store/apps/details?id=com.hyoukacreativestudios.wilkenpoelker',
   appleAppId: '6832653097',
+  // Building on OpenStreetMap (way 939467625)
+  geo: { lat: 53.1129, lng: 7.6145 },
+  // Towns around the shop, for local search (schema.org areaServed and the visit text)
+  area: ['Ostrhauderfehn', 'Rhauderfehn', 'Westoverledingen', 'Leer', 'Papenburg', 'Saterland', 'Barßel', 'Detern', 'Uplengen', 'Moormerland'],
 };
 const ADDRESS_LINE = `${COMPANY.street}, ${COMPANY.zip} ${COMPANY.city}`;
 const MAPS_QUERY = `${COMPANY.legalName}, ${ADDRESS_LINE}`;

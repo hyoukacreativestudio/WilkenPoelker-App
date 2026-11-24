@@ -1,4 +1,4 @@
-const { esc, dateDe, clip } = require('../util');
+const { esc, dateDe } = require('../util');
 const { page, icon } = require('../layout');
 const C = require('../components');
 const { COMPANY, SERVICES, faqs } = require('../content');
@@ -6,6 +6,22 @@ const seo = require('../seo');
 
 // Workshop and service people with a real photo (mosaic of the "Werkstatt" tile)
 const WORKSHOP_DEPS = ['Service / Reparatur', 'Werkstatt Zweirad', 'Werkstatt Motorgeraete', 'Kaercher', 'Maehroboter'];
+
+// A feed post of the app as website text: no emoji (the website has none), the
+// first short line becomes the heading, line breaks stay
+const EMOJI = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{200D}\u{20E3}]/gu;
+function newsText(content, max = 300) {
+  const lines = String(content || '').replace(EMOJI, '').split(/\r?\n/).map((l) => l.replace(/[ \t]+/g, ' ').trim());
+  while (lines.length && !lines[0]) lines.shift();
+  let title = '';
+  if (lines.length > 1 && lines[0].length <= 70 && lines.slice(1).some(Boolean)) title = lines.shift().replace(/[:\s]+$/, '');
+  let body = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  if (body.length > max) {
+    const cut = body.slice(0, max - 1);
+    body = `${cut.slice(0, Math.max(cut.lastIndexOf(' '), max - 30)).replace(/[,;:.\s-]+$/, '')} …`;
+  }
+  return { title, body };
+}
 
 async function teamFaces(ctx, deps) {
   const out = [];
@@ -43,7 +59,7 @@ async function home(ctx) {
   const news = [];
   for (const n of ctx.news.slice(0, 3)) {
     const src = n.thumbnailUrl || (n.type === 'image' || /\.(jpe?g|png|webp)$/i.test(n.mediaUrl || '') ? n.mediaUrl : null);
-    news.push({ ...n, img: src ? await ctx.images.news(src) : null });
+    news.push({ ...n, ...newsText(n.content), product: /\/uploads\/shop\//.test(src || ''), img: src ? await ctx.images.news(src) : null });
   }
 
   const faqList = faqs(C.hoursText(ctx));
@@ -149,7 +165,7 @@ ${news.length ? `
 <section class="sec band" id="neuigkeiten">
 <div class="wrap">
 <div class="sec-head"><div class="head-text"><h2>Neuigkeiten aus dem Laden</h2><p>Aktionen und Neuheiten, so wie in unserer App.</p></div><a class="link-more" href="/app.html">Mehr in der App${icon('arrow-right')}</a></div>
-<div class="news">${news.map((n) => `<article>${n.img ? `<div class="ph"><img src="${n.img.src}" alt="" width="${n.img.width}" height="${n.img.height}" loading="lazy"></div>` : ''}<div class="tx"><time datetime="${esc(n.createdAt)}">${esc(dateDe(n.createdAt))}</time><p>${esc(clip(n.content, 420))}</p></div></article>`).join('')}</div>
+<div class="news">${news.map((n) => `<article class="${n.img ? (n.product ? 'is-product' : 'is-photo') : 'is-note'}">${n.img ? `<div class="ph"><img src="${n.img.src}" alt="" width="${n.img.width}" height="${n.img.height}" loading="lazy"></div>` : ''}<div class="tx"><time datetime="${esc(n.createdAt)}">${esc(dateDe(n.createdAt))}</time>${n.title ? `<h3>${esc(n.title)}</h3>` : ''}<p>${esc(n.body)}</p></div></article>`).join('')}</div>
 </div>
 </section>` : ''}
 

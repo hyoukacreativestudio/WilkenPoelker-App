@@ -13,14 +13,14 @@ const recommended = (a, b) => (b.discountPercent || 0) - (a.discountPercent || 0
 
 // Filter panel + grid (catalog.js). fixed: facets that are not offered
 function shop(ctx, list, { fixed = [], label = 'Produkte' } = {}) {
-  const facet = (key, title) => (fixed.includes(key) ? '' : `<div data-facet="${key}"><h4>${title}</h4><div class="fchips"></div></div>`);
+  const facet = (key, title) => (fixed.includes(key) ? '' : `<div data-facet="${key}"><h3>${title}</h3><div class="fchips"></div></div>`);
   return `<div class="shop" data-shop data-label="${esc(label)}">
 <aside class="filters" id="filters" aria-label="Filter">
 <div class="fsheet-head"><h2>Filter</h2><button class="icon-btn" type="button" data-f-close aria-label="Filter schließen">${icon('close')}</button></div>
-<h4>Suche</h4><input type="search" data-f-q placeholder="Name, Hersteller, Modell" aria-label="In dieser Liste suchen">
-<h4>Anzeigen</h4><div class="fchips"><button type="button" class="fchip" data-flag="avail" aria-pressed="false">Nur verfügbare</button><button type="button" class="fchip" data-flag="offer" aria-pressed="false">Nur Angebote</button></div>
+<h3>Suche</h3><input type="search" data-f-q placeholder="Name, Hersteller, Modell" aria-label="In dieser Liste suchen">
+<h3>Anzeigen</h3><div class="fchips"><button type="button" class="fchip" data-flag="avail" aria-pressed="false">Nur verfügbare</button><button type="button" class="fchip" data-flag="offer" aria-pressed="false">Nur Angebote</button></div>
 ${facet('main', 'Kategorie')}${facet('cat', 'Gerät')}${facet('drive', 'Antrieb')}${facet('sys', 'Akku-System')}${facet('brand', 'Hersteller')}
-<h4>Preis in Euro</h4><div class="prices"><input type="number" data-f-min placeholder="von" min="0" inputmode="numeric" aria-label="Preis von"><span>bis</span><input type="number" data-f-max placeholder="bis" min="0" inputmode="numeric" aria-label="Preis bis"></div>
+<h3>Preis in Euro</h3><div class="prices"><input type="number" data-f-min placeholder="von" min="0" inputmode="numeric" aria-label="Preis von"><span>bis</span><input type="number" data-f-max placeholder="bis" min="0" inputmode="numeric" aria-label="Preis bis"></div>
 <p class="f-reset-row"><button type="button" class="btn btn-ghost btn-sm" data-f-reset>Filter zurücksetzen</button></p>
 <div class="fsheet-foot"><button type="button" class="btn btn-ghost" data-f-reset>Zurücksetzen</button><button type="button" class="btn" data-f-close data-f-show>${plural(list.length, 'Produkt', 'Produkte')} anzeigen</button></div>
 </aside>
@@ -223,7 +223,12 @@ function brandPage(ctx, b) {
 ${C.crumbs(trail)}
 <h1>${esc(b.name)} bei Wilken Poelker</h1>
 <p class="lead">${esc(intro)}</p>
-${devices.length > 1 ? `<p class="muted" style="margin-top:12px">${esc(devices.slice(0, 10).join(', '))}</p>` : ''}
+${devices.length > 1 ? `<p class="phead-note">Im Sortiment: ${devices.slice(0, 10).map((name) => {
+    const c = ctx.categories.find((k) => k.devices.some((d) => d.name === name));
+    const d = c && c.devices.find((x) => x.name === name);
+    if (!d) return esc(name);
+    return `<a href="/produkte/${c.slug}/${c.devices.length > 1 ? `${d.slug}.html` : ''}">${esc(name)}</a>`;
+  }).join(', ')}</p>` : ''}
 </div>
 </section>
 <section class="sec-tight"><div class="wrap">${shop(ctx, list, { fixed: ['brand'], label: b.name })}</div></section>`;
