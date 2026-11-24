@@ -150,7 +150,7 @@ const reportPost = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
 
-  await feedService.reportPost(id, req.user.id, reason, { Post });
+  await feedService.reportPost(id, req.user.id, reason, { Post, User, Notification });
   require('../services/websiteBuilder').schedule('Beitrag in der App');
 
   res.json({

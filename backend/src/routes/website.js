@@ -3,18 +3,24 @@ const router = express.Router();
 const { Op } = require('sequelize');
 const { asyncHandler } = require('../middlewares/errorHandler');
 const googleReviews = require('../services/googleReviews');
+const { createLimiter } = require('../middlewares/rateLimit');
+
+// Every review display costs one Google call: 30 per hour per visitor is far
+// more than anyone reading the page needs. Avatars: up to 5 per display.
+const reviewsLimiter = createLimiter(60 * 60 * 1000, 30, 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.');
+const avatarLimiter = createLimiter(60 * 60 * 1000, 200, 'Zu viele Anfragen.');
 
 // Public endpoints for the company website (www.wilkenpoelker.de, test: wilpo.net).
 // Everything here is public anyway; no login, no personal data of visitors.
 
 // Google reviews, fetched fresh for every display (Google forbids caching them)
-router.get('/reviews', asyncHandler(async (req, res) => {
+router.get('/reviews', reviewsLimiter, asyncHandler(async (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json({ success: true, data: await googleReviews.getReviews() });
 }));
 
 // Author avatars of the reviews, passed through without storing
-router.get('/reviews/avatar', (req, res) => googleReviews.streamAvatar(req.query.u, res));
+router.get('/reviews/avatar', avatarLimiter, (req, res) => googleReviews.streamAvatar(req.query.u, req.query.s, res));
 
 // Latest posts of the app feed ("Neuigkeiten" on the website). Staff posts only
 // (only staff can post), without likes, comments or author accounts.

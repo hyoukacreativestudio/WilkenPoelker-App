@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const logger = require('../utils/logger');
 
 // Google reviews for the website (Places API (New), Place Details).
@@ -17,6 +18,8 @@ const logger = require('../utils/logger');
 // Setup (server .env): GOOGLE_PLACES_API_KEY=<key restricted to "Places API (New)"
 // and the server's IP>; optional GOOGLE_PLACE_ID (otherwise found once by name),
 // GOOGLE_REVIEWS_MONTHLY_LIMIT (default 900).
+// A daily share of it (twice the average day) stops a flood of page views from
+// using up the whole month in minutes; the route also has a per-IP limit.
 
 const API = 'https://places.googleapis.com/v1';
 const QUERY = 'Wilken Poelker GmbH & Co. KG, Langholter Straße 43, 26842 Ostrhauderfehn';
@@ -26,7 +29,18 @@ const AVATAR_HOST = /^https:\/\/lh\d\.googleusercontent\.com\//;
 
 const key = () => (process.env.GOOGLE_PLACES_API_KEY || '').trim();
 const monthlyLimit = () => Math.max(0, parseInt(process.env.GOOGLE_REVIEWS_MONTHLY_LIMIT || '900', 10) || 0);
+const dailyLimit = () => Math.ceil((monthlyLimit() / 30) * 2);
 const monthOf = (d = new Date()) => d.toISOString().slice(0, 7);
+const dayOf = (d = new Date()) => d.toISOString().slice(0, 10);
+
+// Avatar links carry a signature, so the avatar route only passes through the
+// pictures this server handed out itself (it is not an open image proxy)
+const sign = (url) => crypto.createHmac('sha256', `avatar:${process.env.JWT_SECRET || ''}`).update(url).digest('base64url').slice(0, 22);
+function signatureOk(url, sig) {
+  const want = Buffer.from(sign(url));
+  const got = Buffer.from(String(sig || ''));
+  return want.length === got.length && crypto.timingSafeEqual(want, got);
+}
 
 // Place ID + call counter per month (no Google content in here)
 function readState() {
@@ -44,11 +58,18 @@ function usage() {
   const s = readState();
   return s.month === monthOf() ? (s.calls || 0) : 0;
 }
+function usageToday() {
+  const s = readState();
+  return s.day === dayOf() ? (s.dayCalls || 0) : 0;
+}
 function countCall() {
   const s = readState();
   const month = monthOf();
+  const day = dayOf();
   if (s.month !== month) { s.month = month; s.calls = 0; }
+  if (s.day !== day) { s.day = day; s.dayCalls = 0; }
   s.calls = (s.calls || 0) + 1;
+  s.dayCalls = (s.dayCalls || 0) + 1;
   writeState(s);
 }
 
@@ -103,7 +124,7 @@ let inFlight = null; // concurrent page views share one call; nothing is kept
 
 async function loadFromGoogle() {
   const id = await placeId();
-  if (usage() >= monthlyLimit()) {
+  if (usage() >= monthlyLimit() || usageToday() >= dailyLimit()) {
     return { available: false, reason: 'limit', ...fallbackLinks(id) };
   }
   countCall();
@@ -131,7 +152,7 @@ async function loadFromGoogle() {
         // Shown through our server (avatar route), so the visitor's browser does
         // not contact Google by itself
         photo: AVATAR_HOST.test(r.authorAttribution?.photoUri || '')
-          ? `/api/website/reviews/avatar?u=${encodeURIComponent(r.authorAttribution.photoUri)}` : null,
+          ? `/api/website/reviews/avatar?u=${encodeURIComponent(r.authorAttribution.photoUri)}&s=${sign(r.authorAttribution.photoUri)}` : null,
       },
     })),
   };
@@ -150,22 +171,33 @@ async function getReviews() {
   return inFlight;
 }
 
-// Passes the author's avatar through (not stored). Only Google's avatar host.
-async function streamAvatar(rawUrl, res) {
+const AVATAR_TYPES = /^image\/(jpeg|png|webp|gif)\b/i; // no SVG (it can carry script)
+const AVATAR_MAX = 300 * 1024;
+
+// Passes the author's avatar through (not stored). Only Google's avatar host,
+// only links this server signed, no redirects, at most 300 KB.
+async function streamAvatar(rawUrl, sig, res) {
   const url = String(rawUrl || '');
-  if (!AVATAR_HOST.test(url)) { res.status(400).end(); return; }
+  if (!AVATAR_HOST.test(url) || !signatureOk(url, sig)) { res.status(400).end(); return; }
   try {
-    const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    const r = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(6000) });
     const type = r.headers.get('content-type') || '';
-    if (!r.ok || !type.startsWith('image/')) { res.status(404).end(); return; }
-    const buf = Buffer.from(await r.arrayBuffer());
-    if (buf.length > 300 * 1024) { res.status(413).end(); return; }
+    if (!r.ok || !AVATAR_TYPES.test(type) || !r.body) { res.status(404).end(); return; }
+    if (Number(r.headers.get('content-length') || 0) > AVATAR_MAX) { res.status(413).end(); return; }
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of r.body) {
+      size += chunk.length;
+      if (size > AVATAR_MAX) { res.status(413).end(); return; }
+      chunks.push(chunk);
+    }
     res.set('Content-Type', type);
+    res.set('X-Content-Type-Options', 'nosniff');
     res.set('Cache-Control', 'no-store');
-    res.send(buf);
+    res.send(Buffer.concat(chunks.map((c) => Buffer.from(c))));
   } catch {
     res.status(502).end();
   }
 }
 
-module.exports = { getReviews, streamAvatar, usage, monthlyLimit };
+module.exports = { getReviews, streamAvatar, usage, usageToday, monthlyLimit, dailyLimit };

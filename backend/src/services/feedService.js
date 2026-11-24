@@ -149,6 +149,8 @@ async function updatePost(postId, userId, userRole, data, { Post }) {
       updates[field] = data[field];
     }
   }
+  // Saving a reported post again = checked and kept: it shows on the website again
+  if (post.isReported) Object.assign(updates, { isReported: false, reportReason: null, reportedBy: null });
 
   await post.update(updates);
 
@@ -326,17 +328,43 @@ async function deleteComment(commentId, userId, userRole, { Post, Comment }) {
 /**
  * Report a post.
  */
-async function reportPost(postId, userId, reason, { Post }) {
+async function reportPost(postId, userId, reason, { Post, User, Notification }) {
   const post = await Post.findByPk(postId);
   if (!post) {
     throw new NotFoundError('Post');
   }
 
+  const firstReport = !post.isReported;
   await post.update({
     isReported: true,
     reportReason: reason,
     reportedBy: userId,
   });
+
+  // A reported post disappears from the website news, so the admins must hear
+  // about it (one notification per post, not per report): they either delete
+  // the post or keep it.
+  if (firstReport && User && Notification) {
+    try {
+      const admins = await User.findAll({
+        where: { role: { [Op.in]: ['admin', 'super_admin'] }, isActive: true },
+        attributes: ['id'],
+      });
+      const snippet = String(post.content || '').slice(0, 80);
+      await Promise.all(admins.map((a) => Notification.create({
+        userId: a.id,
+        title: 'Beitrag gemeldet',
+        message: `Grund: ${reason || 'ohne Angabe'} – „${snippet}“. Auf der Website ausgeblendet, bis er gelöscht oder neu gespeichert wird.`,
+        type: 'system',
+        category: 'system',
+        relatedId: post.id,
+        relatedType: 'post',
+        deepLink: `/feed/post/${post.id}`,
+      })));
+    } catch (e) {
+      logger.warn('Post report notification failed', { error: e.message });
+    }
+  }
 
   logger.info('Post reported', { postId, userId, reason });
 }

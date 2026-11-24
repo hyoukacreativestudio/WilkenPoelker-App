@@ -168,7 +168,7 @@ forgotRouter.get('/', (req, res) => {
 forgotRouter.post('/', forgotLimiter, async (req, res, next) => {
   noStore(res);
   const email = String(req.body.email || '').trim().slice(0, 200);
-  if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(email)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).type('html').send(forgotFormPage(email, 'Bitte geben Sie eine gültige E-Mail-Adresse ein.'));
   }
   try {

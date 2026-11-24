@@ -135,6 +135,13 @@ function errorHandler(err, req, res, _next) {
     });
   }
 
+  // Unexpected errors (database, library, programming errors) can carry
+  // internal details such as table or column names: outside development the
+  // client only gets a neutral message, the full one is in the log above.
+  if (statusCode >= 500 && !err.isOperational && process.env.NODE_ENV !== 'development') {
+    message = 'Es ist ein Fehler aufgetreten. Bitte später erneut versuchen.';
+  }
+
   const response = {
     success: false,
     error: {

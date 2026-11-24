@@ -130,7 +130,17 @@ const feedbackLimiter = createLimiter(
   'Zu viele Nachrichten. Bitte versuchen Sie es später erneut.'
 );
 
+// Resending the verification mail: 10 per hour per IP (plus a cooldown per
+// address in the controller), so nobody can flood an inbox from noreply@
+const verificationLimiter = createLimiter(
+  60 * 60 * 1000,
+  10,
+  'Zu viele Anfragen. Bitte versuchen Sie es später erneut.'
+);
+
 module.exports = {
+  createLimiter,
+  verificationLimiter,
   inquiryLimiter,
   feedbackLimiter,
   loginLimiter,

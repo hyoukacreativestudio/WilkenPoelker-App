@@ -103,11 +103,26 @@ const createAppInquiry = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: { ticket } });
 });
 
+// Ceilings for ALL website inquiries together (the per-IP limit is in
+// routes/shop.js). Above QUIET_AFTER per hour new inquiries are still saved
+// and shown in the PC program, but nobody gets a push or an e-mail for them,
+// so a bot with many addresses cannot flood the staff phones and info@.
+// Above REJECT_AFTER the form answers "try again later".
+const QUIET_AFTER = 40;
+const REJECT_AFTER = 300;
+
 // POST /api/shop/inquiries (website form, no login). Validated in routes/shop.js
 const createWebInquiry = asyncHandler(async (req, res) => {
   const b = req.body;
   // Filled in only by spam bots (the field is hidden on the page): pretend it worked.
   if (b.website) return res.status(201).json({ success: true, data: { received: true } });
+
+  const lastHour = await WebInquiry.count({ where: { createdAt: { [Op.gte]: new Date(Date.now() - 60 * 60 * 1000) } } });
+  if (lastHour >= REJECT_AFTER) {
+    logger.warn('Web inquiries: hourly ceiling reached, form closed for now', { lastHour });
+    return res.status(429).json({ success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut oder rufen Sie uns an: 04952 5304.' } });
+  }
+  const quiet = lastHour >= QUIET_AFTER;
 
   const product = b.slug ? await catalog.getProduct(String(b.slug)) : null;
   // Older pages send no topic: a product inquiry
@@ -127,6 +142,11 @@ const createWebInquiry = asyncHandler(async (req, res) => {
     artNr: clip(b.artNr, 80),
     pageUrl: pageUrl && pageUrl.startsWith('/') ? pageUrl : null,
   });
+
+  if (quiet) {
+    logger.warn('Web inquiries: unusually many this hour, saved without push and e-mail', { lastHour });
+    return res.status(201).json({ success: true, data: { received: true } });
+  }
 
   const staff = await User.findAll({
     where: { role: { [Op.in]: [...SEES_ALL, ...(DEPARTMENT_ROLES[department] || [])] }, isActive: true },

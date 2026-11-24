@@ -801,7 +801,7 @@ async function confirmAppointment(appointmentId, confirmedBy) {
 /**
  * Generate iCal content for an appointment.
  */
-async function generateICalContent(appointmentId) {
+async function generateICalContent(appointmentId, requester = null) {
   const appointment = await Appointment.findByPk(appointmentId, {
     include: [
       {
@@ -813,6 +813,10 @@ async function generateICalContent(appointmentId) {
   });
 
   if (!appointment) {
+    throw new NotFoundError('Appointment');
+  }
+  // A customer only gets the calendar file of their own appointment
+  if (requester && requester.role === 'customer' && appointment.userId !== requester.id) {
     throw new NotFoundError('Appointment');
   }
 

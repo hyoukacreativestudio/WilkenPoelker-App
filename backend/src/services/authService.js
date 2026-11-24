@@ -48,8 +48,36 @@ async function findTaifunCustomerNumber({ firstName, lastName, address, email })
 // unique match is found. Runs on every login and on demand (customer taps
 // "Kundennummer anfragen"). Once a number is set, this is a no-op forever.
 // Returns the assigned number, or null.
+// The match uses name + address, which an account holder can edit. So that
+// nobody tries one address after another until some customer's number is
+// found, each account gets at most 5 different name/address combinations
+// checked per day (login, self-check, number request); checking the same data
+// again does not count. One process, so memory is enough.
+const MATCH_VARIANTS_PER_DAY = 5;
+const matchVariants = new Map(); // userId -> { day, seen: Set }
+function mayTryMatch(user) {
+  const day = new Date().toISOString().slice(0, 10);
+  const a = user.address || {};
+  const variant = [user.firstName, user.lastName, a.zip || a.postalCode, a.street, a.houseNumber, user.email]
+    .map((v) => String(v || '').trim().toLowerCase()).join('|');
+  let entry = matchVariants.get(user.id);
+  if (!entry || entry.day !== day) {
+    for (const [k, v] of matchVariants) if (v.day !== day) matchVariants.delete(k);
+    entry = { day, seen: new Set() };
+    matchVariants.set(user.id, entry);
+  }
+  if (entry.seen.has(variant)) return true;
+  if (entry.seen.size >= MATCH_VARIANTS_PER_DAY) return false;
+  entry.seen.add(variant);
+  return true;
+}
+
 async function tryAutoAssignCustomerNumber(user) {
   if (!user || user.customerNumber) return null;
+  if (!mayTryMatch(user)) {
+    logger.warn('Customer-number match skipped: too many different addresses today', { userId: user.id });
+    return null;
+  }
   const { User } = require('../models');
   let kdNr = null;
   try {

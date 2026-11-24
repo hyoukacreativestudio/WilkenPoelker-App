@@ -162,19 +162,30 @@ const verifyEmail = asyncHandler(async (req, res) => {
   }
 });
 
+// At most one verification mail per address every 10 minutes (one process,
+// so memory is enough; a restart only resets the waiting time)
+const VERIFY_COOLDOWN_MS = 10 * 60 * 1000;
+const lastVerificationMail = new Map();
+
 const resendVerification = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
   const user = await db.User.findOne({ where: { email } });
 
-  // Don't reveal if email exists or is already verified
-  if (!user || user.emailVerified) {
+  const key = String(email || '').toLowerCase();
+  const now = Date.now();
+  for (const [k, t] of lastVerificationMail) if (now - t > VERIFY_COOLDOWN_MS) lastVerificationMail.delete(k);
+  const coolingDown = lastVerificationMail.has(key);
+
+  // Don't reveal if email exists or is already verified (the cooldown answers the same way)
+  if (!user || user.emailVerified || coolingDown) {
     return res.json({
       success: true,
       message: 'If an account with this email exists and is not yet verified, a new verification email has been sent.',
     });
   }
 
+  lastVerificationMail.set(key, now);
   const { generateToken, hashToken } = require('../utils/crypto');
   const verificationToken = generateToken();
   user.emailVerificationToken = hashToken(verificationToken);

@@ -55,21 +55,40 @@ try {
   logger.warn('compression module not installed, skipping response compression');
 }
 
-// Body parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Rate limiting first, so a flood of requests is turned away before its bodies
+// are parsed and sanitized
+app.use('/api/', apiLimiter);
+
+// Body parsing. Files go as multipart and the Taifun push has its own raw
+// parser (routes/sync.js), so 1 MB is plenty everywhere except one route: the
+// PC tool sends product pictures as data URLs (scaled to 2000 px, a few MB).
+const jsonSmall = express.json({ limit: '1mb' });
+const jsonLarge = express.json({ limit: '12mb' });
+const LARGE_JSON = /^\/api\/desktop\/shop\/products\/[^/]+\/images\/upload$/;
+app.use((req, res, next) => (LARGE_JSON.test(req.path) ? jsonLarge : jsonSmall)(req, res, next));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Input sanitization
 app.use(sanitizeBody);
 
-// Rate limiting
-app.use('/api/', apiLimiter);
-
 // Static files with caching headers for performance
+// Only pictures, videos and PDFs are shown in the browser. Anything else (older
+// uploads kept the client's file name, and the app update .apk lives here) is
+// sent as a download, so an uploaded .html, .svg or .js can never run as a
+// page or script on this origin, where the PC tool keeps its login.
+const INLINE_UPLOAD = /\.(jpe?g|png|gif|webp|mp4|mov|avi|pdf)$/i;
 app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
   maxAge: config.isProd ? '7d' : '1h',
   etag: true,
   lastModified: true,
+  setHeaders(res, filePath) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (!INLINE_UPLOAD.test(filePath)) {
+      if (!/\.apk$/i.test(filePath)) res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', 'attachment');
+      res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    }
+  },
 }));
 
 // Routes
@@ -605,8 +624,11 @@ async function startServer() {
     logger.warn('Holiday check on start failed', { error: err.message });
   }
 
-  server.listen(config.port, () => {
-    logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
+  // HOST=127.0.0.1 in .env keeps the port reachable only through the local
+  // reverse proxy (Caddy); without it Node listens on every interface.
+  const host = process.env.HOST || undefined;
+  server.listen(config.port, host, () => {
+    logger.info(`Server running on ${host || '*'}:${config.port} in ${config.nodeEnv} mode`);
   });
 }
 

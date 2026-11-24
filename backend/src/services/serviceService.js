@@ -675,9 +675,13 @@ async function sendChatMessage(ticketId, userId, data, models) {
     throw new AppError('Cannot send messages to a closed ticket', 400, 'TICKET_CLOSED');
   }
 
-  // Access control: non-admin staff cannot message in tickets assigned to other staff
+  // Access control: a customer may only write in their own ticket; non-admin
+  // staff cannot message in tickets assigned to other staff
   const senderCheck = await User.findByPk(userId, { attributes: ['id', 'role'] });
-  if (senderCheck && senderCheck.role !== 'customer') {
+  if (!senderCheck || (senderCheck.role === 'customer' && ticket.userId !== userId)) {
+    throw new AppError('You do not have access to this chat', 403, 'CHAT_ACCESS_DENIED');
+  }
+  if (senderCheck.role !== 'customer') {
     const isSenderAdmin = senderCheck.role === 'admin' || senderCheck.role === 'super_admin';
     const isSenderAssigned = ticket.assignedTo === userId;
     const isUnassigned = !ticket.assignedTo;
@@ -853,6 +857,14 @@ async function confirmAppointment(ticketId, userId, data, models) {
   const ticket = await Ticket.findByPk(ticketId);
   if (!ticket) {
     throw new NotFoundError('Ticket');
+  }
+
+  // Only the ticket's customer (or staff) may pick the date
+  if (ticket.userId !== userId) {
+    const caller = await models.User.findByPk(userId, { attributes: ['id', 'role'] });
+    if (!caller || caller.role === 'customer') {
+      throw new AppError('You do not have access to this ticket', 403, 'TICKET_ACCESS_DENIED');
+    }
   }
 
   const { selectedDate } = data;

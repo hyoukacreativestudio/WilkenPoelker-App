@@ -134,7 +134,7 @@ const confirmAppointment = asyncHandler(async (req, res) => {
 });
 
 const getICalFile = asyncHandler(async (req, res) => {
-  const icalContent = await appointmentService.generateICalContent(req.params.id);
+  const icalContent = await appointmentService.generateICalContent(req.params.id, req.user);
 
   res.set({
     'Content-Type': 'text/calendar; charset=utf-8',

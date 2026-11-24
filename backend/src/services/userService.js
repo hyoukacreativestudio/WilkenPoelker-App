@@ -150,6 +150,15 @@ async function changeUserRole(targetId, newRole, adminUser, { User, AuditLog }, 
   if (previousRole === newRole) {
     throw new AppError('User already has this role', 400, 'SAME_ROLE');
   }
+  // Nobody changes their own role, and only a super admin grants or takes away
+  // the super admin role (an admin could otherwise make any account, their
+  // own included, a permanent super admin).
+  if (target.id === adminUser.id) {
+    throw new AppError('Die eigene Rolle kann nicht geändert werden.', 403, 'OWN_ROLE');
+  }
+  if ((newRole === 'super_admin' || previousRole === 'super_admin') && adminUser.role !== 'super_admin') {
+    throw new AppError('Nur ein Super-Admin kann diese Rolle vergeben oder entziehen.', 403, 'SUPER_ADMIN_ONLY');
+  }
 
   await target.update({ role: newRole });
 

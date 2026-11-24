@@ -108,10 +108,14 @@ async function getRepairStatus(repairId, userId, userRole, models) {
   const { Repair } = models;
 
   const repair = await Repair.findByPk(repairId, {
-    attributes: ['id', 'repairNumber', 'status', 'statusHistory', 'estimatedCompletion', 'updatedAt'],
+    attributes: ['id', 'userId', 'repairNumber', 'status', 'statusHistory', 'estimatedCompletion', 'updatedAt'],
   });
 
   if (!repair) {
+    throw new NotFoundError('Repair');
+  }
+  // Customers only see their own repairs, with the same hidden statuses as the list
+  if (userRole === 'customer' && (repair.userId !== userId || !CUSTOMER_STATUSES.includes(repair.status))) {
     throw new NotFoundError('Repair');
   }
 
