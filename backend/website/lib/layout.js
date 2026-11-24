@@ -17,6 +17,7 @@ const MENU = [
   ['home', '/', 'Startseite', 'home'],
   ['produkte', '/produkte/', 'Produkte', 'grid'],
   ['angebote', '/angebote.html', 'Angebote', 'tag'],
+  ['merkzettel', '/merkzettel.html', 'Merkzettel', 'bookmark'],
   ['fahrraeder', '/fahrraeder.html', 'Fahrräder und E-Bikes', 'bike'],
   ['leasing', '/e-bike-leasing.html', 'E-Bike-Leasing', 'euro'],
   ['service', '/service.html', 'Werkstatt und Service', 'wrench'],
@@ -42,7 +43,8 @@ function header(ctx, nav) {
 ${links}
 </nav>
 <div class="top-tools">
-<a class="status" href="/kontakt.html#oeffnungszeiten" data-status><span class="dot"></span><span data-status-text>Öffnungszeiten</span></a>
+<a class="status" href="/kontakt.html#oeffnungszeiten" data-status data-status-short><span class="dot"></span><span data-status-text>Öffnungszeiten</span></a>
+<a class="icon-btn merk-link" href="/merkzettel.html" data-merk-link hidden aria-label="Merkzettel">${icon('bookmark')}<span class="merk-n" data-merk-n></span></a>
 <button class="icon-btn" type="button" data-open="search-sheet" aria-label="Produkte suchen">${icon('search')}</button>
 <button class="icon-btn theme-btn" type="button" data-theme-toggle aria-label="Zwischen hellem und dunklem Design wechseln">${icon('sun', 'sun')}${icon('moon', 'moon')}</button>
 <a class="btn btn-sm call-btn" href="${COMPANY.phoneHref}" aria-label="Anrufen: ${COMPANY.phone}">${icon('phone')}<span class="call-t">${COMPANY.phone}</span></a>
@@ -63,7 +65,7 @@ ${tab('kontakt', '/kontakt.html', 'Kontakt', 'pin')}
 }
 
 function sheets(ctx, nav) {
-  const items = MENU.map(([key, href, label, ic]) => `<li><a href="${href}"${nav === key ? ' aria-current="page"' : ''}>${icon(ic)}${label}</a></li>`).join('');
+  const items = MENU.map(([key, href, label, ic]) => `<li><a href="${href}"${nav === key ? ' aria-current="page"' : ''}>${icon(ic)}${label}${key === 'merkzettel' ? '<span class="merk-n" data-merk-n></span>' : ''}</a></li>`).join('');
   const chips = ctx.categories.map((c) => `<a class="chip" href="${c.url}">${esc(c.name)}</a>`).join('');
   return `<div class="sheet" id="menu-sheet" role="dialog" aria-modal="true" aria-labelledby="menu-title">
 <div class="sheet-card">
@@ -166,6 +168,8 @@ ${o.smartBanner ? `<meta name="apple-itunes-app" content="app-id=${COMPANY.apple
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="192x192" href="/assets/img/favicon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Wilken Poelker">
 <link rel="preconnect" href="${esc(ctx.apiPublic)}" crossorigin>
 <link rel="preload" href="/assets/fonts/HankenGrotesk-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/BricolageGrotesque-latin.woff2" as="font" type="font/woff2" crossorigin>

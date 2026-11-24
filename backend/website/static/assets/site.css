@@ -175,8 +175,8 @@ small{font-size:var(--fs-sm)}
 :root[data-theme=dark] .theme-btn .moon{display:block}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .theme-btn .sun{display:none}:root:not([data-theme=light]) .theme-btn .moon{display:block}}
 .call-btn{min-height:44px;padding:.5em 1em;white-space:nowrap}
-@media (max-width:1300px){.call-btn{width:44px;padding:0}.call-btn .call-t{display:none}}
-@media (max-width:1160px){.top-tools .status{display:none}.nav>a,.nav>.mega>button{padding-inline:10px}}
+@media (max-width:1380px){.call-btn{width:44px;padding:0}.call-btn .call-t{display:none}}
+@media (max-width:1240px){.top-tools .status{display:none}.nav>a,.nav>.mega>button{padding-inline:10px}}
 
 /* Live opening status (same wording as the app) */
 .status{display:inline-flex;align-items:center;gap:9px;padding:8px 14px 8px 12px;border-radius:999px;background:var(--surface-2);color:var(--ink);font-size:var(--fs-sm);font-weight:650;line-height:1.2;text-decoration:none;white-space:nowrap}
@@ -930,4 +930,58 @@ dialog.dlg::backdrop{background:var(--scrim)}
 html.vt-theme::view-transition-old(root),html.vt-theme::view-transition-new(root){animation:none;mix-blend-mode:normal}
 html.vt-theme .top,html.vt-theme .tabbar{view-transition-name:none}
 .bike-error{margin-top:16px}
-@media print{.top,.tabbar,.foot,.sheet,.btn,.map,.sign{display:none!important}body{background:#fff}.pano-photo{clip-path:none}}
+/* ── Merkzettel and comparison ───────────────────────── */
+.merk-link{position:relative}
+@media (max-width:360px){.brand img{width:136px}.top-tools{gap:2px}}
+.merk-n:empty{display:none}
+.merk-link .merk-n{position:absolute;top:3px;right:1px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--green);color:var(--on-accent);font:750 .7rem/18px var(--sans);text-align:center;font-variant-numeric:tabular-nums}
+.menu-list .merk-n{margin-left:auto;min-width:26px;padding:2px 8px;border-radius:999px;background:var(--surface-3);color:var(--ink);font-size:var(--fs-xs);text-align:center}
+.merk-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:10px 0 0 -.7em}
+.merk-btn[aria-pressed=true] .ic{fill:currentColor}
+.merk-go{font-size:var(--fs-sm);font-weight:700;color:var(--green-ink)}
+.merk-sec{padding-top:0}
+.merk-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding:14px 0;border-block:1px solid var(--line-2)}
+.merk-bar p{margin:0}
+.merk-tip,.merk-undo{margin:14px 0 0;color:var(--ink-2);font-size:var(--fs-sm)}
+.merk-undo{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.merk-empty .btns{justify-content:center;margin-top:18px}
+.merk-group{margin-top:clamp(36px,5vw,60px)}
+.merk-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;margin-bottom:14px}
+.merk-head h2{margin:0;font-size:var(--fs-h3)}
+.merk-head h2 small{margin-left:6px;color:var(--ink-3);font:650 var(--fs-sm)/1 var(--sans)}
+.cmp-diff{display:inline-flex;align-items:center;gap:9px;min-height:40px;font-size:var(--fs-sm);font-weight:650;cursor:pointer}
+.cmp-diff input{width:20px;height:20px;accent-color:var(--green)}
+.cmp-scroll{overflow-x:auto;border-radius:var(--r-lg);background:var(--surface-2);overscroll-behavior-x:contain}
+.cmp-scroll:focus-visible{outline:3px solid var(--green);outline-offset:3px}
+.cmp{width:100%;border-collapse:separate;border-spacing:0;font-size:var(--fs-sm)}
+.cmp th,.cmp td{padding:11px 16px;border-bottom:1px solid var(--line-2);text-align:left;vertical-align:top}
+.cmp thead th,.cmp thead td{padding-top:18px;border-bottom-color:var(--line);vertical-align:bottom}
+.cmp tbody tr:last-child>*{border-bottom:0}
+.cmp tbody th,.cmp .cmp-corner{position:sticky;left:0;z-index:1;width:9.5rem;min-width:7.5rem;max-width:12rem;background:var(--surface-2);color:var(--ink-3);font-weight:600;box-shadow:1px 0 0 var(--line-2)}
+.cmp td{min-width:9.5rem;font-weight:650}
+.cmp td.none{color:var(--ink-3);font-weight:400}
+.cmp.only-diff tr.same,.cmp.fold tr.solo{display:none}
+.cmp-all{margin:8px 0 0 -.7em}
+.cmp-p{display:grid;justify-items:start;gap:3px;min-width:9.5rem;max-width:15rem}
+.cmp-img{display:block;width:min(100%,150px);aspect-ratio:1;margin-bottom:8px;border-radius:var(--r-md);background:var(--plate);overflow:hidden}
+.cmp-img img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;padding:8%}
+.cmp-name{color:var(--ink);font-weight:700;line-height:1.3;text-decoration:none}
+.cmp-name:hover{color:var(--green-ink);text-decoration:underline}
+.cmp-p .pprice{padding-top:4px}
+.cmp-p .price{font-size:1.15rem}
+.cmp-p .avail{margin-top:0}
+.cmp-rm{margin:4px 0 0 -.7em}
+.merk-more{margin-top:14px}
+.merk-more summary{display:flex;align-items:center;gap:8px;min-height:44px;color:var(--green-ink);font-weight:700;cursor:pointer}
+.merk-more summary small{color:var(--ink-3);font-weight:600}
+.merk-more ul{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:8px;margin:6px 0 0;padding:0;list-style:none}
+.merk-more button{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:10px 14px;border:0;border-radius:var(--r-md);background:var(--surface);color:var(--ink);font:inherit;font-size:var(--fs-sm);text-align:left;cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--line)}
+.merk-more button:hover{box-shadow:inset 0 0 0 1.5px var(--green)}
+.merk-more button .ic{color:var(--green)}
+.merk-more button span{flex:1;min-width:0;font-weight:650;line-height:1.3}
+.merk-more button em{color:var(--ink-3);font-style:normal;font-weight:500}
+.merk-more button small{color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.merk-ask{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(24px,4vw,64px);align-items:start}
+@media (max-width:900px){.merk-ask{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){.cmp th,.cmp td{padding:10px 12px}.cmp tbody th,.cmp .cmp-corner{width:6.5rem;min-width:6.5rem}.cmp td,.cmp-p{min-width:8.5rem}}
+@media print{.top,.tabbar,.foot,.sheet,.btn,.map,.sign,.merk-more,.merk-row,[data-merk-ask],.cmp-diff{display:none!important}.cmp-scroll{overflow:visible}body{background:#fff}.pano-photo{clip-path:none}}

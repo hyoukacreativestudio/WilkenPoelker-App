@@ -342,6 +342,7 @@ ${meta.length ? `<ul class="pd-meta">${meta.map((m) => `<li>${esc(m)}</li>`).joi
 <p class="avail${v0.available ? ' yes' : ''}" data-avail>${v0.available ? 'Bei uns im Laden verfügbar' : 'Derzeit nicht vorrätig, wir bestellen gern für Sie'}</p>
 ${variants}
 <div class="btns"><button class="btn" type="button" data-dialog="inquiry">${icon('mail')}Anfrage senden</button><a class="btn btn-quiet" href="${COMPANY.phoneHref}">${icon('phone')}${COMPANY.phone}</a></div>
+<div class="merk-row"><button class="btn btn-ghost btn-sm merk-btn" type="button" data-merk="${esc(p.slug)}" data-merk-g="${esc(ctx.deviceSlug(p))}" aria-pressed="false">${icon('bookmark')}<span data-merk-label>Merken und vergleichen</span></button><a class="merk-go" href="/merkzettel.html" data-merk-go hidden>Zum Merkzettel</a></div>
 <p class="artnr" data-artnr-text>${v0.artNr ? `Art.-Nr. ${esc(v0.artNr)}` : ''}</p>
 <ul class="promise">
 <li>${icon('chat')}Persönliche Beratung</li>
@@ -388,4 +389,68 @@ ${rel.length ? `<section class="sec"><div class="wrap">
   });
 }
 
-module.exports = { overview, all, category, device, offersPage, brandsIndex, brandPage, productPage, recommended };
+// ── Merkzettel: comparison data and the page ────────
+// Rows of the comparison table: drive, battery system, the shop's own data of
+// the first available variant, then the manufacturer's data sheet (same label
+// only once; the explanations of the run-time rows are left out)
+const specKey = (k) => String(k).toLowerCase().replace(/[^a-z0-9äöüß]+/g, '');
+function compareRows(p) {
+  const vs = p.variants || [];
+  const v0 = vs[Math.max(0, vs.findIndex((v) => v.available))] || {};
+  const rows = [];
+  const seen = new Set();
+  const add = (k, v) => {
+    const key = specKey(k);
+    if (!key || v == null || v === '' || seen.has(key) || /^erkl(ä|ae)rung/.test(key)) return;
+    seen.add(key);
+    rows.push([k, String(v)]);
+  };
+  add('Antrieb', DRIVE[p.drive]);
+  if (p.batterySystem) add('Akku-System', `${p.batterySystem}-System`);
+  for (const [k, v] of mergeSpecs(v0.specs)) add(k, v);
+  for (const [k, v] of mergeSpecs(p.officialSpecs)) add(k, v);
+  return rows;
+}
+
+function compareItem(ctx, p) {
+  const img = ctx.productImages.get(p.slug)?.[0];
+  return {
+    s: p.slug, t: p.title, b: p.brand || '', p: p.price ?? null, m: (p.variants || []).length > 1 ? 1 : 0,
+    u: p.isOffer && p.uvp && p.price != null && p.uvp > p.price ? p.uvp : null, a: p.available ? 1 : 0, i: img ? img.small : '',
+    r: compareRows(p),
+  };
+}
+
+function wishlistPage(ctx) {
+  const body = `
+<section class="phead">
+<div class="wrap">
+${C.crumbs([['Start', '/'], ['Produkte', '/produkte/'], ['Merkzettel', '/merkzettel.html']])}
+<h1>Merkzettel</h1>
+<p class="lead">Sammeln Sie Geräte, die Sie interessieren, und vergleichen Sie Geräte derselben Art nebeneinander. Die Liste bleibt nur in diesem Browser. Mit einer Anfrage schicken Sie sie uns, und wir melden uns mit Verfügbarkeit und einer Empfehlung.</p>
+</div>
+</section>
+<section class="sec-tight merk-sec">
+<div class="wrap" data-merk-page aria-live="polite">
+<p class="muted" data-merk-loading>Merkzettel wird geladen …</p>
+<noscript><p>Für den Merkzettel wird JavaScript benötigt. Gern beraten wir Sie auch am Telefon: <a href="${COMPANY.phoneHref}">${COMPANY.phone}</a>.</p></noscript>
+</div>
+</section>
+<section class="sec band" id="anfrage" data-merk-ask hidden>
+<div class="wrap merk-ask">
+<div><h2>Fragen zu diesen Produkten?</h2><p class="lead">Schicken Sie uns Ihren Merkzettel. Ihre Liste kommt mit der Nachricht bei uns an, und wir melden uns mit Verfügbarkeit, Preisen und einer Empfehlung, gern auch telefonisch.</p></div>
+<div class="prose-card">${C.inquiryForm({ prefix: 'mz', topic: 'allgemein', submit: 'Merkzettel senden' })}</div>
+</div>
+</section>`;
+  return page(ctx, {
+    path: '/merkzettel.html',
+    nav: 'merkzettel',
+    title: 'Merkzettel und Vergleich | Wilken Poelker',
+    description: 'Gemerkte Produkte von Wilken Poelker nebeneinander vergleichen und gesammelt anfragen.',
+    scripts: ['assets/merkzettel.js'],
+    noindex: true,
+    body,
+  });
+}
+
+module.exports = { compareItem, wishlistPage, overview, all, category, device, offersPage, brandsIndex, brandPage, productPage, recommended };

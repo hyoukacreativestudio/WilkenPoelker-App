@@ -127,6 +127,7 @@ async function build(opts) {
     asset: (rel) => `/${rel}?v=${assetHash[rel] || '0'}`,
     products, productImages, categories, brands,
     brandSlug: (b) => slugify(b),
+    deviceSlug: (p) => slugify(p.device || p.main || 'Sonstiges'),
     hours: data.hours, closedDays: data.closedDays, team: data.team, news: data.news,
     images, businessImages, ogDefault: track.large,
   };
@@ -170,6 +171,7 @@ async function build(opts) {
   pageOut('datenschutz.html', legal.datenschutz(ctx), { priority: '0.2' });
   put('404.html', legal.notFound(ctx));
   put('sortiment.html', legal.forward(ctx, '/produkte/', 'Produkte'));
+  put('merkzettel.html', catalog.wishlistPage(ctx));
 
   // Pages of products that are no longer shown stay online as forwards
   // (bookmarks, search engines), so old prices never stay visible.
@@ -180,8 +182,43 @@ async function build(opts) {
   }
 
   // 6. Search index for the search sheet (all pages)
-  const search = products.map((p) => [p.slug, p.title, p.brand || '', p.device || '', p.price ?? null, p.available ? 1 : 0, productImages.get(p.slug)?.[0]?.small || '', p.variantCount > 1 ? 1 : 0]);
+  const search = products.map((p) => [p.slug, p.title, p.brand || '', p.device || '', p.price ?? null, p.available ? 1 : 0, productImages.get(p.slug)?.[0]?.small || '', p.variantCount > 1 ? 1 : 0, ctx.deviceSlug(p)]);
   put('produkte/suche.json', JSON.stringify({ v: 1, items: search }));
+
+  // Comparison data for the Merkzettel page: one file per device, so a
+  // comparison of chain saws loads only the chain saws
+  const byDevice = new Map();
+  for (const p of products) {
+    const g = ctx.deviceSlug(p);
+    if (!byDevice.has(g)) byDevice.set(g, { name: p.device || p.main || 'Sonstiges', items: [] });
+    byDevice.get(g).items.push(catalog.compareItem(ctx, p));
+  }
+  for (const [g, grp] of byDevice) put(`produkte/vergleich/${g}.json`, JSON.stringify({ v: 1, name: grp.name, items: grp.items }));
+
+  // Web app manifest: the website on the home screen of a phone
+  put('manifest.webmanifest', JSON.stringify({
+    name: 'Wilken Poelker',
+    short_name: 'Wilken Poelker',
+    description: 'Fahrräder, Motorgeräte und Reinigungstechnik mit Werkstatt in Ostrhauderfehn',
+    lang: 'de',
+    id: '/',
+    start_url: '/',
+    scope: '/',
+    display: 'standalone',
+    background_color: '#ffffff',
+    theme_color: '#ffffff',
+    icons: [
+      { src: '/assets/img/pwa-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/assets/img/pwa-512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/assets/img/pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+    shortcuts: [
+      { name: 'Produkte', url: '/produkte/' },
+      { name: 'Angebote', url: '/angebote.html' },
+      { name: 'Merkzettel', url: '/merkzettel.html' },
+      { name: 'Werkstatt', url: '/service.html' },
+    ],
+  }, null, 1));
 
   // 7. Sitemap (lastmod only changes when the page changes), robots, .htaccess
   const today = new Date().toISOString().slice(0, 10);
@@ -261,6 +298,7 @@ AddType image/webp .webp
 AddType font/woff2 .woff2
 AddType image/svg+xml .svg
 AddType application/json .json
+AddType application/manifest+json .webmanifest
 <Files "apple-app-site-association">
 ForceType application/json
 </Files>
@@ -285,7 +323,7 @@ Header set Cache-Control "public, max-age=2592000"
 <FilesMatch "(^|-)[0-9a-f]{8,}-[0-9]+\\.webp$">
 Header set Cache-Control "public, max-age=31536000, immutable"
 </FilesMatch>
-<FilesMatch "\\.json$">
+<FilesMatch "\\.(json|webmanifest)$">
 Header set Cache-Control "no-cache"
 </FilesMatch>
 </IfModule>

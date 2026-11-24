@@ -308,7 +308,9 @@
     $$('[data-status]').forEach(function (el) {
       el.setAttribute('data-state', open ? 'open' : 'closed');
       var t = $('[data-status-text]', el);
-      if (t) t.textContent = text;
+      // The header has little room: there only "Geschlossen", the full text as tooltip
+      if (t) t.textContent = !open && el.hasAttribute('data-status-short') ? 'Geschlossen' : text;
+      if (el.hasAttribute('data-status-short')) el.title = text;
     });
   }
   function todayLine(periods, name) {
@@ -567,6 +569,7 @@
       }
       data.topic = topic();
       data.pageUrl = location.pathname;
+      if (typeof form.wpExtra === 'function') form.wpExtra(data); // e.g. the list of the Merkzettel
       if (submit) { submit.disabled = true; submit.textContent = 'Wird gesendet …'; }
       fetch(API + '/api/shop/inquiries', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
         .then(function (res) {
@@ -731,5 +734,54 @@
     if (store.get(KEY) === '1') loadBikes();
   }
 
-  window.WP = { api: API, lightbox: lightbox, getJSON: getJSON, money: money, esc: esc, store: store };
+  /* ── Merkzettel (only in this browser) ────────────────── */
+  // [{ s: slug, g: device }] in the order the visitor added them
+  var merk = (function () {
+    var KEY = 'wp-merk';
+    var MAX = 24;
+    function read() {
+      try {
+        var l = JSON.parse(localStorage.getItem(KEY) || '[]');
+        return Array.isArray(l) ? l.filter(function (x) { return x && typeof x.s === 'string'; }) : [];
+      } catch (e) { return []; }
+    }
+    function write(list) {
+      try { localStorage.setItem(KEY, JSON.stringify(list.slice(-MAX))); } catch (e) { /* blocked */ }
+      sync();
+    }
+    function has(slug) { return read().some(function (x) { return x.s === slug; }); }
+    function toggle(slug, g) {
+      var l = read();
+      var at = l.findIndex(function (x) { return x.s === slug; });
+      if (at >= 0) l.splice(at, 1); else l.push({ s: slug, g: g || '' });
+      write(l);
+      return at < 0;
+    }
+    function sync() {
+      var list = read();
+      var n = list.length;
+      $$('[data-merk-link]').forEach(function (a) {
+        a.hidden = !n;
+        a.setAttribute('aria-label', n ? 'Merkzettel, ' + n + (n === 1 ? ' Produkt' : ' Produkte') : 'Merkzettel');
+      });
+      $$('[data-merk-n]').forEach(function (el) { el.textContent = n ? String(n) : ''; });
+      $$('[data-merk-go]').forEach(function (a) { a.hidden = !n; });
+      $$('button[data-merk]').forEach(function (b) {
+        var on = list.some(function (x) { return x.s === b.getAttribute('data-merk'); });
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        var label = $('[data-merk-label]', b);
+        if (label) label.textContent = on ? 'Gemerkt' : 'Merken und vergleichen';
+      });
+    }
+    d.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-merk]');
+      if (b) toggle(b.getAttribute('data-merk'), b.getAttribute('data-merk-g'));
+    });
+    // Same list in other tabs
+    window.addEventListener('storage', function (e) { if (e.key === KEY || e.key === null) sync(); });
+    sync();
+    return { read: read, write: write, has: has, toggle: toggle, sync: sync, max: MAX };
+  }());
+
+  window.WP = { api: API, lightbox: lightbox, getJSON: getJSON, money: money, esc: esc, store: store, merk: merk };
 }());
