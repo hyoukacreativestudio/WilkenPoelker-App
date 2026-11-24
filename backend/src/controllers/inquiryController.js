@@ -60,6 +60,8 @@ function productDepartment(product) {
   if (/mähroboter/i.test(`${product.device || ''} ${product.category || ''}`)) return 'robby';
   return 'motor';
 }
+// Sent from the English pages of the website (/en/...)
+const isEnglish = (inquiry) => /^\/en\//.test(inquiry.pageUrl || '');
 const topicLabel = (inquiry) => (inquiry.topic === 'produkt' || !inquiry.topic
   ? (inquiry.productTitle || 'Allgemeine Anfrage')
   : `${TOPICS[inquiry.topic] || 'Anfrage'}${inquiry.productTitle ? `: ${inquiry.productTitle}` : ''}`);
@@ -72,12 +74,13 @@ async function mailInquiry(inquiry) {
     ['Name', inquiry.name], ['E-Mail', inquiry.email], ['Telefon', inquiry.phone],
     ['Produkt', inquiry.productTitle], ['Art.-Nr.', inquiry.artNr], ['Nachricht', inquiry.message],
     ['Gesendet von', inquiry.pageUrl],
+    ['Sprache', isEnglish(inquiry) ? 'Englisch (von der englischen Website, bitte auf Englisch antworten)' : null],
   ].filter(([, v]) => v);
   const callback = inquiry.topic === 'rueckruf';
   await emailService.sendEmail({
     to: INQUIRY_MAILBOX(),
     ...(inquiry.email ? { replyTo: inquiry.email } : {}),
-    subject: `Website-${callback ? 'Rückrufbitte' : 'Anfrage'}: ${topicLabel(inquiry)}`.replace(/[\r\n]+/g, ' ').slice(0, 150),
+    subject: `Website-${callback ? 'Rückrufbitte' : 'Anfrage'}${isEnglish(inquiry) ? ' (Englisch)' : ''}: ${topicLabel(inquiry)}`.replace(/[\r\n]+/g, ' ').slice(0, 150),
     text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nDie Anfrage steht auch im PC-Programm unter "Anfragen". Keine Bestellung: wir liefern nur im Umkreis und versenden nichts.`,
     html: `<h2>${callback ? 'Rückrufbitte' : 'Neue Anfrage'} von der Website</h2><table cellpadding="4">${rows.map(([k, v]) => `<tr><td valign="top"><b>${k}</b></td><td style="white-space:pre-wrap">${escapeHtml(v)}</td></tr>`).join('')}</table><p>Die Anfrage steht auch im PC-Programm unter &bdquo;Anfragen&ldquo;.${inquiry.email ? ' Eine Antwort auf diese E-Mail geht direkt an den Kunden.' : ' Der Kunde bittet um einen Anruf.'}</p>`,
   });
@@ -120,7 +123,10 @@ const createWebInquiry = asyncHandler(async (req, res) => {
   const lastHour = await WebInquiry.count({ where: { createdAt: { [Op.gte]: new Date(Date.now() - 60 * 60 * 1000) } } });
   if (lastHour >= REJECT_AFTER) {
     logger.warn('Web inquiries: hourly ceiling reached, form closed for now', { lastHour });
-    return res.status(429).json({ success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut oder rufen Sie uns an: 04952 5304.' } });
+    const message = /^\/en\//.test(String(b.pageUrl || ''))
+      ? 'Too many inquiries right now. Please try again later or call us: +49 4952 5304.'
+      : 'Zu viele Anfragen. Bitte versuchen Sie es später erneut oder rufen Sie uns an: 04952 5304.';
+    return res.status(429).json({ success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message } });
   }
   const quiet = lastHour >= QUIET_AFTER;
 
@@ -157,7 +163,7 @@ const createWebInquiry = asyncHandler(async (req, res) => {
       userId: u.id,
       // "Anfrage von der Website" opens the Anfragen page in the PC program (Shell.jsx)
       title: topic === 'rueckruf' ? 'Rückrufbitte von der Website' : 'Neue Anfrage von der Website',
-      message: `${inquiry.name}: ${topicLabel(inquiry)}`,
+      message: `${inquiry.name}: ${topicLabel(inquiry)}${isEnglish(inquiry) ? ' (auf Englisch)' : ''}`,
       type: 'system',
       category: 'system',
       relatedId: inquiry.id,

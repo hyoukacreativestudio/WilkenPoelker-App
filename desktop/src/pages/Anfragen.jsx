@@ -18,7 +18,11 @@ const TOPIC_ICON = { produkt: '🛒', allgemein: '💬', werkstatt: '🛠️', e
 // Finished inquiries leave the list and wait under "Erledigt"
 const isDone = (r) => ['completed', 'cancelled', 'closed', 'done'].includes(r.status);
 const fmt = (d) => (d ? new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
-const mailto = (r) => `mailto:${r.email}?subject=${encodeURIComponent(`Ihre Anfrage bei Wilken Poelker${r.productTitle ? `: ${r.productTitle}` : ''}`)}`;
+// Sent from the English pages of the website (/en/...): the customer wrote in English
+const isEnglish = (r) => /^\/en\//.test(r.pageUrl || '');
+const mailto = (r) => `mailto:${r.email}?subject=${encodeURIComponent(isEnglish(r)
+  ? `Your inquiry at Wilken Poelker${r.productTitle ? `: ${r.productTitle}` : ''}`
+  : `Ihre Anfrage bei Wilken Poelker${r.productTitle ? `: ${r.productTitle}` : ''}`)}`;
 const telHref = (p) => `tel:${String(p || '').replace(/[^\d+]/g, '')}`;
 
 export default function Anfragen({ user }) {
@@ -136,6 +140,7 @@ export default function Anfragen({ user }) {
                     <span className="pill" style={callback ? { background: '#fff4e5', color: '#9a4a00', fontWeight: 600 } : undefined}>
                       {TOPIC_ICON[r.topic || 'produkt'] || '✉️'} {topicText(r)}
                     </span>
+                    {isEnglish(r) ? <div style={{ marginTop: 4 }}><span className="pill" title="Von der englischen Website gesendet">Englisch: bitte auf Englisch antworten</span></div> : null}
                     {seesApp && r.department ? <div className="muted" style={{ marginTop: 4 }}>{labels.departments[r.department] || r.department}</div> : null}
                   </td>
                   <td>

@@ -1,5 +1,7 @@
 // Fixed texts of the website. Facts only from the company's own pages
 // (old wilkenpoelker.de, wilpo.net) and the app; nothing invented.
+// The English texts are below (EN); txt() gives the set of the page language.
+const { L, isEn } = require('./i18n');
 
 const COMPANY = {
   name: 'Wilken Poelker',
@@ -9,17 +11,18 @@ const COMPANY = {
   city: 'Ostrhauderfehn',
   region: 'Niedersachsen',
   country: 'DE',
-  phone: '04952 5304',
+  // On the English pages the numbers are written for calls from abroad
+  get phone() { return L('04952 5304', '+49 4952 5304'); },
   phoneHref: 'tel:+4949525304',
   phoneLd: '+49 4952 5304',
-  fax: '04952 5096',
+  get fax() { return L('04952 5096', '+49 4952 5096'); },
   faxLd: '+49 4952 5096',
   email: 'info@wilkenpoelker.de',
   founded: 1951,
   founder: 'Wilken Poelker',
   employees: 40,
-  salesArea: '2.000\u00a0m²',
-  testTrack: '2.500\u00a0m²',
+  get salesArea() { return L('2.000\u00a0m²', '2,000\u00a0m²'); },
+  get testTrack() { return L('2.500\u00a0m²', '2,500\u00a0m²'); },
   facebook: 'https://www.facebook.com/WilkenPoelker/',
   instagram: 'https://www.instagram.com/wilkenpoelker/',
   appStore: 'https://apps.apple.com/de/app/wilken-poelker/id6832653097',
@@ -36,7 +39,7 @@ const MAPS = {
   route: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(MAPS_QUERY)}`,
   appleRoute: `https://maps.apple.com/?daddr=${encodeURIComponent(ADDRESS_LINE)}`,
   open: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAPS_QUERY)}`,
-  embed: `https://www.google.com/maps?q=${encodeURIComponent(MAPS_QUERY)}&hl=de&z=15&output=embed`,
+  get embed() { return `https://www.google.com/maps?q=${encodeURIComponent(MAPS_QUERY)}&hl=${isEn() ? 'en' : 'de'}&z=15&output=embed`; },
 };
 
 // The product categories of the app (MAIN_GROUPS in productGrouping.js) with
@@ -128,8 +131,6 @@ const DEVICE = {
   'Mountainbikes': 'Mountainbikes mit Beratung und Probefahrt.',
   'Zubehör & Sonstiges': 'Zubehör und Verbrauchsmaterial für Ihre Geräte.',
 };
-
-const DRIVE = { akku: 'Akku', benzin: 'Benzin', elektro: 'Elektro', diesel: 'Diesel', manuell: 'Ohne Motor' };
 
 // Short texts for brand pages (only well-known, verifiable facts)
 const BRAND = {
@@ -283,7 +284,178 @@ const OLD_CATEGORIES = {
   'automatische-bewaesserung': ['Hecke & Garten'],
 };
 
+// ── English ───────────────────────────────────────────
+const MAIN_TEXT_EN = {
+  'Sägen & Holz': {
+    title: 'Chainsaws, pole pruners and log splitters',
+    intro: 'For firewood, tree care and forestry: petrol and battery chainsaws, pole pruners for high branches, pruners and log splitters. We help you choose the right bar length, hand over your saw assembled and adjusted and show you how to use it safely, right on the saw. For chainsaws we are a QMF-certified specialist dealer.',
+  },
+  'Rasen & Wiese': {
+    title: 'Lawn mowers, robotic mowers and brushcutters',
+    intro: 'From the battery mower for a small garden to the brushcutter for the meadow. On request our robotic mower experts look at your property and look after your mower for many seasons. For lawn mowers, lawn tractors and brushcutters we are QMF-certified.',
+  },
+  'Hecke & Garten': {
+    title: 'Hedge trimmers, shredders and garden tools',
+    intro: 'Battery and petrol hedge trimmers, shredders for green waste, tillers, two-wheel tractors, sprayers and multi-tool systems with interchangeable attachments. We show you which tool suits your garden and keep spare and wear parts in stock.',
+  },
+  'Laub, Kehren & Winter': {
+    title: 'Leaf blowers, sweepers and snow blowers',
+    intro: 'Leaf blowers and leaf vacuums, sweepers and power brooms for yards and driveways, tools for removing weeds and snow blowers for the winter. For sweepers we are a QMF-certified specialist dealer.',
+  },
+  Reinigen: {
+    title: 'Pressure washers and vacuum cleaners',
+    intro: 'Pressure washers, wet and dry vacuum cleaners and cleaning machines for home, trade and business. As an authorised Kärcher dealer we carry the entire Kärcher range, with our own Kärcher workshop and a field service technician.',
+  },
+  'Bau & Werkstatt': {
+    title: 'Generators, cut-off saws and construction equipment',
+    intro: 'Cut-off saws, plate compactors, compressors, generators, pumps and earth augers for building sites, yards and workshops. We advise trade and private customers and take care of maintenance and repairs in our workshop.',
+  },
+  Fahrräder: {
+    title: 'E-bikes and bicycles',
+    intro: 'E-bikes and bicycles from our stock, with a test ride on our 2,500 m² test track and service in our own bicycle workshop. Our complete range of bicycles with sizes and equipment is in the bike catalogue.',
+  },
+  'Zubehör': {
+    title: 'Accessories',
+    intro: 'Accessories and consumables for your equipment. We order spare parts for you; our spare parts service will be glad to help.',
+  },
+};
+
+const DEVICE_TEXT_EN = {
+  'Motorsägen': 'Petrol and battery chainsaws for firewood, tree care and forestry.',
+  'Hochentaster': 'Pole pruners for branches high up, without a ladder.',
+  'Gehölzschneider & Astscheren': 'Battery pruning shears and pruners for fruit trees, hedges and shrubs.',
+  'Holzspalter': 'Log splitters for firewood, horizontal and vertical.',
+  'Rasenmäher & Balkenmäher': 'Petrol, battery and corded lawn mowers, and sickle bar mowers for long grass.',
+  'Mähroboter': 'Robotic mowers with advice and a site visit by our experts.',
+  'Rasentraktoren': 'Lawn tractors and ride-on mowers for large areas.',
+  'Rasentrimmer': 'Grass trimmers for edges, corners and small areas.',
+  'Freischneider & Motorsensen': 'Brushcutters and clearing saws for meadows, slopes and undergrowth.',
+  'Vertikutierer & Lüfter': 'Scarifiers and lawn aerators for a dense, healthy lawn.',
+  'Heckenscheren': 'Battery, petrol and corded hedge trimmers, also as long-reach hedge trimmers.',
+  'Häcksler': 'Shredders for green waste and branches.',
+  'Motorhacken & Bodenfräsen': 'Tillers and cultivators for flower beds and vegetable gardens.',
+  'Einachser': 'Two-wheel tractors with attachments for garden, yard and farm.',
+  'Spritzgeräte': 'Sprayers for plant protection and care.',
+  'Kombigeräte': 'Multi-tool systems with one motor and interchangeable attachments.',
+  'Laubbläser & Laubsauger': 'Battery and petrol leaf blowers and leaf vacuums.',
+  'Kehrmaschinen': 'Sweepers for yards, driveways and commercial areas.',
+  'Radialbesen': 'Power brooms for lawns, paving and artificial turf.',
+  'Wildkrautentfernung': 'Tools for removing weeds mechanically from paving and paths.',
+  'Schneefräsen & Räumschilder': 'Snow blowers and snow blades for clearing snow.',
+  'Hochdruckreiniger': 'Pressure washers for house, yard, vehicles and business.',
+  'Sauger': 'Wet and dry vacuum cleaners for workshop, home and business.',
+  'Boden- & Dampfreiniger': 'Floor cleaners and steam cleaners for home and business.',
+  'Trennschleifer': 'Cut-off saws for stone, concrete and metal.',
+  'Rüttelplatten': 'Plate compactors for paving and subsoil.',
+  'Kompressoren': 'Compressors for workshop and building site.',
+  'Stromerzeuger': 'Generators for building sites, leisure and emergency power.',
+  'Pumpen': 'Pumps for water, garden and building site.',
+  'Erdbohrer': 'Earth augers for posts, fences and planting holes.',
+  'E-Bikes': 'E-bikes with a test ride on our test track and service in our own bicycle workshop.',
+  'Mountainbikes': 'Mountain bikes with advice and a test ride.',
+  'Zubehör & Sonstiges': 'Accessories and consumables for your equipment.',
+};
+
+const BRAND_EN = {
+  STIHL: 'STIHL products are only sold through specialist dealers. With us you also get the advice, a ready-to-use handover with instruction and service in our power tool workshop.',
+  'Kärcher': 'As an authorised Kärcher dealer we carry the entire range, from pressure washers to scrubber dryers, with our own Kärcher workshop and a field service technician.',
+  Kalkhoff: 'Kalkhoff e-bikes with a test ride on our test track and service in our bicycle workshop.',
+};
+
+const SERVICES_EN = [
+  ['chat', 'Personal advice', 'Expert and honest. We take our time and find the right equipment with you, for private or professional use.'],
+  ['check', 'Ready-to-use handover', 'Your equipment is assembled, adjusted and handed over to you ready for use.'],
+  ['hand', 'Personal instruction', 'We show you how to operate, look after and safely handle it, right on the equipment.'],
+  ['truck', 'Pick-up and delivery service', 'On request we collect equipment for maintenance or repair and bring it back to you.'],
+  ['calendar', 'Maintenance and inspection', 'Regular care keeps your equipment running reliably and safely for a long time.'],
+  ['wrench', 'Repairs', 'Our workshops for bicycles, power tools and Kärcher repair quickly and professionally.'],
+  ['box', 'Spare parts stock', 'Many parts are in stock, we order everything else for you. We choose manufacturers whose parts will be available for a long time.'],
+  ['euro', 'Financing', 'Larger purchases can also be financed with us. Just ask us during your consultation.'],
+];
+
+const WORKSHOPS_EN = [
+  { id: 'zweirad', icon: 'bike', title: 'Bicycle workshop', text: 'Inspection, repair and maintenance of bicycles and e-bikes by bicycle mechatronics technicians and a master bicycle mechanic.', points: ['Inspection and wear parts', 'E-bike service', 'Own service reception'], departments: ['Werkstatt Zweirad'] },
+  { id: 'motorgeraete', icon: 'saw', title: 'Power tool workshop', text: 'Under its own management our workshop maintains and repairs lawn mowers, lawn tractors, chainsaws, brushcutters and more.', points: ['Maintenance before the season', 'Repairs and spare parts', 'QMF-certified'], departments: ['Werkstatt Motorgeraete'] },
+  { id: 'kaercher', icon: 'drop', title: 'Kärcher workshop', text: 'Service for pressure washers, vacuum cleaners and cleaning machines, with its own workshop management and a field service technician.', points: ['Maintenance and repair', 'Field service technician', 'Original spare parts'], departments: ['Kaercher'] },
+  { id: 'maehroboter', icon: 'robot', title: 'Robotic mowers', text: 'Our robotic mower experts advise you on your garden and look after your mower for many seasons.', points: ['Advice and site visit', 'Maintenance and inspection', 'Repairs'], departments: ['Maehroboter'] },
+];
+
+const REPAIR_STEPS_EN = [
+  ['Drop-off', 'You bring your equipment to us, or we collect it with our pick-up and delivery service.'],
+  ['Check and estimate', 'We look at the equipment and agree the scope of the work with you.'],
+  ['Spare parts', 'The parts needed come from our stock or are ordered for you.'],
+  ['Repair', 'Our specialist workshop repairs your equipment.'],
+  ['Ready for pick-up', 'You are told as soon as your equipment is ready, in the app even by push notification.'],
+];
+
+const LEASING_STEPS_EN = [
+  ['Ask your employer', 'Find out whether your employer offers bike leasing and through which provider.'],
+  ['Choose your bike', 'Get advice from us and take the bike you like for a test ride on our test track.'],
+  ['Paperwork', 'The next steps run through your employer and the leasing provider. We help you with them.'],
+  ['Handover and service', 'We hand over your bike ready to ride and take care of inspections and repairs.'],
+];
+
+const QMF_ITEMS_EN = ['Lawn mowers', 'Lawn tractors and ride-on mowers', 'Brushcutters and clearing saws', 'Chainsaws', 'Sweepers'];
+const KAERCHER_ITEMS_EN = ['Pressure washers', 'Wet and dry vacuum cleaners', 'Sweepers', 'Scrubber dryers', 'Cleaning agents'];
+
+const JOBS_EN = [
+  ['Sales assistant, power tools (m/f/d)', 'Advice and sales of garden, forestry and power equipment.'],
+  ['Power tool mechanic (m/f/d)', 'Maintenance and repair in our power tool workshop.'],
+  ['Bicycle mechanic (m/f/d)', 'Service for bicycles and e-bikes in our bicycle workshop.'],
+];
+
+const APP_FEATURES_EN = [
+  ['reparaturen', 'wrench', 'Repair status', 'See in the app which step your repair is at.'],
+  ['abholbereit', 'bell', 'Ready for pick-up', 'A push notification as soon as your equipment is ready.'],
+  ['termine', 'calendar', 'Request appointments', 'Delivery, inspection, repair or a site visit.'],
+  ['chat', 'chat', 'Service chat', 'Send an inquiry with a photo and get the answer straight from our team.'],
+  ['start', 'sparkle', 'News and offers', 'Promotions, new products and the current opening hours.'],
+];
+
+const TOPICS_EN = [
+  ['allgemein', 'General question'],
+  ['werkstatt', 'Workshop and repairs'],
+  ['ersatzteile', 'Spare parts'],
+  ['fahrrad', 'Bicycle, e-bike, leasing'],
+  ['kaercher', 'Kärcher and cleaning'],
+  ['maehroboter', 'Robotic mowers'],
+  ['rueckruf', 'Call back'],
+];
+
+function faqsEn(hoursText) {
+  return [
+    ['Can I order on this website?', 'No, we are not an online shop and do not ship goods. Advice and purchase take place in person at our shop in Ostrhauderfehn. You can send us a non-binding inquiry about a product, call us or write an email. On request we deliver within the region.'],
+    ['When are you open?', hoursText],
+    ['Can I try out equipment and e-bikes before buying?', 'Yes. On our outdoor test track of around 2,500 m² you can try equipment and bikes at your leisure. Our specialist advisers show you the differences right on the product.'],
+    ['Are prices and availability up to date?', 'Prices and availability come straight from our merchandise management system, just like in our app. All prices include VAT. If you want to be sure that an item is there for you, just give us a quick call.'],
+    ['Do you also repair and service after the purchase?', 'Of course. We have our own workshops for bicycles, power tools and Kärcher equipment and a large spare parts stock. On request we collect equipment with our pick-up and delivery service.'],
+    ['How do I know when my repair is ready?', 'With the Wilken Poelker app you can see the status of your repair and get a push notification as soon as your equipment is ready for pick-up. You can of course also call us on +49 4952 5304.'],
+    ['Do you offer e-bike leasing?', 'Yes, we work with JobRad, Lease a Bike, Bikeleasing, Businessbike and Eurorad / AGL. Ask your employer which provider it uses. We will be glad to explain the rest in person.'],
+    ['Are there financing options?', 'Yes, we offer financing. Just ask us about it during your consultation.'],
+  ];
+}
+
+const DE = {
+  MAIN, DEVICE, BRAND, SERVICES, WORKSHOPS, REPAIR_STEPS, LEASING_STEPS, QMF_ITEMS, KAERCHER_ITEMS, JOBS, APP_FEATURES, TOPICS, faqs,
+};
+const EN = {
+  MAIN: Object.fromEntries(Object.entries(MAIN).map(([k, v]) => [k, { ...v, ...(MAIN_TEXT_EN[k] || {}) }])),
+  DEVICE: DEVICE_TEXT_EN,
+  BRAND: BRAND_EN,
+  SERVICES: SERVICES_EN,
+  WORKSHOPS: WORKSHOPS_EN,
+  REPAIR_STEPS: REPAIR_STEPS_EN,
+  LEASING_STEPS: LEASING_STEPS_EN,
+  QMF_ITEMS: QMF_ITEMS_EN,
+  KAERCHER_ITEMS: KAERCHER_ITEMS_EN,
+  JOBS: JOBS_EN,
+  APP_FEATURES: APP_FEATURES_EN,
+  TOPICS: TOPICS_EN,
+  faqs: faqsEn,
+};
+// The texts of the language being built: const { SERVICES } = txt();
+const txt = () => (isEn() ? EN : DE);
+
 module.exports = {
-  COMPANY, ADDRESS_LINE, MAPS, MAIN, DEVICE, DRIVE, BRAND, SERVICES, WORKSHOPS, REPAIR_STEPS,
-  LEASING_PARTNERS, LEASING_STEPS, QMF_ITEMS, KAERCHER_ITEMS, JOBS, APP_FEATURES, TOPICS, faqs, OLD_PAGES, OLD_CATEGORIES,
+  COMPANY, ADDRESS_LINE, MAPS, MAIN, LEASING_PARTNERS, OLD_PAGES, OLD_CATEGORIES, txt,
 };

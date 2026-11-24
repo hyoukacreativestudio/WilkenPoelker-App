@@ -932,6 +932,13 @@ html.vt-theme .top,html.vt-theme .tabbar{view-transition-name:none}
 .bike-error{margin-top:16px}
 /* ── Merkzettel and comparison ───────────────────────── */
 .merk-link{position:relative}
+/* Language switch: header (globe + DE/EN), menu and footer */
+.lang-link{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 12px 0 10px;border-radius:999px;color:var(--ink);font-size:var(--fs-sm);font-weight:700;letter-spacing:.02em;text-decoration:none;transition:background-color .2s}
+.lang-link:hover{background:var(--surface-2)}
+.lang-link .ic{width:20px;height:20px}
+@media (max-width:520px){.top-tools .lang-link{display:none}}
+.lang-foot{display:inline-flex;align-items:center;gap:6px}
+.lang-foot .ic{width:16px;height:16px}
 @media (max-width:360px){.brand img{width:136px}.top-tools{gap:2px}}
 .merk-n:empty{display:none}
 .merk-link .merk-n{position:absolute;top:3px;right:1px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--green);color:var(--on-accent);font:750 .7rem/18px var(--sans);text-align:center;font-variant-numeric:tabular-nums}

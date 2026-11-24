@@ -45,6 +45,7 @@
 <symbol id="award" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5.6"/><path d="m8.6 13.6-1.4 7 4.8-2.6 4.8 2.6-1.4-7"/></symbol>
 <symbol id="bookmark" viewBox="0 0 24 24"><path d="M6.8 3.6h10.4a1 1 0 0 1 1 1v15.6L12 16.1l-6.2 4.1V4.6a1 1 0 0 1 1-1z"/></symbol>
 <symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-7.6-4.6-7.6-10.1A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.6 2.7C19.6 15.4 12 20 12 20z"/></symbol>
+<symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.8"/><path d="M3.4 12h17.2M12 3.2c2.4 2.4 3.6 5.4 3.6 8.8s-1.2 6.4-3.6 8.8c-2.4-2.4-3.6-5.4-3.6-8.8s1.2-6.4 3.6-8.8z"/></symbol>
 <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.8"/><path d="M12 11v5.6M12 7.6v.2"/></symbol>
 <symbol id="tag" viewBox="0 0 24 24"><path d="M3.6 12.2V4.6a1 1 0 0 1 1-1h7.6l8.3 8.3a1.4 1.4 0 0 1 0 2l-6.6 6.6a1.4 1.4 0 0 1-2 0z"/><circle cx="8" cy="8" r="1.4"/></symbol>
 <symbol id="zoom" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6M11 8v6M8 11h6"/></symbol>

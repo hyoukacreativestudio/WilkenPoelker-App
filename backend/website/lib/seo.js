@@ -1,5 +1,6 @@
 // Structured data (schema.org JSON-LD) for search engines
 const { COMPANY, MAPS } = require('./content');
+const { L, mainName, deviceName } = require('./i18n');
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const businessId = (ctx) => `${ctx.base}/#betrieb`;
@@ -34,7 +35,8 @@ function business(ctx) {
     '@id': businessId(ctx),
     name: COMPANY.name,
     legalName: COMPANY.legalName,
-    description: 'Familienbetrieb seit 1951 in Ostrhauderfehn: E-Bikes und Fahrräder, Motor- und Gartengeräte, Reinigungstechnik als autorisierter Kärcher-Händler, eigene Werkstätten, Ersatzteillager und 2.500\u00a0m² Teststrecke.',
+    description: L('Familienbetrieb seit 1951 in Ostrhauderfehn: E-Bikes und Fahrräder, Motor- und Gartengeräte, Reinigungstechnik als autorisierter Kärcher-Händler, eigene Werkstätten, Ersatzteillager und 2.500\u00a0m² Teststrecke.',
+      'Family business in Ostrhauderfehn since 1951: e-bikes and bicycles, power and garden tools, cleaning equipment as an authorised Kärcher dealer, our own workshops, a spare parts stock and a 2,500\u00a0m² test track.'),
     url: `${ctx.base}/`,
     logo: `${ctx.base}/assets/img/logo.png`,
     image: ctx.businessImages.map((p) => abs(ctx, p)),
@@ -70,7 +72,7 @@ function website(ctx) {
     url: `${ctx.base}/`,
     name: 'Wilken Poelker',
     alternateName: ['Wilken Poelker GmbH & Co. KG', 'Wilken Poelker Ostrhauderfehn'],
-    inLanguage: 'de-DE',
+    inLanguage: ['de-DE', 'en-GB'],
     publisher: { '@id': businessId(ctx) },
   };
 }
@@ -131,7 +133,7 @@ function product(ctx, p, images, description) {
     sku: p.variants?.[0]?.artNr,
     brand: p.brand ? { '@type': 'Brand', name: p.brand } : undefined,
     model: p.model || undefined,
-    category: [p.main, p.device].filter(Boolean).join(' > '),
+    category: [p.main && mainName(p.main), p.device && deviceName(p.device)].filter(Boolean).join(' > '),
     offers,
   };
 }

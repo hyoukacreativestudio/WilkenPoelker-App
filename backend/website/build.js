@@ -19,6 +19,7 @@ const { loadAll } = require('./lib/data');
 const { createImages } = require('./lib/images');
 const { writeFile, hash, slugify, json } = require('./lib/util');
 const { MAIN, OLD_PAGES, OLD_CATEGORIES, COMPANY } = require('./lib/content');
+const { setLang, L, MAIN_EN, DEVICE_EN, mainName, deviceName } = require('./lib/i18n');
 const homePages = require('./lib/pages/home');
 const catalog = require('./lib/pages/catalog');
 const info = require('./lib/pages/info');
@@ -104,12 +105,16 @@ async function build(opts) {
     const devCount = new Map();
     for (const p of list) if (p.device) devCount.set(p.device, (devCount.get(p.device) || 0) + 1);
     const devices = [...devCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'de'))
-      .map(([dname, count]) => ({ name: dname, slug: slugify(dname), count, url: `/produkte/${slug}/${slugify(dname)}.html` }));
+      .map(([dname, count]) => ({
+        name: dname, slug: slugify(dname), slugEn: slugify(DEVICE_EN[dname] || dname), count, url: `/produkte/${slug}/${slugify(dname)}.html`,
+        get label() { return deviceName(dname); },
+      }));
     const pick = [...list].sort(catalog.recommended).find((p) => p.available && productImages.get(p.slug)?.length)
       || list.find((p) => productImages.get(p.slug)?.length);
     return {
-      name, slug, url: `/produkte/${slug}/`, count: list.length, icon: (MAIN[name] || {}).icon || 'box', devices,
+      name, slug, slugEn: slugify(MAIN_EN[name] || name), url: `/produkte/${slug}/`, count: list.length, icon: (MAIN[name] || {}).icon || 'box', devices,
       image: pick ? productImages.get(pick.slug)[0] : null,
+      get label() { return mainName(name); },
     };
   });
 
@@ -117,6 +122,48 @@ async function build(opts) {
   for (const p of products) if (p.brand) brandCount.set(p.brand, (brandCount.get(p.brand) || 0) + 1);
   const brands = [...brandCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'de'))
     .map(([name, count]) => ({ name, count, slug: slugify(name), url: `/marken/${slugify(name)}.html` }));
+
+  // German page -> English page. The templates link German addresses; the
+  // English pass maps them (localize). Files: rel paths, links: URL paths.
+  const EN_FILES = {
+    'index.html': 'en/index.html',
+    'produkte/index.html': 'en/products/index.html',
+    'produkte/alle.html': 'en/products/all.html',
+    'angebote.html': 'en/offers.html',
+    'merkzettel.html': 'en/wishlist.html',
+    'marken/index.html': 'en/brands/index.html',
+    'fahrraeder.html': 'en/bikes.html',
+    'e-bike-leasing.html': 'en/e-bike-leasing.html',
+    'service.html': 'en/service.html',
+    'ueber-uns.html': 'en/about-us.html',
+    'karriere.html': 'en/careers.html',
+    'app.html': 'en/app.html',
+    'kontakt.html': 'en/contact.html',
+    'impressum.html': 'en/legal-notice.html',
+    'datenschutz.html': 'en/privacy.html',
+    'barrierefreiheit.html': 'en/accessibility.html',
+    '404.html': 'en/404.html',
+  };
+  for (const c of categories) {
+    EN_FILES[`produkte/${c.slug}/index.html`] = `en/products/${c.slugEn}/index.html`;
+    // A category with one device has no device page (German: a forward)
+    if (c.devices.length > 1) for (const d of c.devices) EN_FILES[`produkte/${c.slug}/${d.slug}.html`] = `en/products/${c.slugEn}/${d.slugEn}.html`;
+  }
+  for (const b of brands) EN_FILES[`marken/${b.slug}.html`] = `en/brands/${b.slug}.html`;
+  for (const p of products) EN_FILES[`produkte/p/${p.slug}.html`] = `en/products/p/${p.slug}.html`;
+  if (new Set(Object.values(EN_FILES)).size !== Object.keys(EN_FILES).length) throw new Error('Englische Adressen doppelt vergeben');
+  const urlPath = (rel) => `/${rel.replace(/index\.html$/, '')}`;
+  const PATHS = new Map(Object.entries(EN_FILES).map(([de, en]) => [urlPath(de), urlPath(en)]));
+  for (const c of categories) if (c.devices.length === 1) PATHS.set(c.devices[0].url, urlPath(EN_FILES[`produkte/${c.slug}/index.html`]));
+  const toEn = (p) => PATHS.get(p) || p;
+  const reEsc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // href="/kontakt.html?thema=x#y" and absolute addresses (JSON-LD, og:url)
+  const hrefRe = /(href|data-href)="(\/[^"#?]*)([#?][^"]*)?"/g;
+  // (an address with #, like the @id of the business, is the same in both languages)
+  const absRe = new RegExp(`${reEsc(base)}(/[^"\\s<>#?]*)(#?)`, 'g');
+  const localize = (html) => html
+    .replace(hrefRe, (m, attr, p, rest = '') => (PATHS.has(p) ? `${attr}="${PATHS.get(p)}${rest}"` : m))
+    .replace(absRe, (m, p, h) => (!h && PATHS.has(p) ? base + PATHS.get(p) : m));
 
   // Pictures for the business in search results and the default share picture
   const track = await images.photo('outdoor4');
@@ -130,95 +177,111 @@ async function build(opts) {
     deviceSlug: (p) => slugify(p.device || p.main || 'Sonstiges'),
     hours: data.hours, closedDays: data.closedDays, team: data.team, news: data.news,
     images, businessImages, ogDefault: track.large,
+    toEn, localize,
   };
 
-  // 5. Pages
+  // 5. Pages, first German, then English (same templates, setLang)
   const sitemap = [];
+  const deRelOf = new Map(Object.entries(EN_FILES).map(([de, en]) => [en, de]));
   const pageOut = (rel, html, { images: imgs = [], priority, index = true } = {}) => {
     put(rel, html);
     if (index) sitemap.push({ rel, images: imgs, priority });
   };
-  const urlPath = (rel) => `/${rel.replace(/index\.html$/, '')}`;
-
-  pageOut('index.html', await homePages.home(ctx), { priority: '1.0' });
-  pageOut('produkte/index.html', catalog.overview(ctx), { priority: '0.9' });
-  pageOut('produkte/alle.html', catalog.all(ctx), { priority: '0.6' });
-  for (const c of categories) {
-    pageOut(`produkte/${c.slug}/index.html`, await catalog.category(ctx, c), { priority: '0.8' });
-    if (c.devices.length > 1) {
-      for (const d of c.devices) pageOut(`produkte/${c.slug}/${d.slug}.html`, catalog.device(ctx, c, d), { priority: '0.7' });
-    } else if (c.devices.length === 1) {
-      // Only one device in the category: its page would duplicate the category
-      const d = c.devices[0];
-      put(`produkte/${c.slug}/${d.slug}.html`, legal.forward(ctx, c.url, d.name));
-    }
-  }
-  for (const p of products) {
-    const imgs = (productImages.get(p.slug) || []).map((im) => im.big);
-    pageOut(`produkte/p/${p.slug}.html`, catalog.productPage(ctx, p), { images: imgs, priority: '0.6' });
-  }
-  pageOut('angebote.html', catalog.offersPage(ctx), { priority: '0.8' });
-  pageOut('marken/index.html', catalog.brandsIndex(ctx), { priority: '0.5' });
-  for (const b of brands) pageOut(`marken/${b.slug}.html`, catalog.brandPage(ctx, b), { priority: '0.5' });
-  pageOut('fahrraeder.html', await info.bikes(ctx), { priority: '0.8' });
-  pageOut('e-bike-leasing.html', await info.leasing(ctx), { priority: '0.7' });
-  pageOut('service.html', await info.service(ctx), { priority: '0.8' });
-  pageOut('ueber-uns.html', await info.about(ctx), { priority: '0.7' });
-  pageOut('karriere.html', await info.career(ctx), { priority: '0.5' });
-  pageOut('app.html', info.app(ctx), { priority: '0.6' });
-  pageOut('kontakt.html', info.contact(ctx), { priority: '0.8' });
-  pageOut('impressum.html', legal.impressum(ctx), { priority: '0.2' });
-  pageOut('datenschutz.html', legal.datenschutz(ctx), { priority: '0.2' });
-  put('404.html', legal.notFound(ctx));
-  put('sortiment.html', legal.forward(ctx, '/produkte/', 'Produkte'));
-  put('merkzettel.html', catalog.wishlistPage(ctx));
-
   // Pages of products that are no longer shown stay online as forwards
   // (bookmarks, search engines), so old prices never stay visible.
-  for (const rel of Object.keys(previous.files || {})) {
-    if (/^produkte\/p\/[^/]+\.html$/.test(rel) && !files.has(rel)) {
-      put(rel, legal.forward(ctx, '/produkte/', 'Produkte'));
+  const forwards = (prefix, overview) => {
+    const re = new RegExp(`^${prefix}/p/[^/]+\\.html$`);
+    for (const rel of Object.keys(previous.files || {})) {
+      if (re.test(rel) && !files.has(rel)) put(rel, legal.forward(ctx, overview, L('Produkte', 'Products')));
     }
+  };
+
+  for (const lng of ['de', 'en']) {
+    setLang(lng);
+    const R = (deRel) => (lng === 'en' ? EN_FILES[deRel] : deRel);
+    pageOut(R('index.html'), await homePages.home(ctx), { priority: '1.0' });
+    pageOut(R('produkte/index.html'), catalog.overview(ctx), { priority: '0.9' });
+    pageOut(R('produkte/alle.html'), catalog.all(ctx), { priority: '0.6' });
+    for (const c of categories) {
+      pageOut(R(`produkte/${c.slug}/index.html`), await catalog.category(ctx, c), { priority: '0.8' });
+      if (c.devices.length > 1) {
+        for (const d of c.devices) pageOut(R(`produkte/${c.slug}/${d.slug}.html`), catalog.device(ctx, c, d), { priority: '0.7' });
+      } else if (c.devices.length === 1 && lng === 'de') {
+        // Only one device in the category: its page would duplicate the category
+        const d = c.devices[0];
+        put(`produkte/${c.slug}/${d.slug}.html`, legal.forward(ctx, c.url, d.name));
+      }
+    }
+    for (const p of products) {
+      const imgs = (productImages.get(p.slug) || []).map((im) => im.big);
+      pageOut(R(`produkte/p/${p.slug}.html`), catalog.productPage(ctx, p), { images: imgs, priority: '0.6' });
+    }
+    pageOut(R('angebote.html'), catalog.offersPage(ctx), { priority: '0.8' });
+    pageOut(R('marken/index.html'), catalog.brandsIndex(ctx), { priority: '0.5' });
+    for (const b of brands) pageOut(R(`marken/${b.slug}.html`), catalog.brandPage(ctx, b), { priority: '0.5' });
+    pageOut(R('fahrraeder.html'), await info.bikes(ctx), { priority: '0.8' });
+    pageOut(R('e-bike-leasing.html'), await info.leasing(ctx), { priority: '0.7' });
+    pageOut(R('service.html'), await info.service(ctx), { priority: '0.8' });
+    pageOut(R('ueber-uns.html'), await info.about(ctx), { priority: '0.7' });
+    pageOut(R('karriere.html'), await info.career(ctx), { priority: '0.5' });
+    pageOut(R('app.html'), info.app(ctx), { priority: '0.6' });
+    pageOut(R('kontakt.html'), info.contact(ctx), { priority: '0.8' });
+    pageOut(R('impressum.html'), legal.impressum(ctx), { priority: '0.2' });
+    pageOut(R('datenschutz.html'), legal.datenschutz(ctx), { priority: '0.2' });
+    pageOut(R('barrierefreiheit.html'), legal.barrierefreiheit(ctx), { priority: '0.2' });
+    put(R('404.html'), legal.notFound(ctx));
+    put(R('merkzettel.html'), catalog.wishlistPage(ctx));
+    if (lng === 'de') put('sortiment.html', legal.forward(ctx, '/produkte/', 'Produkte'));
+    forwards(lng === 'en' ? 'en/products' : 'produkte', lng === 'en' ? '/en/products/' : '/produkte/');
+
+    // 6. Search index for the search sheet (all pages). English: the English
+    // device name for the list, the German one at the end for matching.
+    const search = products.map((p) => {
+      const row = [p.slug, p.title, p.brand || '', p.device ? deviceName(p.device) : '', p.price ?? null, p.available ? 1 : 0, productImages.get(p.slug)?.[0]?.small || '', p.variantCount > 1 ? 1 : 0, ctx.deviceSlug(p)];
+      if (lng === 'en') row.push(p.device || '');
+      return row;
+    });
+    put(lng === 'en' ? 'en/products/search.json' : 'produkte/suche.json', JSON.stringify({ v: 1, items: search }));
+
+    // Comparison data for the Merkzettel page: one file per device, so a
+    // comparison of chain saws loads only the chain saws. The device slug
+    // (German) is the same in both languages: one Merkzettel for both.
+    const byDevice = new Map();
+    for (const p of products) {
+      const g = ctx.deviceSlug(p);
+      if (!byDevice.has(g)) byDevice.set(g, { name: p.device ? deviceName(p.device) : (p.main ? mainName(p.main) : L('Sonstiges', 'Other')), items: [] });
+      byDevice.get(g).items.push(catalog.compareItem(ctx, p));
+    }
+    for (const [g, grp] of byDevice) put(`${lng === 'en' ? 'en/products/compare' : 'produkte/vergleich'}/${g}.json`, JSON.stringify({ v: 1, name: grp.name, items: grp.items }));
+
+    // Web app manifest: the website on the home screen of a phone
+    const home = lng === 'en' ? '/en/' : '/';
+    const u = (dePath) => (lng === 'en' ? toEn(dePath) : dePath);
+    put(lng === 'en' ? 'en/manifest.webmanifest' : 'manifest.webmanifest', JSON.stringify({
+      name: 'Wilken Poelker',
+      short_name: 'Wilken Poelker',
+      description: L('Fahrräder, Motorgeräte und Reinigungstechnik mit Werkstatt in Ostrhauderfehn', 'Bicycles, power tools and cleaning equipment with our own workshops in Ostrhauderfehn'),
+      lang: lng,
+      id: home,
+      start_url: home,
+      scope: '/',
+      display: 'standalone',
+      background_color: '#ffffff',
+      theme_color: '#ffffff',
+      icons: [
+        { src: '/assets/img/pwa-192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/assets/img/pwa-512.png', sizes: '512x512', type: 'image/png' },
+        { src: '/assets/img/pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      ],
+      shortcuts: [
+        { name: L('Produkte', 'Products'), url: u('/produkte/') },
+        { name: L('Angebote', 'Offers'), url: u('/angebote.html') },
+        { name: L('Merkzettel', 'Wishlist'), url: u('/merkzettel.html') },
+        { name: L('Werkstatt', 'Workshop'), url: u('/service.html') },
+      ],
+    }, null, 1));
   }
-
-  // 6. Search index for the search sheet (all pages)
-  const search = products.map((p) => [p.slug, p.title, p.brand || '', p.device || '', p.price ?? null, p.available ? 1 : 0, productImages.get(p.slug)?.[0]?.small || '', p.variantCount > 1 ? 1 : 0, ctx.deviceSlug(p)]);
-  put('produkte/suche.json', JSON.stringify({ v: 1, items: search }));
-
-  // Comparison data for the Merkzettel page: one file per device, so a
-  // comparison of chain saws loads only the chain saws
-  const byDevice = new Map();
-  for (const p of products) {
-    const g = ctx.deviceSlug(p);
-    if (!byDevice.has(g)) byDevice.set(g, { name: p.device || p.main || 'Sonstiges', items: [] });
-    byDevice.get(g).items.push(catalog.compareItem(ctx, p));
-  }
-  for (const [g, grp] of byDevice) put(`produkte/vergleich/${g}.json`, JSON.stringify({ v: 1, name: grp.name, items: grp.items }));
-
-  // Web app manifest: the website on the home screen of a phone
-  put('manifest.webmanifest', JSON.stringify({
-    name: 'Wilken Poelker',
-    short_name: 'Wilken Poelker',
-    description: 'Fahrräder, Motorgeräte und Reinigungstechnik mit Werkstatt in Ostrhauderfehn',
-    lang: 'de',
-    id: '/',
-    start_url: '/',
-    scope: '/',
-    display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#ffffff',
-    icons: [
-      { src: '/assets/img/pwa-192.png', sizes: '192x192', type: 'image/png' },
-      { src: '/assets/img/pwa-512.png', sizes: '512x512', type: 'image/png' },
-      { src: '/assets/img/pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-    ],
-    shortcuts: [
-      { name: 'Produkte', url: '/produkte/' },
-      { name: 'Angebote', url: '/angebote.html' },
-      { name: 'Merkzettel', url: '/merkzettel.html' },
-      { name: 'Werkstatt', url: '/service.html' },
-    ],
-  }, null, 1));
+  setLang('de');
 
   // 7. Sitemap (lastmod only changes when the page changes), robots, .htaccess
   const today = new Date().toISOString().slice(0, 10);
@@ -228,13 +291,19 @@ async function build(opts) {
     const mod = prev && prev === files.get(s.rel) && previous.lastmod?.[s.rel] ? previous.lastmod[s.rel] : today;
     lastmod[s.rel] = mod;
     const imgs = s.images.slice(0, 10).map((src) => `<image:image><image:loc>${base}${src}</image:loc></image:image>`).join('');
-    return `<url><loc>${base}${urlPath(s.rel)}</loc><lastmod>${mod}</lastmod>${s.priority ? `<priority>${s.priority}</priority>` : ''}${imgs}</url>`;
+    // Both languages of the page (hreflang, as in the pages themselves)
+    const de = deRelOf.get(s.rel) || s.rel;
+    const en = EN_FILES[de];
+    const alt = en ? [['de', de], ['en', en], ['x-default', de]].map(([hl, rel]) => `<xhtml:link rel="alternate" hreflang="${hl}" href="${base}${urlPath(rel)}"/>`).join('') : '';
+    return `<url><loc>${base}${urlPath(s.rel)}</loc>${alt}<lastmod>${mod}</lastmod>${s.priority ? `<priority>${s.priority}</priority>` : ''}${imgs}</url>`;
   });
-  put('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls.join('\n')}\n</urlset>\n`);
+  put('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls.join('\n')}\n</urlset>\n`);
   put('robots.txt', mode === 'live'
-    ? `User-agent: *\nAllow: /\nDisallow: /produkte/suche.json\n\nSitemap: ${base}/sitemap.xml\n`
+    ? `User-agent: *\nAllow: /\nDisallow: /produkte/suche.json\nDisallow: /en/products/search.json\n\nSitemap: ${base}/sitemap.xml\n`
     : 'User-agent: *\nAllow: /\n# Testseite: alle Seiten sind mit noindex markiert\n');
   put('.htaccess', htaccess({ mode, base, categories, productRoot: [...files.keys()].filter((rel) => /^produkte\/[^/]+\.html$/.test(rel)) }));
+  // English 404 page for addresses below /en/ (own file there, no <If> needed)
+  put('en/.htaccess', '# Wilken Poelker – erzeugt von backend/website/build.js\nErrorDocument 404 /en/404.html\n');
   put('.well-known/apple-app-site-association', JSON.stringify({ webcredentials: { apps: ['H4F74FKLCG.com.hyoukacreativestudios.wilkenpoelker'] } }));
 
   // 8. Remove files of earlier builds that are no longer used (only files this

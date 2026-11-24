@@ -475,6 +475,16 @@ cron.schedule('50 3 * * *', async () => {
   }
 });
 
+// Log files: lines older than 14 days go (promised in the privacy policies).
+cron.schedule('5 4 * * *', () => {
+  try {
+    const r = logger.pruneLogs();
+    if (r.removed || r.trimmed) logger.info('Cron: old log lines deleted', r);
+  } catch (err) {
+    logger.error('Cron: log retention failed', { error: err.message });
+  }
+});
+
 // Delete AI chat histories after 90 days (promised in the app's privacy policy).
 cron.schedule('45 3 * * *', async () => {
   try {

@@ -7,7 +7,14 @@
   var d = document;
   var root = d.documentElement;
   var API = String(root.getAttribute('data-api') || 'https://api.wilkenpoelker.de').replace(/\/+$/, '');
-  var PHONE = '04952 5304';
+  // Language of the page (the English pages are below /en/)
+  var EN = root.lang === 'en';
+  function T(de, en) { return EN ? en : de; }
+  var LOCALE = T('de-DE', 'en-GB');
+  var PATHS = EN
+    ? { all: '/en/products/all.html', product: '/en/products/p/', search: '/en/products/search.json', compare: '/en/products/compare/', wishlist: '/en/wishlist.html' }
+    : { all: '/produkte/alle.html', product: '/produkte/p/', search: '/produkte/suche.json', compare: '/produkte/vergleich/', wishlist: '/merkzettel.html' };
+  var PHONE = T('04952 5304', '+49 4952 5304');
   var PHONE_HREF = 'tel:+4949525304';
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -23,28 +30,25 @@
     del: function (k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (e) { /* blocked */ } },
   };
   var money = (function () {
-    var f = window.Intl ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }) : null;
-    return function (v) { return v == null || v === '' ? '' : (f ? f.format(Number(v)) : Number(v).toFixed(2).replace('.', ',') + ' €'); };
+    var f = window.Intl ? new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'EUR' }) : null;
+    return function (v) { return v == null || v === '' ? '' : (f ? f.format(Number(v)) : (EN ? '€' + Number(v).toFixed(2) : Number(v).toFixed(2).replace('.', ',') + ' €')); };
   }());
+  function num(v, digits) { return Number(v).toLocaleString(LOCALE, digits == null ? undefined : { minimumFractionDigits: digits, maximumFractionDigits: digits }); }
 
-  // Small JSON cache for the session: the live data changes rarely, and a
-  // visitor clicking through ten pages needs only one request.
-  function getJSON(url, ttlSeconds) {
-    var key = 'wp-c:' + url;
-    if (ttlSeconds) {
-      try {
-        var hit = JSON.parse(sessionStorage.getItem(key) || 'null');
-        if (hit && Date.now() - hit.t < ttlSeconds * 1000) return Promise.resolve(hit.v);
-      } catch (e) { /* no cache */ }
+  // JSON from the app server. Nothing is kept in the browser's storage (only
+  // what the visitor chose goes there); the same address is fetched once per page.
+  var pending = {};
+  function getJSON(url) {
+    if (!pending[url]) {
+      pending[url] = fetch(url, { headers: { Accept: 'application/json' } }).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function (j) {
+        return j && Object.prototype.hasOwnProperty.call(j, 'data') ? j.data : j;
+      });
+      pending[url].catch(function () { delete pending[url]; });
     }
-    return fetch(url, { headers: { Accept: 'application/json' } }).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }).then(function (j) {
-      var v = j && Object.prototype.hasOwnProperty.call(j, 'data') ? j.data : j;
-      if (ttlSeconds) { try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), v: v })); } catch (e) { /* full */ } }
-      return v;
-    });
+    return pending[url];
   }
 
   /* ── Theme (light / dark) ─────────────────────────────── */
@@ -185,9 +189,10 @@
     function prepare() {
       if (!input) return null;
       if (!loading) {
-        loading = fetch('/produkte/suche.json').then(function (r) { return r.json(); }).then(function (j) {
+        loading = fetch(PATHS.search).then(function (r) { return r.json(); }).then(function (j) {
           items = j.items.map(function (it) {
-            var text = it[1] + ' ' + it[2] + ' ' + it[3];
+            // English index: the German device name at the end, so both find it
+            var text = it[1] + ' ' + it[2] + ' ' + it[3] + (it[9] ? ' ' + it[9] : '');
             return { slug: it[0], title: it[1], brand: it[2], device: it[3], price: it[4], avail: !!it[5], img: it[6], multi: !!it[7], hay: ' ' + norm(text).replace(/[^a-z0-9]+/g, ' '), t: tight(text), tt: tight(it[1]) };
           });
           run();
@@ -214,15 +219,16 @@
       box.innerHTML = list.map(function (it) {
         var pic = it.img ? '<img src="' + esc(it.img) + '" alt="" width="56" height="56" loading="lazy">' : '<span class="noimg"></span>';
         var meta = [it.brand, it.device].filter(Boolean).join(', ');
-        var price = it.price != null ? '<span class="pr">' + (it.multi ? 'ab ' : '') + esc(money(it.price)) + '</span>' : '';
-        return '<a href="/produkte/p/' + encodeURIComponent(it.slug) + '.html" role="option">' + pic + '<span><b>' + esc(it.title) + '</b><small>' + esc(meta) + (it.avail ? '' : ' (derzeit nicht vorrätig)') + '</small></span>' + price + '</a>';
+        var price = it.price != null ? '<span class="pr">' + (it.multi ? T('ab ', 'from ') : '') + esc(money(it.price)) + '</span>' : '';
+        return '<a href="' + PATHS.product + encodeURIComponent(it.slug) + '.html" role="option">' + pic + '<span><b>' + esc(it.title) + '</b><small>' + esc(meta) + (it.avail ? '' : T(' (derzeit nicht vorrätig)', ' (currently out of stock)')) + '</small></span>' + price + '</a>';
       }).join('');
       if (!hint) return;
       if (!q) { hint.innerHTML = hintDefault; return; }
-      var all = '/produkte/alle.html?q=' + encodeURIComponent(q);
+      var all = PATHS.all + '?q=' + encodeURIComponent(q);
+      var browse = T(' Oder stöbern Sie in einer Kategorie:', ' Or browse a category:');
       hint.innerHTML = total
-        ? (total > list.length ? '<a href="' + all + '">Alle ' + total + ' Treffer ansehen</a>' : (total === 1 ? '1 Treffer.' : total + ' Treffer.')) + ' Oder stöbern Sie in einer Kategorie:'
-        : 'Keine Treffer für „' + esc(q) + '“. Vieles bestellen wir für Sie: <a href="' + PHONE_HREF + '">' + PHONE + '</a>. Oder stöbern Sie in einer Kategorie:';
+        ? (total > list.length ? '<a href="' + all + '">' + T('Alle ' + total + ' Treffer ansehen', 'View all ' + total + ' results') + '</a>' : (total === 1 ? T('1 Treffer.', '1 result.') : total + T(' Treffer.', ' results.'))) + browse
+        : T('Keine Treffer für „' + esc(q) + '“. Vieles bestellen wir für Sie: ', 'No results for “' + esc(q) + '”. We can order a lot for you: ') + '<a href="' + PHONE_HREF + '">' + PHONE + '</a>.' + browse;
     }
     function run() {
       if (!input || !box) return;
@@ -252,7 +258,7 @@
           var links = $$('a', box);
           var q = input.value.trim();
           if (links.length) location.href = links[Math.max(sel, 0)].href;
-          else if (q) location.href = '/produkte/alle.html?q=' + encodeURIComponent(q);
+          else if (q) location.href = PATHS.all + '?q=' + encodeURIComponent(q);
         }
       });
     }
@@ -262,7 +268,10 @@
   /* ── Opening hours: live status ───────────────────────── */
   var hoursData = null;
   try { hoursData = JSON.parse(($('#hours-data') || {}).textContent || 'null'); } catch (e) { hoursData = null; }
-  var DAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+  var DAYS = EN ? ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    : ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+  // Holiday names come from the app server in German; English pages translate them
+  function holiday(n) { return EN && hoursData && hoursData.hn && hoursData.hn[String(n || '').trim()] || n; }
   function berlin(date) {
     var parts = {};
     new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
@@ -275,7 +284,9 @@
     return { iso: t.toISOString().slice(0, 10), dow: t.getUTCDay(), m: t.getUTCMonth() + 1 };
   }
   var toMin = function (s) { var p = String(s).split(':'); return +p[0] * 60 + +(p[1] || 0); };
-  var hhmm = function (s) { var p = String(s).split(':'); return String(+p[0]) + (p[1] && p[1] !== '00' ? ':' + p[1] : ''); };
+  // German "8 Uhr", "8:30 Uhr"; English "8:00", "8:30"
+  var hhmm = function (s) { var p = String(s).split(':'); var m = p[1] || '00'; return String(+p[0]) + (EN || m !== '00' ? ':' + m : ''); };
+  var uhr = function (s) { return EN ? s : s + ' Uhr'; };
   // Periods of a day: closed days first, then the season's week (winter = November to January)
   var todayOverride = null; // today's hours as the app server knows them (holidays)
   function periodsOn(day) {
@@ -300,22 +311,24 @@
     return null;
   }
   function closedText(next) {
-    if (!next) return 'Derzeit geschlossen';
+    if (!next) return T('Derzeit geschlossen', 'Currently closed');
+    if (EN) return 'Closed, opens ' + (next.inDays === 0 ? 'at' : (next.inDays === 1 ? 'tomorrow at' : DAYS[next.dow] + ' at')) + ' ' + hhmm(next.time);
     var when = next.inDays === 0 ? 'um' : (next.inDays === 1 ? 'morgen um' : DAYS[next.dow] + ' um');
     return 'Geschlossen, öffnet ' + when + ' ' + hhmm(next.time) + ' Uhr';
   }
+  function openText(until) { return T('Geöffnet bis ', 'Open until ') + uhr(hhmm(until)); }
   function setStatus(open, text) {
     $$('[data-status]').forEach(function (el) {
       el.setAttribute('data-state', open ? 'open' : 'closed');
       var t = $('[data-status-text]', el);
       // The header has little room: there only "Geschlossen", the full text as tooltip
-      if (t) t.textContent = !open && el.hasAttribute('data-status-short') ? 'Geschlossen' : text;
+      if (t) t.textContent = !open && el.hasAttribute('data-status-short') ? T('Geschlossen', 'Closed') : text;
       if (el.hasAttribute('data-status-short')) el.title = text;
     });
   }
   function todayLine(periods, name) {
-    if (!periods || !periods.length) return 'Heute geschlossen' + (name ? ' (' + name + ')' : '');
-    return 'Heute ' + periods.map(function (p) { return hhmm(p[0]) + '–' + hhmm(p[1]); }).join(' und ') + ' Uhr';
+    if (!periods || !periods.length) return T('Heute geschlossen', 'Closed today') + (name ? ' (' + holiday(name) + ')' : '');
+    return T('Heute ', 'Today ') + uhr(periods.map(function (p) { return hhmm(p[0]) + '–' + hhmm(p[1]); }).join(T(' und ', ' and ')));
   }
   function setToday(periods, name) {
     $$('[data-today-hours]').forEach(function (el) { el.textContent = todayLine(periods, name); });
@@ -359,7 +372,7 @@
     var now = berlin();
     var today = periodsOn(now);
     var current = (today.periods || []).filter(function (p) { return toMin(p[0]) <= now.min && now.min < toMin(p[1]); })[0];
-    if (current) setStatus(true, 'Geöffnet bis ' + hhmm(current[1]) + ' Uhr');
+    if (current) setStatus(true, openText(current[1]));
     else setStatus(false, closedText(nextOpening(now, now.min)));
     setToday(today.periods, today.name);
     drawToday(now, today.periods);
@@ -371,10 +384,10 @@
       var ul = $('ul', box);
       if (!ul) return;
       ul.innerHTML = list.map(function (c) {
-        var date = new Date(c.date + 'T12:00:00Z').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', timeZone: 'UTC' });
-        var hours = c.isClosed || !(c.specialHours || []).length ? 'geschlossen'
-          : c.specialHours.map(function (p) { return hhmm(p.open) + '–' + hhmm(p.close); }).join(', ') + ' Uhr';
-        return '<li><span>' + esc(c.name || 'Geschlossen') + ', ' + esc(date) + '</span><span>' + esc(hours) + '</span></li>';
+        var date = new Date(c.date + 'T12:00:00Z').toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'long', timeZone: 'UTC' });
+        var hours = c.isClosed || !(c.specialHours || []).length ? T('geschlossen', 'closed')
+          : uhr(c.specialHours.map(function (p) { return hhmm(p.open) + '–' + hhmm(p.close); }).join(', '));
+        return '<li><span>' + esc(c.name ? holiday(c.name) : T('Geschlossen', 'Closed')) + ', ' + esc(date) + '</span><span>' + esc(hours) + '</span></li>';
       }).join('');
       box.hidden = !list.length;
     });
@@ -385,16 +398,16 @@
     computeStatus();
     setInterval(computeStatus, 60000);
     // Fresh data from the app server (the same as in the app)
-    getJSON(API + '/api/settings/closed-days', 600).then(function (data) {
+    getJSON(API + '/api/settings/closed-days').then(function (data) {
       if (!data || !Array.isArray(data.days)) return;
       hoursData.closed = data.days.map(function (c) { return { date: c.date, name: c.name, c: !!c.isClosed, p: (c.specialHours || []).map(function (p) { return [p.open, p.close]; }) }; });
       renderClosedDays(data.days);
       computeStatus();
     }).catch(function () { /* the built data stays */ });
-    getJSON(API + '/api/settings/opening-hours/status', 120).then(function (s) {
+    getJSON(API + '/api/settings/opening-hours/status').then(function (s) {
       if (!s || typeof s.isOpen !== 'boolean') return;
       var now = berlin();
-      if (s.isOpen && s.currentPeriod) setStatus(true, 'Geöffnet bis ' + hhmm(s.currentPeriod.close) + ' Uhr');
+      if (s.isOpen && s.currentPeriod) setStatus(true, openText(s.currentPeriod.close));
       else if (!s.isOpen) {
         var n = s.nextOpen;
         var inDays = null;
@@ -498,6 +511,9 @@
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   var PHONE_RE = /^[+()\d][\d\s()/+-]{5,30}$/;
   var FIELD_NAMES = { name: 'name', email: 'email', phone: 'phone', message: 'message' };
+  var FIELD_TEXT = EN
+    ? { name: 'Please enter your name.', phone: 'Please enter a phone number on which we can reach you.', email: 'Please enter a valid e-mail address.', message: 'Your message is too long.' }
+    : { name: 'Bitte geben Sie Ihren Namen an.', phone: 'Bitte geben Sie eine Telefonnummer an, unter der wir Sie erreichen.', email: 'Bitte geben Sie eine gültige E-Mail-Adresse an.', message: 'Ihre Nachricht ist zu lang.' };
   $$('form[data-inquiry]').forEach(function (form) {
     var emailInput = $('[data-email-field] input', form);
     var optional = $('[data-email-optional]', form);
@@ -514,7 +530,7 @@
       var callback = topic() === 'rueckruf';
       if (emailInput) emailInput.required = !callback;
       if (optional) optional.hidden = !callback;
-      if (msgLabel) msgLabel.textContent = callback ? 'Wann passt es Ihnen, und worum geht es?' : msgDefault;
+      if (msgLabel) msgLabel.textContent = callback ? T('Wann passt es Ihnen, und worum geht es?', 'When suits you, and what is it about?') : msgDefault;
     }
     var wanted = new URLSearchParams(location.search).get('thema');
     if (wanted) {
@@ -547,8 +563,9 @@
       ok.setAttribute('role', 'status');
       ok.setAttribute('tabindex', '-1');
       ok.innerHTML = '<svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="25"/><path d="M17 29l7 7 15-16"/></svg>'
-        + '<h3>Vielen Dank, Ihre Nachricht ist angekommen.</h3>'
-        + '<p>' + (callback ? 'Wir rufen Sie so bald wie möglich zurück.' : 'Wir melden uns so bald wie möglich bei Ihnen.') + ' Wenn es eilt, erreichen Sie uns unter <a href="' + PHONE_HREF + '">' + PHONE + '</a>.</p>';
+        + '<h3>' + T('Vielen Dank, Ihre Nachricht ist angekommen.', 'Thank you, your message has arrived.') + '</h3>'
+        + '<p>' + (callback ? T('Wir rufen Sie so bald wie möglich zurück.', 'We will call you back as soon as possible.') : T('Wir melden uns so bald wie möglich bei Ihnen.', 'We will get back to you as soon as possible.'))
+        + T(' Wenn es eilt, erreichen Sie uns unter ', ' If it is urgent, call us on ') + '<a href="' + PHONE_HREF + '">' + PHONE + '</a>.</p>';
       form.replaceWith(ok);
       ok.focus({ preventScroll: true });
     }
@@ -562,26 +579,29 @@
       if (!PHONE_RE.test(data.phone || '')) bad.push('phone');
       if (emailInput && (emailInput.required || data.email) && !EMAIL_RE.test(data.email || '')) bad.push('email');
       if (bad.length) {
-        var text = bad.length > 1 ? 'Bitte prüfen Sie die markierten Felder.'
-          : { name: 'Bitte geben Sie Ihren Namen an.', phone: 'Bitte geben Sie eine Telefonnummer an, unter der wir Sie erreichen.', email: 'Bitte geben Sie eine gültige E-Mail-Adresse an.' }[bad[0]];
-        showErrors(bad, text);
+        showErrors(bad, bad.length > 1 ? T('Bitte prüfen Sie die markierten Felder.', 'Please check the marked fields.') : FIELD_TEXT[bad[0]]);
         return;
       }
       data.topic = topic();
-      data.pageUrl = location.pathname;
+      data.pageUrl = location.pathname; // /en/… tells the staff to answer in English
       if (typeof form.wpExtra === 'function') form.wpExtra(data); // e.g. the list of the Merkzettel
-      if (submit) { submit.disabled = true; submit.textContent = 'Wird gesendet …'; }
+      if (submit) { submit.disabled = true; submit.textContent = T('Wird gesendet …', 'Sending …'); }
       fetch(API + '/api/shop/inquiries', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
         .then(function (res) {
           return res.json().catch(function () { return {}; }).then(function (j) {
             if (res.ok) { done(); return; }
             var err = (j && j.error) || {};
             var fields = (err.details || []).map(function (x) { return FIELD_NAMES[x.field]; }).filter(Boolean);
-            var text = err.details && err.details[0] ? err.details[0].message : (err.message && res.status === 429 ? err.message : 'Ihre Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es noch einmal oder rufen Sie uns an: ' + PHONE + '.');
+            var failed = T('Ihre Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es noch einmal oder rufen Sie uns an: ', 'Your message could not be sent. Please try again or call us: ') + PHONE + '.';
+            var text;
+            if (res.status === 429) text = EN ? 'Too many inquiries right now. Please try again later or call us: ' + PHONE + '.' : (err.message || failed);
+            // The server's checks answer in German: the English pages use their own words
+            else if (fields.length) text = fields.length > 1 ? T('Bitte prüfen Sie die markierten Felder.', 'Please check the marked fields.') : (EN ? FIELD_TEXT[fields[0]] : err.details[0].message);
+            else text = failed;
             showErrors(fields, /[.!?]$/.test(text) ? text : text + '.');
           });
         })
-        .catch(function () { showErrors([], 'Ihre Nachricht konnte nicht gesendet werden. Bitte prüfen Sie Ihre Internetverbindung oder rufen Sie uns an: ' + PHONE + '.'); })
+        .catch(function () { showErrors([], T('Ihre Nachricht konnte nicht gesendet werden. Bitte prüfen Sie Ihre Internetverbindung oder rufen Sie uns an: ', 'Your message could not be sent. Please check your internet connection or call us: ') + PHONE + '.'); })
         .then(function () { if (submit && submit.isConnected) { submit.disabled = false; submit.innerHTML = submitHtml; } });
     });
   });
@@ -593,7 +613,19 @@
     var note = $('[data-reviews-note]', sec);
     var write = $('[data-reviews-write]', sec);
     var GM = '<span class="gmaps" translate="no">Google Maps</span>';
-    function stars(r) { var v = Math.max(0, Math.min(5, Number(r) || 0)); return '<span class="stars" style="--p:' + (v / 5 * 100).toFixed(1) + '%" role="img" aria-label="' + String(v).replace('.', ',') + ' von 5 Sternen"></span>'; }
+    function stars(r) { var v = Math.max(0, Math.min(5, Number(r) || 0)); return '<span class="stars" style="--p:' + (v / 5 * 100).toFixed(1) + '%" role="img" aria-label="' + T(String(v).replace('.', ',') + ' von 5 Sternen', v + ' out of 5 stars') + '"></span>'; }
+    // Google gives "vor 2 Monaten" in German: the English pages compute it from the date
+    var rtf = EN && window.Intl && Intl.RelativeTimeFormat ? new Intl.RelativeTimeFormat('en-GB', { numeric: 'auto' }) : null;
+    function when(v) {
+      var t = rtf && v.publishTime ? Date.parse(v.publishTime) : NaN;
+      if (isNaN(t)) return EN ? '' : (v.relativeTime || '');
+      var days = (t - Date.now()) / 86400000;
+      if (days > -1) return rtf.format(0, 'day');
+      if (days > -7) return rtf.format(Math.round(days), 'day');
+      if (days > -30) return rtf.format(Math.round(days / 7), 'week');
+      if (days > -365) return rtf.format(Math.round(days / 30.4), 'month');
+      return rtf.format(Math.round(days / 365.25), 'year');
+    }
     // Links from the API only if they are web addresses (never javascript: and the like)
     function web(u) { return /^https:\/\//i.test(String(u || '')) ? String(u) : ''; }
     function initials(n) { return String(n || '?').split(/\s+/).filter(Boolean).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase(); }
@@ -601,9 +633,11 @@
       var url = (links && web(links.reviewsUri || links.mapsUri)) || (write ? write.href : '#');
       var writeUrl = (links && web(links.writeAReviewUri)) || (write ? write.href : url);
       top.innerHTML = '<div class="rv-empty"><span class="rv-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons.svg#star"/></svg></span>'
-        + '<div class="rv-text"><b>Ihre Erfahrungen zählen</b><p>Lesen Sie, was unsere Kundinnen und Kunden über uns schreiben, direkt bei ' + GM + '. Und wenn Sie bei uns waren: Wir freuen uns über Ihre Bewertung.</p></div>'
-        + '<div class="btns"><a class="btn btn-sm" href="' + esc(url) + '" target="_blank" rel="noopener">Bewertungen ansehen</a>'
-        + '<a class="btn btn-quiet btn-sm" href="' + esc(writeUrl) + '" target="_blank" rel="noopener">Bewertung schreiben</a></div></div>';
+        + '<div class="rv-text"><b>' + T('Ihre Erfahrungen zählen', 'Your experience counts') + '</b><p>'
+        + T('Lesen Sie, was unsere Kundinnen und Kunden über uns schreiben, direkt bei ' + GM + '. Und wenn Sie bei uns waren: Wir freuen uns über Ihre Bewertung.',
+          'Read what our customers write about us, directly on ' + GM + '. And if you have been to our shop: we would be glad to receive your review.') + '</p></div>'
+        + '<div class="btns"><a class="btn btn-sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + T('Bewertungen ansehen', 'View reviews') + '</a>'
+        + '<a class="btn btn-quiet btn-sm" href="' + esc(writeUrl) + '" target="_blank" rel="noopener">' + T('Bewertung schreiben', 'Write a review') + '</a></div></div>';
       sec.classList.add('no-reviews');
       list.hidden = true;
       if (note) note.textContent = '';
@@ -612,21 +646,23 @@
       if (r && write && web(r.writeAReviewUri)) write.href = web(r.writeAReviewUri);
       if (!r || !r.available || !(r.reviews || []).length) { fallback(r); return; }
       var rating = Number(r.rating || 0);
-      top.innerHTML = '<div class="score"><b>' + rating.toFixed(1).replace('.', ',') + '</b><div>' + stars(rating) + '<br><small>' + Number(r.count || 0).toLocaleString('de-DE') + ' Bewertungen auf ' + GM + '</small></div></div>'
-        + (web(r.reviewsUri) ? '<a class="btn btn-quiet btn-sm" href="' + esc(web(r.reviewsUri)) + '" target="_blank" rel="noopener">Alle Bewertungen ansehen</a>' : '');
+      top.innerHTML = '<div class="score"><b>' + esc(num(rating, 1)) + '</b><div>' + stars(rating) + '<br><small>' + esc(num(Number(r.count || 0))) + T(' Bewertungen auf ', ' reviews on ') + GM + '</small></div></div>'
+        + (web(r.reviewsUri) ? '<a class="btn btn-quiet btn-sm" href="' + esc(web(r.reviewsUri)) + '" target="_blank" rel="noopener">' + T('Alle Bewertungen ansehen', 'View all reviews') + '</a>' : '');
       list.innerHTML = r.reviews.map(function (v) {
         var a = v.author || {};
         var photo = a.photo && (web(a.photo) || /^\/api\//.test(a.photo)) ? '<img src="' + esc(web(a.photo) || API + a.photo) + '" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" data-ini="' + esc(initials(a.name)) + '">' : '<span class="av" aria-hidden="true">' + esc(initials(a.name)) + '</span>';
         var name = web(a.uri) ? '<a href="' + esc(web(a.uri)) + '" target="_blank" rel="noopener nofollow">' + esc(a.name) + '</a>' : esc(a.name);
-        return '<article class="review"><div class="review-head">' + photo + '<span><b>' + name + '</b><small>' + esc(v.relativeTime || '') + '</small></span></div>'
-          + stars(v.rating) + '<p>' + esc(v.text || '') + '</p>'
-          + (web(v.googleMapsUri) ? '<span class="src"><a href="' + esc(web(v.googleMapsUri)) + '" target="_blank" rel="noopener nofollow">Bewertung auf ' + GM + ' ansehen</a></span>' : '<span class="src">' + GM + '</span>')
+        // The reviews come from Google in German (languageCode=de on the server)
+        return '<article class="review"><div class="review-head">' + photo + '<span><b>' + name + '</b><small>' + esc(when(v)) + '</small></span></div>'
+          + stars(v.rating) + '<p' + (EN ? ' lang="de"' : '') + '>' + esc(v.text || '') + '</p>'
+          + (web(v.googleMapsUri) ? '<span class="src"><a href="' + esc(web(v.googleMapsUri)) + '" target="_blank" rel="noopener nofollow">' + T('Bewertung auf ' + GM + ' ansehen', 'View review on ' + GM) + '</a></span>' : '<span class="src">' + GM + '</span>')
           + '</article>';
       }).join('');
       $$('img[data-ini]', list).forEach(function (img) {
         img.addEventListener('error', function () { var s = d.createElement('span'); s.className = 'av'; s.setAttribute('aria-hidden', 'true'); s.textContent = img.getAttribute('data-ini'); img.replaceWith(s); });
       });
-      if (note) note.textContent = 'Bis zu fünf Bewertungen, unverändert von Google übernommen und von Google nach Relevanz sortiert. Wir prüfen nicht, ob die Verfasser bei uns eingekauft haben.';
+      if (note) note.textContent = T('Bis zu fünf Bewertungen, unverändert von Google übernommen und von Google nach Relevanz sortiert. Wir prüfen nicht, ob die Verfasser bei uns eingekauft haben.',
+        'Up to five reviews, taken unchanged from Google and sorted by relevance by Google, in German as Google provides them. We do not check whether the authors have bought from us.');
     }
     var started = false;
     function load() {
@@ -651,7 +687,7 @@
       if (m.querySelector('iframe')) return;
       var f = d.createElement('iframe');
       f.src = m.getAttribute('data-embed');
-      f.title = 'Karte: Wilken Poelker, Langholter Straße 43, 26842 Ostrhauderfehn';
+      f.title = T('Karte', 'Map') + ': Wilken Poelker, Langholter Straße 43, 26842 Ostrhauderfehn';
       f.loading = 'lazy';
       f.referrerPolicy = 'strict-origin-when-cross-origin';
       f.setAttribute('allowfullscreen', '');
@@ -717,7 +753,7 @@
         gate.hidden = false;
         revoke.hidden = true;
         var p = $('.bike-error', gate) || gate.appendChild(Object.assign(d.createElement('p'), { className: 'form-msg bike-error' }));
-        p.textContent = 'Der Fahrradkatalog ist gerade nicht erreichbar. Bitte versuchen Sie es später noch einmal oder rufen Sie uns an: ' + PHONE + '.';
+        p.textContent = T('Der Fahrradkatalog ist gerade nicht erreichbar. Bitte versuchen Sie es später noch einmal oder rufen Sie uns an: ', 'The bicycle catalogue cannot be reached at the moment. Please try again later or call us: ') + PHONE + '.';
         s.remove();
       };
       d.body.appendChild(s);
@@ -764,7 +800,7 @@
       var n = list.length;
       $$('[data-merk-link]').forEach(function (a) {
         a.hidden = !n;
-        a.setAttribute('aria-label', n ? 'Merkzettel, ' + n + (n === 1 ? ' Produkt' : ' Produkte') : 'Merkzettel');
+        a.setAttribute('aria-label', EN ? (n ? 'Wishlist, ' + n + (n === 1 ? ' product' : ' products') : 'Wishlist') : (n ? 'Merkzettel, ' + n + (n === 1 ? ' Produkt' : ' Produkte') : 'Merkzettel'));
       });
       $$('[data-merk-n]').forEach(function (el) { el.textContent = n ? String(n) : ''; });
       $$('[data-merk-go]').forEach(function (a) { a.hidden = !n; });
@@ -772,7 +808,7 @@
         var on = list.some(function (x) { return x.s === b.getAttribute('data-merk'); });
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
         var label = $('[data-merk-label]', b);
-        if (label) label.textContent = on ? 'Gemerkt' : 'Merken und vergleichen';
+        if (label) label.textContent = on ? T('Gemerkt', 'Saved') : T('Merken und vergleichen', 'Save and compare');
       });
     }
     d.addEventListener('click', function (e) {
@@ -785,5 +821,5 @@
     return { read: read, write: write, has: has, toggle: toggle, sync: sync, max: MAX };
   }());
 
-  window.WP = { api: API, lightbox: lightbox, getJSON: getJSON, money: money, esc: esc, store: store, merk: merk };
+  window.WP = { api: API, lightbox: lightbox, getJSON: getJSON, money: money, num: num, esc: esc, store: store, merk: merk, en: EN, t: T, locale: LOCALE, paths: PATHS, phone: PHONE };
 }());

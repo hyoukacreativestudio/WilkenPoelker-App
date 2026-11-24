@@ -8,6 +8,8 @@
   var API = WP.api || String(d.documentElement.getAttribute('data-api') || 'https://api.wilkenpoelker.de').replace(/\/+$/, '');
   var esc = WP.esc || function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var money = WP.money || function (v) { return Number(v).toFixed(2).replace('.', ',') + ' €'; };
+  var EN = !!WP.en;
+  function T(de, en) { return EN ? en : de; }
   function $(sel, ctx) { return (ctx || d).querySelector(sel); }
   function $$(sel, ctx) { return Array.prototype.slice.call((ctx || d).querySelectorAll(sel)); }
   function norm(s) {
@@ -28,7 +30,8 @@
   }
 
   /* ── Product lists with filters ───────────────────────── */
-  var DRIVE = { akku: 'Akku', benzin: 'Benzin', elektro: 'Elektro', diesel: 'Diesel', manuell: 'Ohne Motor' };
+  var DRIVE = EN ? { akku: 'Battery', benzin: 'Petrol', elektro: 'Electric', diesel: 'Diesel', manuell: 'No motor' }
+    : { akku: 'Akku', benzin: 'Benzin', elektro: 'Elektro', diesel: 'Diesel', manuell: 'Ohne Motor' };
   var FACETS = [['main', 'kategorie'], ['cat', 'geraet'], ['drive', 'antrieb'], ['sys', 'system'], ['brand', 'marke']];
 
   $$('[data-shop]').forEach(function (shop) {
@@ -63,10 +66,10 @@
       if (!box) return;
       var counts = {};
       cards.forEach(function (c) { if (c[key]) counts[c[key]] = (counts[c[key]] || 0) + 1; });
-      var values = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || a.localeCompare(b, 'de'); });
+      var values = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || a.localeCompare(b, T('de', 'en')); });
       if (values.length < 2) { box.hidden = true; return; }
       $('.fchips', box).innerHTML = values.map(function (v) {
-        var label = key === 'drive' ? (DRIVE[v] || v) : (key === 'sys' ? v + '-System' : v);
+        var label = key === 'drive' ? (DRIVE[v] || v) : (key === 'sys' ? v + T('-System', ' system') : v);
         return '<button type="button" class="fchip" data-v="' + esc(v) + '" aria-pressed="false">' + esc(label) + ' <small></small></button>';
       }).join('');
       facetEls[key] = box;
@@ -90,7 +93,7 @@
       return true;
     }
 
-    function plural(n) { return n.toLocaleString('de-DE') + (n === 1 ? ' Produkt' : ' Produkte'); }
+    function plural(n) { return EN ? n.toLocaleString('en-GB') + (n === 1 ? ' product' : ' products') : n.toLocaleString('de-DE') + (n === 1 ? ' Produkt' : ' Produkte'); }
 
     function apply(push) {
       var shown = cards.filter(function (c) { return matches(c); });
@@ -111,7 +114,7 @@
       cards.forEach(function (c) { if (!set.has(c)) frag.appendChild(c.el); });
       grid.appendChild(frag);
       if (countEl) countEl.textContent = plural(shown.length);
-      if (showBtn) showBtn.textContent = shown.length ? plural(shown.length) + ' anzeigen' : 'Keine Treffer';
+      if (showBtn) showBtn.textContent = shown.length ? T(plural(shown.length) + ' anzeigen', 'Show ' + plural(shown.length)) : T('Keine Treffer', 'No results');
       if (empty) empty.hidden = shown.length > 0;
       // Numbers on the chips: what each choice would show with the other filters
       Object.keys(facetEls).forEach(function (key) {
@@ -240,15 +243,22 @@
   var thumbs = $$('[data-gal-thumbs] button');
 
   function priceHtml(v) {
-    if (v.price == null) return '<span class="price">Preis auf Anfrage</span>';
+    if (v.price == null) return '<span class="price">' + T('Preis auf Anfrage', 'Price on request') + '</span>';
+    // The saving always says what it refers to: the manufacturer's UVP
     var save = v.isOffer && v.uvp && v.uvp > v.price ? Math.floor(((v.uvp - v.price) / v.uvp) * 100) : 0;
     return '<span class="price' + (v.isOffer ? ' offer' : '') + '">' + esc(money(v.price)) + '</span>'
-      + (save ? ' <span class="uvp">UVP ' + esc(money(v.uvp)) + '</span><span class="save"><span>−' + save + '&nbsp;%</span></span>' : '');
+      + (save ? ' <span class="uvp">' + T('UVP ', 'RRP ') + esc(money(v.uvp)) + '</span><span class="save"><span>' + T(save + '&nbsp;% unter UVP', save + '% below RRP') + '</span></span>' : '');
   }
   function specsHtml(v) {
-    var rows = (v.specs || []).map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('');
-    var notes = (v.notes || []).map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('');
-    return '<h2>Ausstattung</h2>' + (rows ? '<dl>' + rows + '</dl>' : '') + (notes ? '<ul>' + notes + '</ul>' : '');
+    // Rows: [label, value, mark]; mark 1 = label German, 2 = value German
+    var de = function (on) { return on ? ' lang="de"' : ''; };
+    var rows = (v.specs || []).map(function (r) { var m = r[2] || 0; return '<dt' + de(m & 1) + '>' + esc(r[0]) + '</dt><dd' + de(m & 2) + '>' + esc(r[1]) + '</dd>'; }).join('');
+    // Notes: [text, translated]; untranslated ones stay German (lang="de")
+    var notes = (v.notes || []).map(function (n) {
+      var t = Array.isArray(n) ? n : [n, true];
+      return '<li' + (t[1] ? '' : ' lang="de"') + '>' + esc(t[0]) + '</li>';
+    }).join('');
+    return '<h2>' + T('Ausstattung', 'Features') + '</h2>' + (rows ? '<dl>' + rows + '</dl>' : '') + (notes ? '<ul>' + notes + '</ul>' : '');
   }
   function showImage(btn) {
     if (!mainImg || !btn) return;
@@ -272,10 +282,10 @@
     if (!v) return;
     if (priceBox) priceBox.innerHTML = priceHtml(v);
     if (availEl) {
-      availEl.textContent = v.available ? 'Bei uns im Laden verfügbar' : 'Derzeit nicht vorrätig, wir bestellen gern für Sie';
+      availEl.textContent = v.available ? T('Bei uns im Laden verfügbar', 'Available in our shop') : T('Derzeit nicht vorrätig, wir bestellen gern für Sie', 'Currently out of stock, we will be happy to order it for you');
       availEl.classList.toggle('yes', !!v.available);
     }
-    if (artText) artText.textContent = v.artNr ? 'Art.-Nr. ' + v.artNr : '';
+    if (artText) artText.textContent = v.artNr ? T('Art.-Nr. ', 'Item no. ') + v.artNr : '';
     artInputs.forEach(function (i) { i.value = v.artNr || ''; });
     if (specsBox) {
       var has = (v.specs || []).length || (v.notes || []).length;
@@ -287,7 +297,7 @@
       b.setAttribute('aria-pressed', i === cur ? 'true' : 'false');
       var x = vs[i];
       var small = b.querySelector('small');
-      if (small && x && x.price != null) small.textContent = money(x.price) + (x.available ? '' : ', nicht vorrätig');
+      if (small && x && x.price != null) small.textContent = money(x.price) + (x.available ? '' : T(', nicht vorrätig', ', out of stock'));
     });
     if (vSelect) vSelect.value = String(cur);
     filterThumbs(v.look);
@@ -329,7 +339,7 @@
   // Live price and stock: the page is built at night, the app server knows
   // today's numbers (same source as the app)
   var url = API + '/api/shop/products/' + encodeURIComponent(P.slug);
-  (WP.getJSON ? WP.getJSON(url, 60) : fetch(url).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (j) { return j.data; }))
+  (WP.getJSON ? WP.getJSON(url) : fetch(url).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (j) { return j.data; }))
     .then(function (data) {
       var live = data && data.product;
       if (!live || !Array.isArray(live.variants)) return;
