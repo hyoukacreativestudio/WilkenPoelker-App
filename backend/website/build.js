@@ -310,7 +310,10 @@ Require all denied
 ${mode === 'live' ? '' : 'Header set X-Robots-Tag "noindex, nofollow"\n'}Header always set X-Content-Type-Options "nosniff"
 Header always set Referrer-Policy "strict-origin-when-cross-origin"
 Header always set X-Frame-Options "SAMEORIGIN"
-Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+Header always set Content-Security-Policy "frame-ancestors 'self'"
+Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+${mode === 'live' ? '# Browsers only accept this over https; one year, without subdomains (api. has its own)\nHeader always set Strict-Transport-Security "max-age=31536000"\n' : ''}
 <FilesMatch "\\.html$">
 Header set Cache-Control "no-cache"
 </FilesMatch>

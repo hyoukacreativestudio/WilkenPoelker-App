@@ -135,6 +135,7 @@ ${await teamList(ctx, ['Verkauf E-Bikes', 'Werkstatt Zweirad'])}
     description: 'E-Bikes und Fahrräder in Ostrhauderfehn: Fahrradkatalog mit Verfügbarkeit, Probefahrt auf 2.500\u00a0m² Teststrecke, E-Bike-Leasing und eigene Zweiradwerkstatt.',
     ogImage: photo.large,
     head: `<link rel="stylesheet" href="${ctx.asset('assets/bidex.css')}">\n`,
+    thirdParty: true, // BIDEX catalogue: loose Content Security Policy (layout.js)
     jsonLd: [seo.breadcrumbs(ctx, trail)],
     body,
   });

@@ -594,10 +594,12 @@
     var write = $('[data-reviews-write]', sec);
     var GM = '<span class="gmaps" translate="no">Google Maps</span>';
     function stars(r) { var v = Math.max(0, Math.min(5, Number(r) || 0)); return '<span class="stars" style="--p:' + (v / 5 * 100).toFixed(1) + '%" role="img" aria-label="' + String(v).replace('.', ',') + ' von 5 Sternen"></span>'; }
+    // Links from the API only if they are web addresses (never javascript: and the like)
+    function web(u) { return /^https:\/\//i.test(String(u || '')) ? String(u) : ''; }
     function initials(n) { return String(n || '?').split(/\s+/).filter(Boolean).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase(); }
     function fallback(links) {
-      var url = (links && (links.reviewsUri || links.mapsUri)) || (write ? write.href : '#');
-      var writeUrl = (links && links.writeAReviewUri) || (write ? write.href : url);
+      var url = (links && web(links.reviewsUri || links.mapsUri)) || (write ? write.href : '#');
+      var writeUrl = (links && web(links.writeAReviewUri)) || (write ? write.href : url);
       top.innerHTML = '<div class="rv-empty"><span class="rv-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons.svg#star"/></svg></span>'
         + '<div class="rv-text"><b>Ihre Erfahrungen zählen</b><p>Lesen Sie, was unsere Kundinnen und Kunden über uns schreiben, direkt bei ' + GM + '. Und wenn Sie bei uns waren: Wir freuen uns über Ihre Bewertung.</p></div>'
         + '<div class="btns"><a class="btn btn-sm" href="' + esc(url) + '" target="_blank" rel="noopener">Bewertungen ansehen</a>'
@@ -607,18 +609,18 @@
       if (note) note.textContent = '';
     }
     function show(r) {
-      if (r && write && r.writeAReviewUri) write.href = r.writeAReviewUri;
+      if (r && write && web(r.writeAReviewUri)) write.href = web(r.writeAReviewUri);
       if (!r || !r.available || !(r.reviews || []).length) { fallback(r); return; }
       var rating = Number(r.rating || 0);
       top.innerHTML = '<div class="score"><b>' + rating.toFixed(1).replace('.', ',') + '</b><div>' + stars(rating) + '<br><small>' + Number(r.count || 0).toLocaleString('de-DE') + ' Bewertungen auf ' + GM + '</small></div></div>'
-        + (r.reviewsUri ? '<a class="btn btn-quiet btn-sm" href="' + esc(r.reviewsUri) + '" target="_blank" rel="noopener">Alle Bewertungen ansehen</a>' : '');
+        + (web(r.reviewsUri) ? '<a class="btn btn-quiet btn-sm" href="' + esc(web(r.reviewsUri)) + '" target="_blank" rel="noopener">Alle Bewertungen ansehen</a>' : '');
       list.innerHTML = r.reviews.map(function (v) {
         var a = v.author || {};
-        var photo = a.photo ? '<img src="' + esc(/^https?:/.test(a.photo) ? a.photo : API + a.photo) + '" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" data-ini="' + esc(initials(a.name)) + '">' : '<span class="av" aria-hidden="true">' + esc(initials(a.name)) + '</span>';
-        var name = a.uri ? '<a href="' + esc(a.uri) + '" target="_blank" rel="noopener nofollow">' + esc(a.name) + '</a>' : esc(a.name);
+        var photo = a.photo && (web(a.photo) || /^\/api\//.test(a.photo)) ? '<img src="' + esc(web(a.photo) || API + a.photo) + '" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" data-ini="' + esc(initials(a.name)) + '">' : '<span class="av" aria-hidden="true">' + esc(initials(a.name)) + '</span>';
+        var name = web(a.uri) ? '<a href="' + esc(web(a.uri)) + '" target="_blank" rel="noopener nofollow">' + esc(a.name) + '</a>' : esc(a.name);
         return '<article class="review"><div class="review-head">' + photo + '<span><b>' + name + '</b><small>' + esc(v.relativeTime || '') + '</small></span></div>'
           + stars(v.rating) + '<p>' + esc(v.text || '') + '</p>'
-          + (v.googleMapsUri ? '<span class="src"><a href="' + esc(v.googleMapsUri) + '" target="_blank" rel="noopener nofollow">Bewertung auf ' + GM + ' ansehen</a></span>' : '<span class="src">' + GM + '</span>')
+          + (web(v.googleMapsUri) ? '<span class="src"><a href="' + esc(web(v.googleMapsUri)) + '" target="_blank" rel="noopener nofollow">Bewertung auf ' + GM + ' ansehen</a></span>' : '<span class="src">' + GM + '</span>')
           + '</article>';
       }).join('');
       $$('img[data-ini]', list).forEach(function (img) {

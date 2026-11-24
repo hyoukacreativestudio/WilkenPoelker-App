@@ -1,5 +1,6 @@
 // Page frame: <head> with SEO tags, header with mega menu, the app-like tab
 // bar on phones, menu + search sheets and the footer.
+const crypto = require('crypto');
 const { esc, json } = require('./util');
 const { COMPANY, ADDRESS_LINE, MAPS } = require('./content');
 
@@ -124,6 +125,35 @@ function footer(ctx) {
 </footer>`;
 }
 
+// Light/dark choice before the first paint (the only inline script, allowed by its hash)
+const THEME_JS = "(function(d){d.classList.add('js');try{var t=localStorage.getItem('wp-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t)}catch(e){}})(document.documentElement)";
+const THEME_HASH = `'sha256-${crypto.createHash('sha256').update(THEME_JS).digest('base64')}'`;
+
+// Content Security Policy: what a page may load. Besides our own files only the
+// app server (live status, reviews, forms) and the Google Maps map (after
+// consent). frame-ancestors is set in .htaccess (not possible in a meta tag).
+// The bike page is the exception: the BIDEX catalogue (after consent) works with
+// inline scripts and event handlers, frames and further providers (financing,
+// size advice) that change without notice, so there only plugins and a foreign
+// <base> are blocked.
+function csp(ctx, thirdParty = false) {
+  if (thirdParty) return "object-src 'none'; base-uri 'self'";
+  const api = new URL(ctx.apiPublic).origin;
+  return [
+    "default-src 'self'",
+    `script-src 'self' ${THEME_HASH}`,
+    "style-src 'self' 'unsafe-inline'",
+    `img-src 'self' data: ${api}`,
+    "font-src 'self'",
+    `connect-src 'self' ${api}`,
+    'frame-src https://www.google.com https://maps.google.com',
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "manifest-src 'self'",
+  ].join('; ');
+}
+
 // Opening hours for the live status (computed in the browser until the API answers)
 function hoursData(ctx) {
   const pick = (s) => (s || []).map((d) => ({ d: d.dayOfWeek, c: !!d.isClosed, p: (d.periods || []).map((p) => [p.open, p.close]) }));
@@ -149,6 +179,7 @@ function page(ctx, o) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="${esc(csp(ctx, o.thirdParty))}">
 <title>${esc(o.title)}</title>
 <meta name="description" content="${esc(o.description)}">
 <link rel="canonical" href="${esc(canonical)}">
@@ -174,7 +205,7 @@ ${o.smartBanner ? `<meta name="apple-itunes-app" content="app-id=${COMPANY.apple
 <link rel="preload" href="/assets/fonts/HankenGrotesk-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/BricolageGrotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${ctx.asset('assets/site.css')}">
-<script>(function(d){d.classList.add('js');try{var t=localStorage.getItem('wp-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t)}catch(e){}})(document.documentElement)</script>
+<script>${THEME_JS}</script>
 <script src="${ctx.asset('assets/site.js')}" defer></script>${scripts}
 ${o.head || ''}${ld}
 </head>

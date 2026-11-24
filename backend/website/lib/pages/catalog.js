@@ -360,7 +360,7 @@ ${variants}
 <div class="pd-text"><h2>Über dieses Produkt</h2><p>${esc(text)}</p></div>
 <div class="specs" style="margin-top:24px">
 <div class="spec" data-variant-specs${own.length || notes.length ? '' : ' hidden'}><h2>Ausstattung</h2>${own.length ? `<dl>${specRows(own)}</dl>` : ''}${notes.length ? `<ul>${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}</div>
-${official.length ? `<div class="spec"><h2>Technische Daten des Herstellers</h2><dl>${specRows(official)}</dl>${p.officialUrl ? `<p class="source">Quelle: <a href="${esc(p.officialUrl)}" target="_blank" rel="noopener nofollow">${esc(p.officialSource || 'Hersteller')}</a></p>` : ''}</div>` : ''}
+${official.length ? `<div class="spec"><h2>Technische Daten des Herstellers</h2><dl>${specRows(official)}</dl>${/^https?:\/\//i.test(p.officialUrl || '') ? `<p class="source">Quelle: <a href="${esc(p.officialUrl)}" target="_blank" rel="noopener nofollow">${esc(p.officialSource || 'Hersteller')}</a></p>` : ''}</div>` : ''}
 </div>
 <p class="note" style="margin-top:18px">Alle Angaben ohne Gewähr, Änderungen und Irrtümer vorbehalten. Abbildungen können vom Original abweichen. Produktbilder und technische Daten: © der jeweilige Hersteller.</p>
 </div>
