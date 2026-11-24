@@ -4,9 +4,22 @@ const { authenticate } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/roles');
 const desktop = require('../controllers/desktopController');
 
-// Passwordless department login (click a department -> token). No auth needed;
-// it IS the login. Restricted server-side to staff/department accounts.
-router.post('/login', desktop.desktopLogin);
+const { createLimiter } = require('../middlewares/rateLimit');
+
+// All PCs of the shop share one public IP and log in again silently every
+// 15 minutes, so the login limit is generous; pairing codes get a tight one.
+const loginLimiter = createLimiter(15 * 60 * 1000, 150, 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.');
+const pairLimiter = createLimiter(15 * 60 * 1000, 10, 'Zu viele Versuche. Bitte in 15 Minuten erneut versuchen.');
+
+// Department login (click a department -> token). No auth needed; it IS the
+// login. Restricted server-side to staff/department accounts and, with
+// DESKTOP_DEVICE_PAIRING=on, to paired PCs.
+router.post('/login', loginLimiter, desktop.desktopLogin);
+
+// PC pairing: status (is the protection on, is this PC paired) and pairing
+// with a one-time code from the Admin
+router.post('/device/status', loginLimiter, desktop.deviceStatus);
+router.post('/device/pair', pairLimiter, desktop.pairDevice);
 
 // All other desktop-tool routes require a logged-in staff account (never customers).
 const STAFF = [
@@ -14,6 +27,11 @@ const STAFF = [
   'service_manager', 'robby_manager', 'sales_manager', 'orders_manager', 'warehouse_worker',
   'delivery_manager', 'motor_equipment_manager', 'ev_manager',
 ];
+
+// ── Paired PCs (Admin only) ──
+router.get('/devices', authenticate, authorize('admin', 'super_admin'), desktop.listDevices);
+router.post('/devices', authenticate, authorize('admin', 'super_admin'), desktop.createDeviceCode);
+router.delete('/devices/:id', authenticate, authorize('admin', 'super_admin'), desktop.revokeDevice);
 
 // ── Bestellungen ──
 router.get('/customer-profile', authenticate, authorize(...STAFF), desktop.getCustomerProfile);

@@ -34,8 +34,9 @@ import TermineHeute from './pages/TermineHeute.jsx';
 import ReparaturenHeute from './pages/ReparaturenHeute.jsx';
 import Quellen from './pages/Quellen.jsx';
 import HiddenTools from './pages/HiddenTools.jsx';
+import Geraete from './pages/Geraete.jsx';
 
-const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturenheute: ReparaturenHeute, reparaturen: Reparaturen, kva: Kva, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, kundenbestellungen: Kundenbestellungen, produkte: Produkte, anfragen: Anfragen, feedback: Feedback, quellen: Quellen, lager: Lager };
+const PAGES = { termine: Termine, kalender: Kalender, termineheute: TermineHeute, reparaturenheute: ReparaturenHeute, reparaturen: Reparaturen, kva: Kva, tickets: Tickets, robbykunden: RobbyKunden, kundennummern: Kundennummern, bestellungen: Bestellungen, kundenbestellungen: Kundenbestellungen, produkte: Produkte, anfragen: Anfragen, feedback: Feedback, pcs: Geraete, quellen: Quellen, lager: Lager };
 
 const SUBTITLES = {
   uebersicht: 'Überblick für deine Abteilung',

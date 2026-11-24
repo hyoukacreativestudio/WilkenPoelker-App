@@ -200,7 +200,9 @@ tr.done td { opacity: .5; }
 .dept-card.busy { pointer-events: none; opacity: .8; }
 .dept-card .mini-spin { position: absolute; top: 10px; right: 10px; width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; }
 .login-error { color: var(--danger); font-size: 14px; margin-top: 18px; text-align: center; background: #fdecea; padding: 10px; border-radius: 10px; }
-.login-hint { margin-top: 22px; text-align: center; color: var(--text-3); font-size: 12.5px; }
+.login-hint { margin-top: 22px; text-align: center; color: var(--text-3); font-size: 12.5px; line-height: 1.7; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--green); font: inherit; text-decoration: underline; cursor: pointer; }
+.code-box { font-family: ui-monospace, Consolas, monospace; font-size: 30px; letter-spacing: 4px; font-weight: 700; padding: 14px 18px; border-radius: 12px; background: var(--dept-soft); display: inline-block; user-select: all; }
 
 /* ── Print: only the list, no chrome ── */
 @media print {

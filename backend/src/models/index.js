@@ -39,6 +39,7 @@ const ShopBrand = require('./ShopBrand');
 const ShopGroup = require('./ShopGroup');
 const WebInquiry = require('./WebInquiry');
 const AppFeedback = require('./AppFeedback');
+const DesktopDevice = require('./DesktopDevice');
 
 // ==========================================
 // ASSOCIATIONS
@@ -240,4 +241,5 @@ module.exports = {
   ShopGroup,
   WebInquiry,
   AppFeedback,
+  DesktopDevice,
 };

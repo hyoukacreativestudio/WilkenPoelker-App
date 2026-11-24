@@ -22,13 +22,24 @@ export function setDept(d) {
   else localStorage.removeItem('wp_desktop_dept');
 }
 export function getDept() { return localStorage.getItem('wp_desktop_dept'); }
-// Password-protected departments (Admin) must re-send their password on silent
-// re-login. Stored lightly obfuscated (trusted company PC).
-export function setDeptSecret(pw) {
-  try { if (pw) localStorage.setItem('wp_desktop_pw', btoa(unescape(encodeURIComponent(pw)))); else localStorage.removeItem('wp_desktop_pw'); } catch { /* ignore */ }
+// The Admin's silent re-login uses a ticket from the last password login
+// (valid one working day, bound to this PC). The password itself is never
+// kept; older versions stored it here, so it is removed on start.
+try { localStorage.removeItem('wp_desktop_pw'); } catch { /* ignore */ }
+export function setAdminTicket(t) {
+  try { if (t) localStorage.setItem('wp_desktop_admin', t); else localStorage.removeItem('wp_desktop_admin'); } catch { /* ignore */ }
 }
-function getDeptSecret() {
-  try { const v = localStorage.getItem('wp_desktop_pw'); return v ? decodeURIComponent(escape(atob(v))) : ''; } catch { return ''; }
+function getAdminTicket() {
+  try { return localStorage.getItem('wp_desktop_admin') || ''; } catch { return ''; }
+}
+
+// Device key of this PC after pairing with a code from the Admin (see the
+// "PCs" page). Sent with every department login.
+export function setDeviceToken(t) {
+  try { if (t) localStorage.setItem('wp_desktop_device', t); else localStorage.removeItem('wp_desktop_device'); } catch { /* ignore */ }
+}
+export function getDeviceToken() {
+  try { return localStorage.getItem('wp_desktop_device') || ''; } catch { return ''; }
 }
 
 function doFetch(path, { method = 'GET', body, headers = {} } = {}) {
@@ -43,7 +54,9 @@ function doFetch(path, { method = 'GET', body, headers = {} } = {}) {
   });
 }
 
-// Passwordless re-login for the stored department. Returns true on success.
+// Silent re-login for the stored department. Returns true on success. If the
+// server refuses (PC no longer paired, Admin ticket expired), the session is
+// over: back to the login screen.
 async function reLogin() {
   const dept = getDept();
   if (!dept) return false;
@@ -51,13 +64,20 @@ async function reLogin() {
     const res = await fetch(`${BASE}/desktop/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ department: dept, password: getDeptSecret() }),
+      body: JSON.stringify({ department: dept, deviceToken: getDeviceToken() || undefined, adminTicket: dept === 'admin' ? getAdminTicket() : undefined }),
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        setToken(null); setDept(null); setAdminTicket(null);
+        try { window.dispatchEvent(new CustomEvent('wp-session-ended')); } catch { /* ignore */ }
+      }
+      return false;
+    }
     const json = await res.json();
     const tok = json?.data?.accessToken;
     if (!tok) return false;
     setToken(tok);
+    if (json?.data?.adminTicket) setAdminTicket(json.data.adminTicket);
     return true;
   } catch { return false; }
 }
@@ -69,7 +89,8 @@ const QKEY = 'wp_offline_queue';
 const readQueue = () => { try { return JSON.parse(localStorage.getItem(QKEY) || '[]'); } catch { return []; } };
 const writeQueue = (q) => { localStorage.setItem(QKEY, JSON.stringify(q)); try { window.dispatchEvent(new CustomEvent('wp-queue', { detail: q.length })); } catch {} };
 export const pendingCount = () => readQueue().length;
-const isQueueable = (path, method) => method !== 'GET' && !path.startsWith('/desktop/login') && !path.startsWith('/auth');
+const isLoginPath = (path) => path.startsWith('/desktop/login') || path.startsWith('/desktop/device/');
+const isQueueable = (path, method) => method !== 'GET' && !isLoginPath(path) && !path.startsWith('/auth');
 
 let flushing = false;
 export async function flushQueue() {
@@ -109,7 +130,7 @@ async function request(path, opts = {}, retried = false) {
   }
 
   // Access token expired → silently re-login (passwordless) and retry once.
-  if (res.status === 401 && !retried && !path.startsWith('/desktop/login')) {
+  if (res.status === 401 && !retried && !isLoginPath(path)) {
     if (await reLogin()) return request(path, opts, true);
   }
 

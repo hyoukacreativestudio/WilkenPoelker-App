@@ -12,7 +12,8 @@ const { appCustomerNumbers, markHasApp } = require('../services/appAccounts');
 // person's name or email). Clicking a department logs into that account WITHOUT
 // a password. Only these staff roles are ever allowed — never a customer.
 // Create the accounts with: node scripts/create-desktop-accounts.js
-// Optionally hardened with a shared secret via env DESKTOP_LOGIN_SECRET.
+// Optionally hardened with a shared secret via env DESKTOP_LOGIN_SECRET, and
+// with DESKTOP_DEVICE_PAIRING=on only on paired PCs (services/desktopDevices.js).
 const DEPT_ACCOUNTS = {
   admin:        { username: 'admin',        role: 'admin' },
   fahrrad:      { username: 'fahrrad',       role: 'bike_manager' },
@@ -33,18 +34,21 @@ const DESKTOP_ROLES = new Set([
   'delivery_manager', 'motor_equipment_manager', 'ev_manager',
 ]);
 
+const devices = require('../services/desktopDevices');
+
 const desktopLogin = asyncHandler(async (req, res) => {
   const secret = process.env.DESKTOP_LOGIN_SECRET;
   if (secret && req.body.secret !== secret) throw new AppError('Nicht erlaubt', 403, 'FORBIDDEN');
 
+  // Device protection: with DESKTOP_DEVICE_PAIRING=on only PCs that were paired
+  // with a one-time code may log in (services/desktopDevices.js)
+  const device = req.body.deviceToken ? await devices.findDevice(req.body.deviceToken) : null;
+  if (devices.pairingRequired() && !device) {
+    throw new AppError('Dieser PC ist nicht freigeschaltet. Bitte mit einem Kopplungscode freischalten.', 403, 'DEVICE_NOT_PAIRED');
+  }
+
   const dept = DEPT_ACCOUNTS[req.body.department];
   if (!dept) throw new AppError('Unbekannte Abteilung', 400, 'UNKNOWN_DEPARTMENT');
-
-  // The Admin account is password-protected.
-  if (req.body.department === 'admin') {
-    const adminPw = process.env.ADMIN_DESKTOP_PASSWORD || 'CPClemens0901*';
-    if (String(req.body.password || '') !== adminPw) throw new AppError('Falsches Passwort', 401, 'ADMIN_PASSWORD');
-  }
 
   const { fn, col, where } = require('sequelize');
   // Prefer the dedicated department account (by username); else the first
@@ -55,10 +59,63 @@ const desktopLogin = asyncHandler(async (req, res) => {
   if (!DESKTOP_ROLES.has(user.role)) throw new AppError('Dieser Account ist im PC-Programm nicht erlaubt', 403, 'ROLE_NOT_ALLOWED');
   if (user.isActive === false) throw new AppError('Account ist deaktiviert', 403, 'INACTIVE');
 
+  // The Admin account is password-protected. The silent re-login sends the
+  // ticket from the last password login instead of the password.
+  let adminTicket;
+  if (req.body.department === 'admin') {
+    if (req.body.adminTicket && devices.checkAdminTicket(req.body.adminTicket, user, device)) {
+      adminTicket = req.body.adminTicket;
+    } else if (devices.checkAdminPassword(req.body.password)) {
+      adminTicket = devices.issueAdminTicket(user, device);
+    } else if (!devices.adminPasswordConfigured() && devices.pairingRequired()) {
+      throw new AppError('Für den Admin ist noch kein Passwort eingerichtet (Skript auf dem Server).', 403, 'ADMIN_PASSWORD_NOT_SET');
+    } else {
+      throw new AppError(req.body.password ? 'Falsches Passwort' : 'Bitte das Admin-Passwort eingeben', 401, 'ADMIN_PASSWORD');
+    }
+  }
+
   const authService = require('../services/authService');
   const accessToken = authService.generateAccessToken(user);
-  const refreshToken = authService.generateRefreshToken(user);
-  res.json({ success: true, data: { accessToken, refreshToken, user: authService.sanitizeUser(user) } });
+  res.json({
+    success: true,
+    data: {
+      accessToken,
+      ...(adminTicket ? { adminTicket } : {}),
+      user: authService.sanitizeUser(user),
+      device: device ? { name: device.name } : null,
+    },
+  });
+});
+
+// ── PC pairing (no login: the code is the proof) ──
+
+// POST /api/desktop/device/status { deviceToken } -> is the protection on, is this PC paired
+const deviceStatus = asyncHandler(async (req, res) => {
+  const device = req.body.deviceToken ? await devices.findDevice(req.body.deviceToken) : null;
+  res.json({ success: true, data: { required: devices.pairingRequired(), paired: !!device, name: device ? device.name : null } });
+});
+
+// POST /api/desktop/device/pair { code, name } -> { deviceToken }
+const pairDevice = asyncHandler(async (req, res) => {
+  const result = await devices.pair(req.body.code, req.body.name);
+  if (!result) throw new AppError('Der Code ist ungültig, abgelaufen oder wurde schon benutzt.', 400, 'BAD_PAIRING_CODE');
+  res.status(201).json({ success: true, data: { deviceToken: result.deviceToken, name: result.device.name } });
+});
+
+// ── Admin: manage the paired PCs ──
+
+const listDevices = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: { required: devices.pairingRequired(), devices: await devices.listDevices() } });
+});
+
+const createDeviceCode = asyncHandler(async (req, res) => {
+  const { code, device } = await devices.createPairingCode(req.body.name, req.user.id);
+  res.status(201).json({ success: true, data: { code, id: device.id, name: device.name, validUntil: device.pairingExpiresAt } });
+});
+
+const revokeDevice = asyncHandler(async (req, res) => {
+  if (!(await devices.revokeDevice(req.params.id))) throw new NotFoundError('PC');
+  res.json({ success: true, data: { revoked: true } });
 });
 
 // Map a user role to its department key (used to scope orders lists).
@@ -1005,6 +1062,11 @@ const getCustomerProfile = asyncHandler(async (req, res) => {
 module.exports = {
   getCustomerProfile,
   desktopLogin,
+  deviceStatus,
+  pairDevice,
+  listDevices,
+  createDeviceCode,
+  revokeDevice,
   lookupGeo,
   listRobbyCustomers, createRobbyCustomer, updateRobbyCustomer, deleteRobbyCustomer,
   listOrders, createOrder, updateOrder, deleteOrder, setOrderProblem, purgeDoneOrders,
