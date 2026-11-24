@@ -8,6 +8,10 @@
 //
 // No output contains device keys; codes are shown once when they are created.
 
+// The setup script reads this program's output (the hash, the codes); dotenv
+// would otherwise print "injecting env ..." on stdout in front of it.
+process.env.DOTENV_CONFIG_QUIET = 'true';
+
 const { sequelize } = require('../src/config/database');
 
 function pad(v, n) {

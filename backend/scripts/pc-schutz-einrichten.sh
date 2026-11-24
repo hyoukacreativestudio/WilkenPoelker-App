@@ -17,8 +17,8 @@
 #   bash /root/pc-schutz-einrichten.sh --aus    Schutz wieder ausschalten (Notfall)
 set -uo pipefail
 
-APP=/apps/wpapp/backend
-ENV_FILE="$APP/.env"
+APP=${WP_APP_DIR:-/apps/wpapp/backend}
+ENV_FILE=${WP_ENV_FILE:-"$APP/.env"}
 PM2_NAME=wpapp-backend
 
 if [ "$(id -u)" != 0 ]; then echo "Bitte als root ausführen."; exit 1; fi
@@ -30,7 +30,7 @@ fi
 PORT=$(grep -E '^PORT=' "$ENV_FILE" | tail -1 | cut -d= -f2 | tr -d "'\"[:space:]")
 PORT=${PORT:-5000}
 
-devices() { node scripts/desktop-devices.js "$@"; }
+devices() { DOTENV_CONFIG_QUIET=true node scripts/desktop-devices.js "$@"; }
 
 # Sets KEY=VALUE in the .env (old lines of that key and their comment removed).
 # The .env is backed up once per run, before the first change.
@@ -56,7 +56,8 @@ set_env() {
 
 restart_backend() {
   echo "Starte das Backend neu ..."
-  pm2 restart "$PM2_NAME" --update-env > /dev/null && pm2 save > /dev/null
+  # No --update-env: the backend reads the .env itself on every start
+  pm2 restart "$PM2_NAME" > /dev/null && pm2 save > /dev/null
   for _ in $(seq 1 30); do
     sleep 2
     STATUS=$(curl -s --max-time 5 -X POST -H 'Content-Type: application/json' -d '{}' "http://127.0.0.1:$PORT/api/desktop/device/status") && [ -n "$STATUS" ] && break
@@ -103,6 +104,9 @@ if [ "$a" = "ja" ]; then
   done
   HASH=$(printf '%s' "$PW1" | devices hash-password) || { echo "Hash fehlgeschlagen, nichts geändert."; exit 1; }
   unset PW1 PW2
+  # Only the hash line itself may end up in the .env (no log lines in front of it)
+  HASH=$(printf '%s\n' "$HASH" | grep -E '^scrypt\$[A-Za-z0-9_-]{16,}\$[A-Za-z0-9_-]{32,}$' | tail -1)
+  if [ -z "$HASH" ]; then echo "Hash fehlgeschlagen, nichts geändert."; exit 1; fi
   set_env ADMIN_DESKTOP_PASSWORD "" "Admin-Passwort PC-Programm alt"
   set_env ADMIN_DESKTOP_PASSWORD_HASH "$HASH" "Admin-Passwort PC-Programm"
   unset HASH
@@ -127,7 +131,8 @@ if [[ "$N" =~ ^[0-9]+$ ]] && [ "$N" -gt 0 ]; then
   echo "Die Codes (bitte notieren, sie werden nur jetzt angezeigt):"
   printf '  %s\n' "${CODES[@]}"
   echo
-  echo "An jedem PC: PC-Programm öffnen, unten \"Diesen PC mit einem Kopplungscode freischalten\""
+  echo "An jedem PC: PC-Programm (WilkenPoelker) ganz schließen und neu öffnen, damit es die"
+  echo "neue Version lädt. Dann abmelden, unten \"Diesen PC mit einem Kopplungscode freischalten\""
   echo "anklicken und den Code eingeben. Ein Code gilt nur für einen PC."
 fi
 echo
@@ -145,8 +150,8 @@ echo
 
 # ── 4. Switch on ──
 echo "Schritt 4: Schutz einschalten."
-echo "Danach können sich nur noch die freigeschalteten PCs anmelden. Wer gerade"
-echo "angemeldet ist und nicht freigeschaltet ist, wird innerhalb von 15 Minuten abgemeldet."
+echo "Danach können sich nur noch die freigeschalteten PCs anmelden. Ein PC, der nicht"
+echo "freigeschaltet ist, verliert spätestens nach 15 Minuten die Verbindung."
 read -rp "Schutz jetzt einschalten? (ja/nein): " a
 if [ "$a" = "ja" ]; then
   set_env DESKTOP_DEVICE_PAIRING "on" "PC-Programm nur auf freigeschalteten PCs"
