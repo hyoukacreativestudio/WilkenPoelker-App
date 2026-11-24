@@ -27,7 +27,7 @@ const MENU = [
 ];
 
 function logo() {
-  return `<img src="/assets/img/logo.png" alt="Wilken Poelker" width="520" height="93">`;
+  return `<img src="/assets/img/logo-400.png" alt="Wilken Poelker" width="400" height="72">`;
 }
 
 function header(ctx, nav) {
@@ -102,7 +102,7 @@ function footer(ctx) {
 </div>
 <div class="foot-grid">
 <div class="foot-brand">
-<img src="/assets/img/logo.png" alt="Wilken Poelker" width="520" height="93" loading="lazy">
+<img src="/assets/img/logo-400.png" alt="Wilken Poelker" width="400" height="72" loading="lazy">
 <img class="claim" src="/assets/img/logo-claim.png" alt="Für jedermann, ob Privat oder Profi" width="340" height="116" loading="lazy">
 <p>Familienbetrieb in dritter Generation. Seit 1951 beraten, verkaufen und reparieren wir in Ostrhauderfehn: E-Bikes und Fahrräder, Motor- und Gartengeräte, Reinigungstechnik.</p>
 <div class="foot-social"><a href="${COMPANY.facebook}" rel="noopener" target="_blank" aria-label="Wilken Poelker bei Facebook">${icon('facebook')}</a><a href="${COMPANY.instagram}" rel="noopener" target="_blank" aria-label="Wilken Poelker bei Instagram">${icon('instagram')}</a></div>
@@ -166,6 +166,7 @@ ${o.smartBanner ? `<meta name="apple-itunes-app" content="app-id=${COMPANY.apple
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="192x192" href="/assets/img/favicon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="${esc(ctx.apiPublic)}" crossorigin>
 <link rel="preload" href="/assets/fonts/HankenGrotesk-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/BricolageGrotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${ctx.asset('assets/site.css')}">

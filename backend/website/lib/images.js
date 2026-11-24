@@ -56,8 +56,14 @@ function createImages({ out, api, uploadsDir, cacheDir, log = console.log }) {
       if (!file) throw new Error(`Foto fehlt: ${name}`);
       const buf = fs.readFileSync(path.join(ABOUT, file));
       const h = hash(buf, 8);
+      // A photo narrower than the largest width only gets the sizes it really
+      // has (no copies under a larger name, no duplicate widths in srcset)
+      const meta = await sharp(buf).metadata();
+      const own = (meta.orientation || 1) >= 5 ? meta.height : meta.width;
+      const usable = widths.filter((w) => w < own);
+      if (usable.length < widths.length) usable.push(widths.find((w) => w >= own));
       const sizes = [];
-      for (const w of widths) {
+      for (const w of usable) {
         const rel = `assets/img/foto/${name}-${h}-${w}.webp`;
         const dim = await encode(buf, rel, { width: w, withoutEnlargement: true }, quality);
         sizes.push({ rel, ...dim });

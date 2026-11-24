@@ -282,6 +282,9 @@ Header set Cache-Control "public, max-age=31536000, immutable"
 <FilesMatch "\\.(webp|jpg|jpeg|png|svg|ico|woff2)$">
 Header set Cache-Control "public, max-age=2592000"
 </FilesMatch>
+<FilesMatch "(^|-)[0-9a-f]{8,}-[0-9]+\\.webp$">
+Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
 <FilesMatch "\\.json$">
 Header set Cache-Control "no-cache"
 </FilesMatch>

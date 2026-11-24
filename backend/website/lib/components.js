@@ -260,7 +260,7 @@ function appBand({ heading = 'Ihr Draht zu uns, direkt auf dem Handy', headingTa
   return `<div class="app-band" data-app>
 <div class="app-grid">
 <div>
-<img class="app-icon" src="/assets/img/app-icon.png" alt="" width="360" height="360" loading="lazy">
+<img class="app-icon" src="/assets/img/app-icon.png" alt="" width="192" height="192" loading="lazy">
 <${headingTag}>${heading}</${headingTag}>
 <p class="lead">Mit der kostenlosen Wilken-Poelker-App für iPhone und Android verfolgen Sie Ihre Reparatur, fragen Termine an und schreiben unserem Team, auch mit Foto. Ihr Kundenkonto führen Sie bequem in der App.</p>
 <ul class="app-feats">${feats}</ul>

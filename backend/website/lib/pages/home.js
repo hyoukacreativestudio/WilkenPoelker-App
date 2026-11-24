@@ -153,8 +153,8 @@ ${C.appBand()}
 <div class="wrap">
 <div class="sec-head"><div class="head-text"><h2>Geprüfte Qualität und Marken, die halten</h2><p>Wir setzen bewusst auf renommierte Hersteller, deren Ersatzteile auch Jahre nach dem Kauf noch verfügbar sind. Das schützt Ihre Investition.</p></div></div>
 <div class="certs">
-<div class="cert"><span class="logo"><img src="/assets/img/qmf.jpg" alt="QMF – Qualität mit Fachbetrieb" width="380" height="200" loading="lazy"></span><h3>QMF-zertifizierter Fachbetrieb</h3><p>„Qualität mit Fachbetrieb“ für Rasenmäher, Rasentraktoren, Motorsensen, Motorsägen und Kehrmaschinen. Zertifizierte Betriebe erfüllen strenge Kriterien und werden regelmäßig überprüft.</p></div>
-<div class="cert"><span class="logo"><img src="/assets/img/kaercher-haendler.png" alt="Kärcher" width="600" height="149" loading="lazy"></span><h3>Autorisierter Kärcher-Händler</h3><p>Die gesamte Kärcher-Palette, vom Hochdruckreiniger bis zur Scheuersaugmaschine, mit eigener Kärcher-Werkstatt und Monteur im Außendienst.</p></div>
+<div class="cert"><span class="logo"><img src="/assets/img/qmf.webp" alt="QMF – Qualität mit Fachbetrieb" width="260" height="137" loading="lazy"></span><h3>QMF-zertifizierter Fachbetrieb</h3><p>„Qualität mit Fachbetrieb“ für Rasenmäher, Rasentraktoren, Motorsensen, Motorsägen und Kehrmaschinen. Zertifizierte Betriebe erfüllen strenge Kriterien und werden regelmäßig überprüft.</p></div>
+<div class="cert"><span class="logo"><img src="/assets/img/kaercher-haendler.png" alt="Kärcher" width="480" height="119" loading="lazy"></span><h3>Autorisierter Kärcher-Händler</h3><p>Die gesamte Kärcher-Palette, vom Hochdruckreiniger bis zur Scheuersaugmaschine, mit eigener Kärcher-Werkstatt und Monteur im Außendienst.</p></div>
 <div class="cert"><span class="logo"><span class="fair">FairCommerce</span></span><h3>Mitglied bei FairCommerce</h3><p>Seit Februar 2022 sind wir Mitglied der Initiative FairCommerce des Händlerbundes, für faires und transparentes Handeln.</p></div>
 </div>
 <div class="brands-head"><h3>Unsere Marken</h3><a class="link-more" href="/marken/">Alle Marken${icon('arrow-right')}</a></div>
