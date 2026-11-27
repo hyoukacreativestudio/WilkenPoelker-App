@@ -1,8 +1,30 @@
 const AboutContent = require('../models/AboutContent');
 const path = require('path');
 const fs = require('fs');
+const logger = require('../utils/logger');
 
 const VALID_SECTIONS = ['team', 'store', 'qmf', 'kaercher'];
+
+// Team list: [{ department, label, members: [{ name, position, phone, image, imageUrl }] }]
+const TEXT_MAX = 120;
+function teamProblem(list) {
+  if (!Array.isArray(list) || list.length > 40) return 'Die Teamliste ist ungültig';
+  for (const d of list) {
+    if (!d || typeof d !== 'object' || !Array.isArray(d.members) || d.members.length > 80) return 'Die Teamliste ist ungültig';
+    if (!String(d.label || d.department || '').trim()) return 'Jede Abteilung braucht einen Namen';
+    for (const k of ['key', 'department', 'label', 'color', 'icon']) {
+      if (d[k] != null && (typeof d[k] !== 'string' || d[k].length > TEXT_MAX)) return 'Ein Abteilungsname ist zu lang oder ungültig';
+    }
+    for (const m of d.members) {
+      if (!m || typeof m !== 'object' || !String(m.name || '').trim()) return 'Jede Person braucht einen Namen';
+      for (const k of ['name', 'position', 'phone', 'image']) {
+        if (m[k] != null && (typeof m[k] !== 'string' || m[k].length > TEXT_MAX)) return `Ein Eintrag (${k}) ist zu lang oder ungültig`;
+      }
+      if (m.imageUrl != null && (typeof m.imageUrl !== 'string' || !/^(https:\/\/|\/uploads\/)[^\s"'<>]{1,400}$/.test(m.imageUrl))) return 'Ein Foto-Link ist ungültig';
+    }
+  }
+  return null;
+}
 
 // Get all content for a section (public)
 const getSection = async (req, res) => {
@@ -47,6 +69,11 @@ const updateContentKey = async (req, res) => {
     if (!content) {
       return res.status(400).json({ error: 'Content is required' });
     }
+    // The team list is shown in the app and on the website: keep its shape
+    if (section === 'team' && contentKey === 'departments') {
+      const bad = teamProblem(content);
+      if (bad) return res.status(400).json({ error: bad });
+    }
 
     const [row, created] = await AboutContent.findOrCreate({
       where: { section, contentKey },
@@ -62,6 +89,9 @@ const updateContentKey = async (req, res) => {
         updatedBy: req.user?.id,
       });
     }
+
+    // The website shows the team (portraits, names, positions)
+    if (section === 'team') require('../services/websiteBuilder').schedule('Team geändert', 60 * 1000);
 
     res.json({
       message: created ? 'Content created' : 'Content updated',
@@ -119,4 +149,31 @@ const deleteImage = async (req, res) => {
   }
 };
 
-module.exports = { getSection, updateContentKey, uploadImage, deleteImage };
+// Team photo from the PC program: a data URL (scaled down in the browser),
+// checked and re-encoded here, then stored like the app's uploads.
+const uploadPhotoData = async (req, res) => {
+  try {
+    const m = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=\s]+)$/.exec(String(req.body?.data || ''));
+    if (!m) return res.status(400).json({ error: 'Bitte ein Bild (JPG, PNG, WebP) auswählen' });
+    const buf = Buffer.from(m[2], 'base64');
+    let jpg;
+    try {
+      jpg = await require('sharp')(buf).rotate()
+        .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+        .flatten({ background: '#ffffff' }).jpeg({ quality: 85 }).toBuffer();
+    } catch {
+      return res.status(400).json({ error: 'Das Bild konnte nicht gelesen werden' });
+    }
+    const filename = `team-${Date.now()}-${require('crypto').randomBytes(4).toString('hex')}.jpg`;
+    const file = path.resolve(__dirname, '../../uploads', filename);
+    fs.writeFileSync(file, jpg);
+    const { uploadFile } = require('../services/uploadService');
+    const url = await uploadFile({ path: file, filename }, 'about');
+    res.json({ success: true, data: { url } });
+  } catch (error) {
+    logger.error('Error uploading team photo:', error);
+    res.status(500).json({ error: 'Das Foto konnte nicht gespeichert werden' });
+  }
+};
+
+module.exports = { getSection, updateContentKey, uploadImage, deleteImage, uploadPhotoData, teamProblem };

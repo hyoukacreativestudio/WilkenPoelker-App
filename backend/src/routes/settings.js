@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const settingsController = require('../controllers/settingsController');
 const { authenticate } = require('../middlewares/auth');
-const { isAdmin } = require('../middlewares/roles');
+const { authorize } = require('../middlewares/roles');
+
+// Opening hours and closed days: Admin and Verkauf (PC program and app)
+const EDITORS = authorize('admin', 'super_admin', 'sales_manager');
 const { validate, validators, body } = require('../middlewares/validate');
 
 // GET /api/settings/opening-hours - current opening hours
@@ -21,7 +24,7 @@ router.get('/closed-days', settingsController.getClosedDays);
 router.put(
   '/opening-hours',
   authenticate,
-  isAdmin,
+  EDITORS,
   validate([
     body('season')
       .isIn(['standard', 'winter'])
@@ -45,7 +48,7 @@ router.put(
 router.post(
   '/holidays',
   authenticate,
-  isAdmin,
+  EDITORS,
   validate([
     body('date').isISO8601().withMessage('Ungültiges Datum'),
     body('name').notEmpty().withMessage('Name ist erforderlich').trim(),
@@ -60,7 +63,7 @@ router.post(
 router.delete(
   '/holidays/:id',
   authenticate,
-  isAdmin,
+  EDITORS,
   validate([validators.uuid()]),
   settingsController.removeHoliday
 );

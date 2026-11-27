@@ -31,7 +31,7 @@ const telText = (n) => {
 const initials = (name) => String(name).split(/\s+/).filter(Boolean).map((w) => w[0]).filter((ch, i, a) => i === 0 || i === a.length - 1).join('').toUpperCase();
 
 async function member(ctx, m) {
-  const p = await ctx.images.portrait(m.image);
+  const p = await ctx.images.portrait(m);
   return `<li><div class="ph">${p ? `<img src="${p.src}" alt="${esc(m.name)}" width="360" height="360" loading="lazy">` : `<span class="ini" aria-hidden="true">${esc(initials(m.name))}</span>`}</div><div class="tx"><b>${esc(m.name)}</b><span>${esc(positionName(m.position))}</span>${m.phone ? `<a href="${telHref(m.phone)}">${esc(telText(m.phone))}</a>` : ''}</div></li>`;
 }
 
@@ -219,7 +219,7 @@ async function service(ctx) {
     const faces = [];
     for (const dep of ctx.team.filter((d) => w.departments.includes(d.key))) {
       for (const m of dep.members) {
-        const p = await ctx.images.portrait(m.image);
+        const p = await ctx.images.portrait(m);
         if (p) faces.push(`<li><img src="${p.small}" alt="${esc(m.name)}" title="${esc(m.name)}, ${esc(positionName(m.position))}" width="128" height="128" loading="lazy"></li>`);
       }
     }

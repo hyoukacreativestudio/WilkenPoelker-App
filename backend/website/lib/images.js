@@ -79,19 +79,35 @@ function createImages({ out, api, uploadsDir, cacheDir, log = console.log }) {
     });
   }
 
-  // Team portrait (square). Placeholders of the app are skipped (initials instead).
-  function portrait(image) {
+  // Team portrait (square) of a member: a photo uploaded in the app or the PC
+  // program (imageUrl) first, else the picture bundled with the app (image).
+  // Placeholders of the app are skipped (initials instead).
+  function portrait(member) {
+    const m = typeof member === 'string' ? { image: member } : (member || {});
+    const square = async (buf, name) => {
+      const h = hash(buf, 8);
+      const big = `assets/img/team/${name}-${h}-360.webp`;
+      const small = `assets/img/team/${name}-${h}-128.webp`;
+      await encode(buf, big, { width: 360, height: 360, fit: 'cover', position: 'attention' }, 74);
+      await encode(buf, small, { width: 128, height: 128, fit: 'cover', position: 'attention' }, 70);
+      return { src: `/${big}`, small: `/${small}` };
+    };
+    if (m.imageUrl && /^(https:\/\/|\/uploads\/)/.test(m.imageUrl)) {
+      return once(`team-url:${m.imageUrl}`, async () => {
+        try {
+          return await square(await productSource(m.imageUrl), `p-${hash(m.imageUrl, 10)}`);
+        } catch (e) {
+          log(`Teamfoto nicht geladen: ${e.message}`);
+          return null;
+        }
+      });
+    }
+    const image = m.image;
     if (!image || /^placeholder/.test(image)) return Promise.resolve(null);
     return once(`team:${image}`, async () => {
       const src = path.join(TEAM, `${image}.jpg`);
       if (!fs.existsSync(src)) return null;
-      const buf = fs.readFileSync(src);
-      const h = hash(buf, 8);
-      const big = `assets/img/team/${image}-${h}-360.webp`;
-      const small = `assets/img/team/${image}-${h}-128.webp`;
-      await encode(buf, big, { width: 360, height: 360, fit: 'cover', position: 'attention' }, 74);
-      await encode(buf, small, { width: 128, height: 128, fit: 'cover', position: 'attention' }, 70);
-      return { src: `/${big}`, small: `/${small}` };
+      return square(fs.readFileSync(src), image);
     });
   }
 

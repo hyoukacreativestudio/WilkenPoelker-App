@@ -74,34 +74,44 @@ const updateOpeningHours = asyncHandler(async (req, res) => {
     throw new AppError('Season muss standard oder winter sein', 400, 'INVALID_SEASON');
   }
 
-  // Validate dayOfWeek
-  if (dayOfWeek < 0 || dayOfWeek > 6) {
+  // Validate dayOfWeek (0 = Sunday ... 6)
+  if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
     throw new AppError('dayOfWeek muss zwischen 0 und 6 liegen', 400, 'INVALID_DAY');
   }
 
-  // Validate periods format
+  // Validate periods: HH:MM, each ends after it starts, in order without overlap
+  if (periods !== undefined && periods !== null && (!Array.isArray(periods) || periods.length > 4)) {
+    throw new AppError('Höchstens 4 Zeiten pro Tag', 400, 'INVALID_PERIOD');
+  }
   if (!isClosed && periods) {
+    const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+    let last = '';
     for (const period of periods) {
-      if (!period.open || !period.close) {
+      if (!period || !period.open || !period.close) {
         throw new AppError('Jede Periode muss open und close enthalten', 400, 'INVALID_PERIOD');
       }
-      if (!/^\d{2}:\d{2}$/.test(period.open) || !/^\d{2}:\d{2}$/.test(period.close)) {
+      if (!TIME.test(period.open) || !TIME.test(period.close)) {
         throw new AppError('Zeiten müssen im Format HH:MM sein', 400, 'INVALID_TIME_FORMAT');
       }
+      if (period.close <= period.open || period.open < last) {
+        throw new AppError('Jede Zeit muss nach dem Beginn enden, ohne Überschneidung', 400, 'INVALID_PERIOD_ORDER');
+      }
+      last = period.close;
     }
   }
+  const clean = isClosed ? [] : (periods || []).map((p) => ({ open: p.open, close: p.close }));
 
   const [record, created] = await OpeningHour.findOrCreate({
     where: { dayOfWeek, season },
     defaults: {
       isClosed: isClosed || false,
-      periods: isClosed ? [] : (periods || []),
+      periods: clean,
     },
   });
 
   if (!created) {
     record.isClosed = isClosed || false;
-    record.periods = isClosed ? [] : (periods || []);
+    record.periods = clean;
     await record.save();
   }
 

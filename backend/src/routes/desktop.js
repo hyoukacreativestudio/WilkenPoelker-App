@@ -54,6 +54,10 @@ router.post('/customer-orders/:year/:number/message', authenticate, authorize(..
 router.patch('/customer-orders/:year/:number/contacted', authenticate, authorize(...CUSTOMER_ORDER_ROLES), desktop.setCustomerOrderContacted);
 router.get('/customer-lookup', authenticate, authorize(...STAFF), desktop.lookupCustomer);
 
+// ── Öffnungszeiten & Team: the page edits /api/settings and /api/about
+// directly (same rights there); only the photo upload is PC-specific ──
+router.post('/team/photo', authenticate, authorize('admin', 'super_admin', 'sales_manager'), require('../controllers/aboutController').uploadPhotoData);
+
 // ── Produkte (Taifun stock -> app + website product pages) ──
 const shopAdmin = require('../controllers/shopAdminController');
 const SHOP_ADMIN = ['admin', 'super_admin', 'sales_manager'];

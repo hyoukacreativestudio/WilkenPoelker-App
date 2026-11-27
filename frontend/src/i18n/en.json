@@ -345,7 +345,8 @@
     "sat": "Sat",
     "and": "and",
     "winterHours": "Winter hours (Nov 1 – Jan 31)",
-    "title": "Current opening hours:"
+    "title": "Current opening hours:",
+    "period": "{{open}} – {{close}}"
   },
   "service": {
     "title": "Service",
@@ -1633,5 +1634,36 @@
     "products": "Products",
     "allProducts": "Show all {{count}} products",
     "nothing": "Nothing found for “{{term}}”."
+  },
+  "openingHoursEdit": {
+    "title": "Opening hours",
+    "intro": "These hours apply to the app, the PC program and the website. The website is updated about a minute after saving. Enter single closed days under \"Closed days\".",
+    "season": {
+      "standard": "Summer",
+      "winter": "Winter"
+    },
+    "seasonDates": {
+      "standard": "Feb 1 – Oct 31",
+      "winter": "Nov 1 – Jan 31"
+    },
+    "open": "Open",
+    "closed": "Closed",
+    "openSwitch": "{{day}} open",
+    "from": "From",
+    "to": "To",
+    "addPeriod": "Add another time",
+    "removePeriod": "Remove time",
+    "copyMonday": "Use Monday's hours for Tuesday to Friday",
+    "problem": {
+      "empty": "Please enter at least one time or set the day to closed.",
+      "format": "Please enter the times as HH:MM, for example 08:00.",
+      "order": "Each time must end after it starts, and times must not overlap."
+    },
+    "fixErrors": "Please check the marked days.",
+    "hint": "The app shows the new hours the next time the page is opened.",
+    "save": "Save",
+    "saved": "Opening hours saved",
+    "saveError": "The opening hours could not be saved.",
+    "loadError": "The opening hours could not be loaded."
   }
 }

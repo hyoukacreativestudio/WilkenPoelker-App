@@ -66,6 +66,9 @@ export function modulesForRole(role) {
     { key: 'produkte',     label: 'Produkte',     icon: '🛒', show: all || role === 'sales_manager' },
     { key: 'anfragen',     label: 'Anfragen',     icon: '✉️', show: all || role === 'sales_manager' || WEB_INQUIRY_DEPARTMENT_ROLES.includes(role) },
     { key: 'feedback',     label: 'Feedback',     icon: '💡', show: all },
+    // Shown in the app and on the website (rebuilt about a minute after saving)
+    { key: 'oeffnungszeiten', label: 'Öffnungszeiten', icon: '🕘', show: all || role === 'sales_manager' },
+    { key: 'team',         label: 'Team',         icon: '👥', show: all || role === 'sales_manager' },
     { key: 'pcs',          label: 'PCs',          icon: '🖥️', show: all },
     { key: 'lager',        label: 'Lager',        icon: '🏬', show: all || role === 'sales_manager' || role === 'warehouse_worker' || role === 'orders_manager' },
   ].filter((m) => m.show);

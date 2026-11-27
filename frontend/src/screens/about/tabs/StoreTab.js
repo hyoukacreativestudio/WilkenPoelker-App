@@ -21,6 +21,8 @@ import EditableImageGallery from '../../../components/about/EditableImageGallery
 import EditableListEditor from '../../../components/about/EditableListEditor';
 import EditOverlay from '../../../components/about/EditOverlay';
 import { settingsApi } from '../../../api/settings';
+import { DAY_KEYS, groupedRows } from '../../../utils/openingHours';
+import { useOpeningHours } from '../../../hooks/useOpeningHours';
 
 // ---------------------------------------------------------------------------
 // Local asset map for store photos
@@ -81,7 +83,9 @@ const DEFAULT_CONTACT = {
 };
 
 // ---------------------------------------------------------------------------
-// Winter season detection + opening hours
+// Winter season detection + opening hours. The hours come from the server
+// (edited in the app under "Öffnungszeiten" or in the PC program); these
+// fixed hours are only shown when the server cannot be reached.
 // ---------------------------------------------------------------------------
 function isWinterSeason(date = new Date()) {
   const month = date.getMonth();
@@ -95,7 +99,7 @@ function getOpeningHours() {
   return [
     { day: 'Mo \u2013 Fr', hours: `08:00\u201313:00 | 14:00\u2013${closeTime}` },
     { day: 'Sa', hours: '09:00\u201313:00' },
-    { day: 'So', hours: 'Geschlossen' },
+    { day: 'So', hours: null },
   ];
 }
 
@@ -257,7 +261,7 @@ function ContactRow({ icon, text, onPress, theme, isEditMode, onSave, placeholde
 // Main component
 // ---------------------------------------------------------------------------
 export default function StoreTab({ isEditMode, registerSave }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const s = styles(theme);
   const { content, saving, updateContent, saveAllChanges, uploadImage } = useAboutContent('store');
@@ -266,8 +270,15 @@ export default function StoreTab({ isEditMode, registerSave }) {
   useEffect(() => {
     if (registerSave) registerSave(saveAllChanges);
   }, [registerSave, saveAllChanges]);
-  const OPENING_HOURS = useMemo(() => getOpeningHours(), []);
-  const isWinter = useMemo(() => isWinterSeason(), []);
+  // Opening hours of the current season from the server (fallback: fixed hours)
+  const { hours } = useOpeningHours();
+  const OPENING_HOURS = useMemo(() => {
+    if (!hours) return getOpeningHours();
+    const german = (i18n.language || 'de').startsWith('de');
+    const short = (i) => String(t(`common.days.${DAY_KEYS[i]}`)).slice(0, german ? 2 : 3);
+    return groupedRows(hours.schedule, short);
+  }, [hours, t, i18n.language]);
+  const isWinter = hours ? hours.season === 'winter' : isWinterSeason();
 
   // Holiday status from API
   const [holidayInfo, setHolidayInfo] = useState(null);
@@ -566,7 +577,7 @@ export default function StoreTab({ isEditMode, registerSave }) {
         ) : null}
 
         {OPENING_HOURS.map((entry, index) => {
-          const isClosed = entry.hours === 'Geschlossen';
+          const isClosed = !entry.hours;
           return (
             <View key={index} style={s.hoursRow}>
               <Text

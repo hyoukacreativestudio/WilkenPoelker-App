@@ -90,7 +90,10 @@ const readQueue = () => { try { return JSON.parse(localStorage.getItem(QKEY) || 
 const writeQueue = (q) => { localStorage.setItem(QKEY, JSON.stringify(q)); try { window.dispatchEvent(new CustomEvent('wp-queue', { detail: q.length })); } catch {} };
 export const pendingCount = () => readQueue().length;
 const isLoginPath = (path) => path.startsWith('/desktop/login') || path.startsWith('/desktop/device/');
-const isQueueable = (path, method) => method !== 'GET' && !isLoginPath(path) && !path.startsWith('/auth');
+// Picture uploads are not queued: they are large (localStorage is small) and
+// the page needs the picture's address right away.
+const isUpload = (path) => /\/images\/upload$|\/team\/photo$/.test(path);
+const isQueueable = (path, method) => method !== 'GET' && !isLoginPath(path) && !path.startsWith('/auth') && !isUpload(path);
 
 let flushing = false;
 export async function flushQueue() {
@@ -137,7 +140,7 @@ async function request(path, opts = {}, retried = false) {
   let json = null;
   try { json = await res.json(); } catch { /* no body */ }
   if (!res.ok) {
-    const msg = json?.error?.message || json?.message || `Fehler ${res.status}`;
+    const msg = (typeof json?.error === 'string' ? json.error : json?.error?.message) || json?.message || `Fehler ${res.status}`;
     const err = new Error(msg);
     err.status = res.status;
     err.code = json?.error?.code;

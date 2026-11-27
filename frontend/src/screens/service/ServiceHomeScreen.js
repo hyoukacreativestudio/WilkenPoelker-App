@@ -18,6 +18,8 @@ import OfflineBanner from '../../components/ui/OfflineBanner';
 import Button from '../../components/ui/Button';
 import FloatingActionButton from '../../components/shared/FloatingActionButton';
 import AiChatWidget from '../../components/service/AiChatWidget';
+import { useOpeningHours } from '../../hooks/useOpeningHours';
+import { DAY_KEYS, WEEK_ORDER } from '../../utils/openingHours';
 
 export default function ServiceHomeScreen({ navigation }) {
   const safeEdges = useScreenEdges();
@@ -51,7 +53,20 @@ export default function ServiceHomeScreen({ navigation }) {
     Linking.openURL(`https://maps.google.com/?q=${address}`);
   };
 
+  // Hours from the server (edited in the app or the PC program); the fixed
+  // hours below only without a connection
+  const { hours: serverHours } = useOpeningHours();
   const openingHours = useMemo(() => {
+    if (serverHours) {
+      const byDay = new Map(serverHours.schedule.map((d) => [d.dayOfWeek, d]));
+      return WEEK_ORDER
+        .map((i) => byDay.get(i))
+        .filter((d) => d && !d.isClosed && (d.periods || []).length)
+        .map((d) => ({
+          day: t(`common.days.${DAY_KEYS[d.dayOfWeek]}`),
+          hours: d.periods.map((p) => `${p.open} - ${p.close}`).join(' | '),
+        }));
+    }
     const now = new Date();
     const month = now.getMonth();
     const isWinter = month >= 10 || month === 0; // 01.11. - 31.01.
@@ -64,7 +79,7 @@ export default function ServiceHomeScreen({ navigation }) {
       { day: t('common.days.friday'), hours: `08:00 - 13:00 | 14:00 - ${closeTime}` },
       { day: t('common.days.saturday'), hours: '09:00 - 13:00' },
     ];
-  }, [t]);
+  }, [t, serverHours]);
 
   const s = styles(theme);
 

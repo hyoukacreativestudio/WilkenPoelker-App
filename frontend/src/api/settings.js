@@ -1,8 +1,9 @@
 import apiClient from './client';
 
 export const settingsApi = {
-  getOpeningHours: async () => {
-    const response = await apiClient.get('/settings/opening-hours');
+  // season: 'standard' | 'winter'; without it the server picks the current one
+  getOpeningHours: async (season) => {
+    const response = await apiClient.get('/settings/opening-hours', { params: season ? { season } : undefined });
     return response.data?.data ?? response.data;
   },
   getOpeningStatus: async () => {

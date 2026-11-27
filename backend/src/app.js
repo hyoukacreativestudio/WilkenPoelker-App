@@ -64,7 +64,7 @@ app.use('/api/', apiLimiter);
 // PC tool sends product pictures as data URLs (scaled to 2000 px, a few MB).
 const jsonSmall = express.json({ limit: '1mb' });
 const jsonLarge = express.json({ limit: '12mb' });
-const LARGE_JSON = /^\/api\/desktop\/shop\/products\/[^/]+\/images\/upload$/;
+const LARGE_JSON = /^\/api\/desktop\/(?:shop\/products\/[^/]+\/images\/upload|team\/photo)$/;
 app.use((req, res, next) => (LARGE_JSON.test(req.path) ? jsonLarge : jsonSmall)(req, res, next));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
@@ -89,6 +89,14 @@ app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
       res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
     }
   },
+}));
+
+// Team portraits bundled with the app (frontend/assets/team), so the PC
+// program can show them. The same photos are public on the website.
+app.use('/api/about/team-photos', express.static(path.resolve(__dirname, '../../frontend/assets/team'), {
+  maxAge: config.isProd ? '7d' : '1h',
+  index: false,
+  setHeaders(res) { res.setHeader('X-Content-Type-Options', 'nosniff'); },
 }));
 
 // Routes

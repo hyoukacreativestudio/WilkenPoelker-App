@@ -8,9 +8,10 @@ const { uploadSingle } = require('../middlewares/upload');
 // Public route - get section content
 router.get('/:section', getSection);
 
-// Admin routes
-router.put('/:section/:contentKey', authenticate, authorize('admin', 'super_admin'), updateContentKey);
-router.post('/upload', authenticate, authorize('admin', 'super_admin'), uploadSingle('image'), uploadImage);
+// Admin and Verkauf (team in the app and in the PC program)
+const EDITORS = ['admin', 'super_admin', 'sales_manager'];
+router.put('/:section/:contentKey', authenticate, authorize(...EDITORS), updateContentKey);
+router.post('/upload', authenticate, authorize(...EDITORS), uploadSingle('image'), uploadImage);
 router.delete('/upload/:filename', authenticate, authorize('admin', 'super_admin'), deleteImage);
 
 module.exports = router;

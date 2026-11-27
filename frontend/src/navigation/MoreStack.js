@@ -17,6 +17,7 @@ import AdminScreen from '../screens/admin/AdminScreen';
 import AdminRequestsScreen from '../screens/admin/AdminRequestsScreen';
 import AdminOpenTicketsScreen from '../screens/admin/AdminOpenTicketsScreen';
 import ClosedDaysScreen from '../screens/admin/ClosedDaysScreen';
+import OpeningHoursScreen from '../screens/admin/OpeningHoursScreen';
 import FeedbackScreen from '../screens/more/FeedbackScreen';
 import ImpressumScreen from '../screens/legal/ImpressumScreen';
 import DatenschutzScreen from '../screens/legal/DatenschutzScreen';
@@ -165,6 +166,15 @@ export default function MoreStack() {
         component={AdminOpenTicketsScreen}
         options={({ navigation }) => ({
           title: t('adminTickets.title', 'Offene Tickets'),
+          headerLeft: () => backButton(navigation),
+          headerRight: () => <NotificationBell />,
+        })}
+      />
+      <Stack.Screen
+        name="OpeningHours"
+        component={OpeningHoursScreen}
+        options={({ navigation }) => ({
+          title: t('openingHoursEdit.title'),
           headerLeft: () => backButton(navigation),
           headerRight: () => <NotificationBell />,
         })}

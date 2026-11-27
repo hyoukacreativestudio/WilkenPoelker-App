@@ -345,7 +345,8 @@
     "sat": "Sa",
     "and": "und",
     "winterHours": "Winteröffnungszeiten (01.11. – 31.01.)",
-    "title": "Aktuelle Öffnungszeiten:"
+    "title": "Aktuelle Öffnungszeiten:",
+    "period": "{{open}} - {{close}} Uhr"
   },
   "service": {
     "title": "Service",
@@ -1620,5 +1621,36 @@
     "products": "Produkte",
     "allProducts": "Alle {{count}} Produkte anzeigen",
     "nothing": "Zu „{{term}}“ wurde nichts gefunden."
+  },
+  "openingHoursEdit": {
+    "title": "Öffnungszeiten",
+    "intro": "Die Zeiten gelten für die App, das PC-Programm und die Website. Die Website wird etwa eine Minute nach dem Speichern aktualisiert. Einzelne geschlossene Tage tragen Sie unter „Geschlossene Tage“ ein.",
+    "season": {
+      "standard": "Sommer",
+      "winter": "Winter"
+    },
+    "seasonDates": {
+      "standard": "01.02. – 31.10.",
+      "winter": "01.11. – 31.01."
+    },
+    "open": "Geöffnet",
+    "closed": "Geschlossen",
+    "openSwitch": "{{day}} geöffnet",
+    "from": "Von",
+    "to": "Bis",
+    "addPeriod": "Weitere Zeit hinzufügen",
+    "removePeriod": "Zeit entfernen",
+    "copyMonday": "Zeiten vom Montag für Dienstag bis Freitag übernehmen",
+    "problem": {
+      "empty": "Bitte tragen Sie mindestens eine Zeit ein oder stellen Sie den Tag auf geschlossen.",
+      "format": "Bitte geben Sie die Zeiten als HH:MM ein, zum Beispiel 08:00.",
+      "order": "Jede Zeit muss nach dem Beginn enden, und die Zeiten dürfen sich nicht überschneiden."
+    },
+    "fixErrors": "Bitte prüfen Sie die markierten Tage.",
+    "hint": "Die Zeiten werden in der App beim nächsten Öffnen der Seite angezeigt.",
+    "save": "Speichern",
+    "saved": "Öffnungszeiten gespeichert",
+    "saveError": "Die Öffnungszeiten konnten nicht gespeichert werden.",
+    "loadError": "Die Öffnungszeiten konnten nicht geladen werden."
   }
 }

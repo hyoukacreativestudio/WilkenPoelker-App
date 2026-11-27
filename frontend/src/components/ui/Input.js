@@ -19,6 +19,8 @@ export default function Input({
   keyboardType,
   autoCapitalize,
   style,
+  onFocus,
+  onBlur,
   ...rest
 }) {
   const { theme } = useTheme();
@@ -92,8 +94,8 @@ export default function Input({
           maxLength={maxLength}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={(e) => { setIsFocused(true); onFocus?.(e); }}
+          onBlur={(e) => { setIsFocused(false); onBlur?.(e); }}
           style={[
             theme.typography.styles.body,
             {

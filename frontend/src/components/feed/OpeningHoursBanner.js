@@ -4,6 +4,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { settingsApi } from '../../api/settings';
+import { useOpeningHours } from '../../hooks/useOpeningHours';
+import { DAY_KEYS, WEEK_ORDER } from '../../utils/openingHours';
 
 // ── Local fallback logic (used when API fails) ──────────────────────────────
 
@@ -52,6 +54,27 @@ function isCurrentlyOpenFallback(hours, date = new Date()) {
   return false;
 }
 
+// Open days of the server's week, consecutive days with the same hours as one
+// group: [{ from, to, periods }]
+function openGroups(schedule) {
+  const byDay = new Map(schedule.map((d) => [d.dayOfWeek, d]));
+  const groups = [];
+  let prevKey = null;
+  for (const i of WEEK_ORDER) {
+    const d = byDay.get(i);
+    const open = d && !d.isClosed && (d.periods || []).length;
+    const key = open ? JSON.stringify(d.periods) : null;
+    const last = groups[groups.length - 1];
+    if (key && key === prevKey && last) last.to = i;
+    else if (key) groups.push({ from: i, to: i, periods: d.periods });
+    prevKey = key;
+  }
+  return groups;
+}
+
+// "08:00" -> "8:00", as the banner always showed it
+const shortTime = (v) => String(v).replace(/^0(\d)/, '$1');
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Status is re-read on pull-to-refresh (refreshKey), when the app comes back to
@@ -61,7 +84,7 @@ const REFRESH_INTERVAL = 5 * 60 * 1000;
 
 export default function OpeningHoursBanner({ refreshKey = 0 }) {
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Fallback values (used immediately, then overridden by API)
   const fallback = useMemo(() => {
@@ -80,8 +103,12 @@ export default function OpeningHoursBanner({ refreshKey = 0 }) {
   const [holidayName, setHolidayName] = useState(null);
   const [holidayHours, setHolidayHours] = useState(null);
   const [weekdayClose, setWeekdayClose] = useState(fallback.weekdayClose);
+  const { hours: serverHours, reload: reloadHours } = useOpeningHours();
+  // "Mo", "Sa" (German) or "Mon", "Sat", like the fixed labels
+  const dayShort = (i) => String(t(`common.days.${DAY_KEYS[i]}`)).slice(0, (i18n.language || 'de').startsWith('de') ? 2 : 3);
 
   const loadStatus = useCallback(async (isCancelled = () => false) => {
+    reloadHours();
     try {
       const status = await settingsApi.getOpeningStatus();
       if (isCancelled()) return;
@@ -107,7 +134,7 @@ export default function OpeningHoursBanner({ refreshKey = 0 }) {
     } catch {
       // Keep the last known values on error
     }
-  }, []);
+  }, [reloadHours]);
 
   useEffect(() => {
     let cancelled = false;
@@ -207,7 +234,31 @@ export default function OpeningHoursBanner({ refreshKey = 0 }) {
       {/* Divider */}
       <View style={[s.divider, { backgroundColor: theme.colors.divider }]} />
 
-      {/* Hours grid */}
+      {/* Hours grid: from the server, the fixed hours only without a connection */}
+      {serverHours && openGroups(serverHours.schedule).length ? (
+        <View style={s.hoursGrid}>
+          {openGroups(serverHours.schedule).map((g, index) => (
+            <React.Fragment key={g.from}>
+              {index > 0 ? (
+                <View style={[s.verticalDivider, { backgroundColor: theme.colors.divider }]} />
+              ) : null}
+              <View style={s.hoursColumn}>
+                <Text style={[s.dayLabel, { color: theme.colors.textSecondary }]}>
+                  {g.from === g.to ? dayShort(g.from) : `${dayShort(g.from)} - ${dayShort(g.to)}`}
+                </Text>
+                {g.periods.map((p) => (
+                  <Text
+                    key={p.open}
+                    style={[s.timeText, { color: theme.colors.text, fontWeight: theme.typography.weights.semiBold }]}
+                  >
+                    {t('openingHours.period', '{{open}} - {{close}} Uhr', { open: shortTime(p.open), close: shortTime(p.close) })}
+                  </Text>
+                ))}
+              </View>
+            </React.Fragment>
+          ))}
+        </View>
+      ) : (
       <View style={s.hoursGrid}>
         {/* Mon-Fri */}
         <View style={s.hoursColumn}>
@@ -235,6 +286,7 @@ export default function OpeningHoursBanner({ refreshKey = 0 }) {
           </Text>
         </View>
       </View>
+      )}
     </View>
   );
 }

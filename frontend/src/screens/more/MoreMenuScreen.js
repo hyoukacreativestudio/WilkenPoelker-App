@@ -210,6 +210,13 @@ export default function MoreMenuScreen({ navigation }) {
                   />
                   <Divider style={{ marginVertical: 0 }} />
                   <MenuRow
+                    icon="clock-edit-outline"
+                    label={t('openingHoursEdit.title')}
+                    onPress={() => navigation.navigate('OpeningHours')}
+                    theme={theme}
+                  />
+                  <Divider style={{ marginVertical: 0 }} />
+                  <MenuRow
                     icon="calendar-remove-outline"
                     label={t('closedDays.title', 'Geschlossene Tage')}
                     onPress={() => navigation.navigate('ClosedDays')}

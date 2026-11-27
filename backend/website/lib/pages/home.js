@@ -29,7 +29,7 @@ async function teamFaces(ctx, deps) {
   for (const dep of ctx.team) {
     if (deps && !deps.includes(dep.key)) continue;
     for (const m of dep.members) {
-      const p = await ctx.images.portrait(m.image);
+      const p = await ctx.images.portrait(m);
       if (p) out.push({ name: m.name, position: positionName(m.position), ...p });
     }
   }
@@ -43,7 +43,7 @@ async function home(ctx) {
   const workshopFaces = (await teamFaces(ctx, WORKSHOP_DEPS)).slice(0, 12);
   const allFaces = await teamFaces(ctx);
   const md = (ctx.team.find((d) => d.key === 'Geschaeftsfuehrung') || { members: [] }).members[0];
-  const mdPhoto = md ? await ctx.images.portrait(md.image) : null;
+  const mdPhoto = md ? await ctx.images.portrait(md) : null;
   const teamSize = ctx.team.reduce((n, d) => n + d.members.length, 0);
 
   const cat = (name) => ctx.categories.find((c) => c.name === name);
