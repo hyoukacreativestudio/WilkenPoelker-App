@@ -19,9 +19,9 @@ const register = asyncHandler(async (req, res) => {
   const requestOrigin = `${req.protocol}://${req.get('host')}`;
   emailService
     .sendVerificationEmail(email, firstName || username, result.verificationToken, requestOrigin)
-    .then(() => console.log(`Verification email sent to ${email}`))
+    .then(() => logger.info(`Verification email sent to ${email}`))
     .catch((err) => {
-      console.error(`CRITICAL: Failed to send verification email to ${email}:`, err.message, err.response || '');
+      logger.error(`CRITICAL: Failed to send verification email to ${email}: ${err.message}`);
     });
 
   res.status(201).json({
@@ -195,9 +195,9 @@ const resendVerification = asyncHandler(async (req, res) => {
   const resendOrigin = `${req.protocol}://${req.get('host')}`;
   emailService
     .sendVerificationEmail(email, user.firstName || user.username, verificationToken, resendOrigin)
-    .then(() => console.log(`Resend verification email sent to ${email}`))
+    .then(() => logger.info(`Resend verification email sent to ${email}`))
     .catch((err) => {
-      console.error(`CRITICAL: Failed to resend verification email to ${email}:`, err.message, err.response || '');
+      logger.error(`CRITICAL: Failed to resend verification email to ${email}: ${err.message}`);
     });
 
   res.json({
